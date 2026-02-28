@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -16,6 +17,8 @@ import {
     Menu,
     Sparkles,
     Download,
+    Sun,
+    Moon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -36,6 +39,7 @@ function SidebarContent({ onClose }) {
     const location = useLocation()
     const navigate = useNavigate()
     const { signOut } = useAuth()
+    const { theme, setTheme } = useTheme()
 
     const isActive = (to) => {
         if (to === '/dashboard') return location.pathname === '/dashboard'
@@ -47,68 +51,80 @@ function SidebarContent({ onClose }) {
         navigate('/login', { replace: true })
     }
 
+    const toggleTheme = () => {
+        setTheme(theme === 'dark' ? 'light' : 'dark')
+    }
+
     return (
-        <div className="flex h-full flex-col bg-white">
+        <div className="flex h-full flex-col bg-white dark:bg-slate-950">
             {/* Logo */}
-            <div className="flex items-center gap-3 px-5 py-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700">
-                    <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-lg font-bold text-slate-900">Hacienda</span>
+            <div className="flex items-center justify-center gap-0 px-5 py-10">
+                <span className="font-heading text-2xl tracking-widest text-foreground">Hacienda Bodas</span>
             </div>
 
             {/* Menu */}
-            <div className="px-4 pt-2">
-                <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Menu</p>
-                <nav className="space-y-1">
+            <div className="px-6 pt-2">
+                <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Menu</p>
+                <nav className="space-y-2">
                     {menuItems.map((item) => (
                         <NavLink
                             key={item.to}
                             to={item.to}
                             onClick={onClose}
                             className={cn(
-                                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                                'flex items-center gap-4 rounded-none px-3 py-3 text-sm font-medium transition-colors',
                                 isActive(item.to)
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                    ? 'bg-secondary text-foreground dark:bg-secondary dark:text-foreground'
+                                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
                             )}
                         >
                             {isActive(item.to) && (
-                                <div className="absolute left-0 h-6 w-1 rounded-r-full bg-emerald-700" />
+                                <div className="absolute left-0 h-6 w-[2px] bg-foreground" />
                             )}
-                            <item.icon className={cn('h-5 w-5', isActive(item.to) ? 'text-emerald-700' : 'text-slate-400')} />
-                            {item.label}
+                            <item.icon className={cn('h-4 w-4 stroke-[1.5]', isActive(item.to) ? 'text-foreground' : 'text-muted-foreground')} />
+                            <span className="font-medium tracking-wide">{item.label}</span>
                         </NavLink>
                     ))}
                 </nav>
             </div>
 
             {/* General */}
-            <div className="px-4 pt-6">
-                <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">General</p>
-                <nav className="space-y-1">
+            <div className="px-6 pt-8">
+                <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">General</p>
+                <nav className="space-y-2">
                     {generalItems.map((item) => (
                         <NavLink
                             key={item.to}
                             to={item.to}
                             onClick={onClose}
                             className={cn(
-                                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                                'flex items-center gap-4 rounded-none px-3 py-3 text-sm font-medium transition-colors',
                                 isActive(item.to)
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                    ? 'bg-secondary text-foreground dark:bg-secondary dark:text-foreground'
+                                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
                             )}
                         >
-                            <item.icon className="h-5 w-5 text-slate-400" />
-                            {item.label}
+                            <item.icon className="h-4 w-4 stroke-[1.5] text-muted-foreground" />
+                            <span className="font-medium tracking-wide">{item.label}</span>
                         </NavLink>
                     ))}
                     <button
-                        onClick={() => { handleLogout(); onClose?.(); }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                        onClick={toggleTheme}
+                        className="flex w-full items-center gap-4 rounded-none px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
                     >
-                        <LogOut className="h-5 w-5 text-slate-400" />
-                        Logout
+                        {theme === 'dark' ? (
+                            <Sun className="h-4 w-4 stroke-[1.5]" />
+                        ) : (
+                            <Moon className="h-4 w-4 stroke-[1.5]" />
+                        )}
+                        <span className="font-medium tracking-wide">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                    </button>
+                    <button
+                        onClick={() => { handleLogout(); onClose?.(); }}
+                        className="flex w-full items-center gap-4 rounded-none px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+                    >
+                        <LogOut className="h-4 w-4 stroke-[1.5]" />
+                        <span className="font-medium tracking-wide">Logout</span>
                     </button>
                 </nav>
             </div>
@@ -117,19 +133,19 @@ function SidebarContent({ onClose }) {
             <div className="flex-1" />
 
             {/* Bottom promo card */}
-            <div className="p-4">
-                <div className="relative overflow-hidden rounded-2xl bg-emerald-800 p-5 text-white">
-                    <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-emerald-700/50" />
-                    <div className="absolute -bottom-6 -right-6 h-20 w-20 rounded-full bg-emerald-600/30" />
-                    <div className="relative">
-                        <Download className="mb-3 h-6 w-6" />
-                        <p className="text-sm font-bold">Descarga la App</p>
-                        <p className="mt-1 text-xs text-emerald-200">Gestiona leads desde tu móvil</p>
+            <div className="p-6">
+                <div className="relative overflow-hidden bg-primary p-6 text-primary-foreground">
+                    <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/20" />
+                    <div className="absolute -bottom-6 -right-6 h-20 w-20 rounded-full bg-black/5" />
+                    <div className="relative text-center flex flex-col items-center">
+                        <Download className="mb-4 h-5 w-5 stroke-[1.5]" />
+                        <p className="font-heading text-lg">Descarga la App</p>
+                        <p className="mt-2 text-xs opacity-70">Gestiona leads desde tu móvil</p>
                         <Button
                             size="sm"
-                            className="mt-3 rounded-full bg-emerald-500 text-xs font-semibold text-white hover:bg-emerald-400"
+                            className="mt-6 w-full rounded-none bg-foreground text-background hover:bg-foreground/90 font-medium tracking-wider text-xs"
                         >
-                            Download
+                            DOWNLOAD
                         </Button>
                     </div>
                 </div>
@@ -145,7 +161,7 @@ export default function Sidebar() {
         <>
             {/* Desktop sidebar */}
             <aside className="hidden lg:block lg:w-60 lg:flex-shrink-0">
-                <div className="fixed left-0 top-0 z-30 h-screen w-60 border-r border-slate-200 bg-white">
+                <div className="fixed left-0 top-0 z-30 h-screen w-60 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
                     <SidebarContent />
                 </div>
             </aside>
@@ -156,12 +172,12 @@ export default function Sidebar() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="fixed left-4 top-4 z-50 lg:hidden text-slate-700 hover:bg-slate-100"
+                        className="fixed left-4 top-4 z-50 lg:hidden text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                         <Menu className="h-5 w-5" />
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-60 p-0 border-slate-200 bg-white">
+                <SheetContent side="left" className="w-60 p-0 border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
                     <SheetTitle className="sr-only">Navegación</SheetTitle>
                     <SidebarContent onClose={() => setOpen(false)} />
                 </SheetContent>

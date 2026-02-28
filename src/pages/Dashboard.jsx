@@ -1,9 +1,11 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useLeads } from '@/hooks/useLeads'
-import { mockLeads } from '@/data/mockLeads'
 import { isSinInfo, parseLeadDate, normalizeCanal } from '@/lib/leadUtils'
+import { useFilteredLeads, useFilters } from '@/contexts/FilterContext'
 
+import FilterBar from '@/components/dashboard/FilterBar'
 import KpiCards from '@/components/dashboard/KpiCards'
+import ExportReportDialog from '@/components/dashboard/ExportReportDialog'
 import {
     LeadsByDayChart,
     LeadsByFaseChart,
@@ -53,20 +55,20 @@ function RemindersCard({ leads }) {
     const d = parseLeadDate(reminder.fecha_primer_mensaje)
 
     return (
-        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-800">Reminders</CardTitle>
+        <Card className="rounded-none border-border bg-card shadow-sm">
+            <CardHeader className="pb-4">
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Reminders</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="rounded-xl bg-slate-50 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Clock className="h-4 w-4 text-emerald-600" />
-                        <span className="text-xs font-medium text-slate-400">Seguimiento pendiente</span>
+                <div className="bg-secondary/30 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Clock className="h-4 w-4 text-primary" />
+                        <span className="text-xs uppercase tracking-widest text-muted-foreground">Seguimiento pendiente</span>
                     </div>
-                    <p className="text-sm font-semibold text-slate-800">Follow up: {reminder.nombre}</p>
-                    <p className="text-xs text-slate-500 mt-1">Lead #{reminder.lead_id} · {reminder.evento}</p>
-                    {d && <p className="text-xs text-slate-400 mt-1">{format(d, "dd MMM yyyy, HH:mm", { locale: es })}</p>}
-                    <Button size="sm" className="mt-3 rounded-full bg-emerald-700 text-xs text-white hover:bg-emerald-800">
+                    <p className="text-base font-medium text-foreground">{reminder.nombre}</p>
+                    <p className="text-xs text-muted-foreground mt-2 uppercase tracking-wide">Lead #{reminder.lead_id} · {reminder.evento}</p>
+                    {d && <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">{format(d, "dd MMM yyyy, HH:mm", { locale: es })}</p>}
+                    <Button size="sm" className="mt-5 rounded-none bg-primary text-xs font-medium tracking-widest text-primary-foreground hover:bg-primary/90 w-full uppercase">
                         Open Lead
                     </Button>
                 </div>
@@ -84,21 +86,21 @@ function RecentLeadsList({ leads, onSelectLead }) {
     }, [leads])
 
     const faseColor = (fase) => {
-        if (!fase) return 'bg-slate-100 text-slate-600'
+        if (!fase) return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
         const f = fase.toLowerCase()
-        if (f.includes('contrato')) return 'bg-emerald-100 text-emerald-700'
-        if (f.includes('perdido')) return 'bg-red-100 text-red-700'
-        if (f.includes('+24hrs')) return 'bg-amber-100 text-amber-700'
-        if (f.includes('cita') || f.includes('visita')) return 'bg-blue-100 text-blue-700'
-        return 'bg-slate-100 text-slate-600'
+        if (f.includes('contrato')) return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+        if (f.includes('perdido')) return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+        if (f.includes('+24hrs')) return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+        if (f.includes('cita') || f.includes('visita')) return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
     }
 
     return (
-        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-800">Leads Recientes</CardTitle>
-                <Button variant="outline" size="sm" className="rounded-full border-slate-200 text-xs">
-                    <Plus className="mr-1 h-3 w-3" /> New
+        <Card className="rounded-none border-border bg-card shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-4">
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Leads Recientes</CardTitle>
+                <Button variant="outline" size="sm" className="rounded-none border-foreground text-xs uppercase tracking-widest hover:bg-secondary">
+                    <Plus className="mr-2 h-3 w-3" /> New
                 </Button>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -108,14 +110,14 @@ function RecentLeadsList({ leads, onSelectLead }) {
                         <button
                             key={lead.lead_id}
                             onClick={() => onSelectLead(lead)}
-                            className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-slate-50"
+                            className="flex w-full items-center gap-4 p-3 text-left transition-colors hover:bg-secondary/50 border border-transparent hover:border-border"
                         >
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50">
-                                <User className="h-4 w-4 text-emerald-700" />
+                            <div className="flex h-10 w-10 items-center justify-center bg-secondary">
+                                <User className="h-4 w-4 text-foreground" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-800 truncate">{lead.nombre}</p>
-                                <p className="text-xs text-slate-400">{d ? format(d, 'dd MMM', { locale: es }) : 'Sin fecha'}</p>
+                                <p className="text-sm font-medium text-foreground truncate">{lead.nombre}</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">{d ? format(d, 'dd MMM', { locale: es }) : 'Sin fecha'}</p>
                             </div>
                             <Badge className={`rounded-full text-xs font-medium ${faseColor(lead.fase_embudo)}`}>
                                 {(lead.fase_embudo || 'Sin fase').split(' ').slice(0, 2).join(' ')}
@@ -143,31 +145,31 @@ function TeamCard({ leads }) {
     }, [leads])
 
     const getStatus = (v) => {
-        if (v.perdidos > v.activos) return { label: 'Needs follow-up', color: 'bg-red-100 text-red-700' }
-        if (v.activos > 3) return { label: 'On track', color: 'bg-emerald-100 text-emerald-700' }
-        return { label: 'Backlog', color: 'bg-amber-100 text-amber-700' }
+        if (v.perdidos > v.activos) return { label: 'Needs follow-up', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }
+        if (v.activos > 3) return { label: 'On track', color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' }
+        return { label: 'Backlog', color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' }
     }
 
-    const colors = ['bg-emerald-200', 'bg-blue-200', 'bg-amber-200', 'bg-rose-200']
+    const colors = ['bg-emerald-200 dark:bg-emerald-800', 'bg-blue-200 dark:bg-blue-800', 'bg-amber-200 dark:bg-amber-800', 'bg-rose-200 dark:bg-rose-800']
 
     return (
-        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-800">Team Collaboration</CardTitle>
+        <Card className="rounded-none border-border bg-card shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-4">
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Team Collaboration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
                 {team.map((v, i) => {
                     const status = getStatus(v)
                     return (
-                        <div key={v.name} className="flex items-center gap-3 rounded-xl p-2">
-                            <Avatar className="h-8 w-8">
-                                <AvatarFallback className={`text-xs font-bold text-slate-700 ${colors[i % colors.length]}`}>
+                        <div key={v.name} className="flex items-center gap-4 p-3 hover:bg-secondary/30 transition-colors">
+                            <Avatar className="h-10 w-10 rounded-none">
+                                <AvatarFallback className={`text-xs font-bold text-foreground bg-secondary font-heading tracking-widest`}>
                                     {v.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-800">{v.name}</p>
-                                <p className="text-xs text-slate-400">{v.total} leads</p>
+                                <p className="text-sm font-medium text-foreground">{v.name}</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">{v.total} leads</p>
                             </div>
                             <Badge className={`rounded-full text-xs font-medium ${status.color}`}>{status.label}</Badge>
                         </div>
@@ -187,42 +189,42 @@ function PipelineDonut({ leads, loading }) {
     }, [leads])
 
     const data = [
-        { name: 'Activos', value: activos, fill: '#059669' },
-        { name: 'Perdidos', value: perdidos, fill: '#e2e8f0' },
+        { name: 'Activos', value: activos, fill: '#E2D4C8' },
+        { name: 'Perdidos', value: perdidos, fill: '#A9AFA3' },
     ]
 
     if (loading) {
         return (
-            <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <Card className="rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm">
                 <CardContent className="flex items-center justify-center p-6" style={{ height: 240 }}>
-                    <Skeleton className="h-36 w-36 rounded-full bg-slate-100" />
+                    <Skeleton className="h-36 w-36 rounded-full bg-slate-100 dark:bg-slate-800" />
                 </CardContent>
             </Card>
         )
     }
 
     return (
-        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
-            <CardHeader className="pb-0">
-                <CardTitle className="text-sm font-semibold text-slate-800">Pipeline Progress</CardTitle>
+        <Card className="rounded-none border-border bg-card shadow-sm">
+            <CardHeader className="pb-4">
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Pipeline Progress</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center pt-2">
                 <div className="relative" style={{ width: 160, height: 160 }}>
                     <ResponsiveContainer>
                         <PieChart>
                             <Pie data={data} cx="50%" cy="50%" innerRadius={52} outerRadius={72} paddingAngle={4} dataKey="value" startAngle={90} endAngle={-270}>
-                                {data.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                                {data.map((e, i) => <Cell key={i} fill={e.fill} className="dark:opacity-80" />)}
                             </Pie>
                         </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold text-slate-900 tabular-nums">{pct}%</span>
-                        <span className="text-xs text-slate-500">Activos</span>
+                        <span className="font-numbers text-4xl text-foreground tabular-nums">{pct}%</span>
+                        <span className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Activos</span>
                     </div>
                 </div>
-                <div className="mt-3 flex items-center gap-5 text-xs">
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-600" />Activos</span>
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-slate-200" />Perdidos</span>
+                <div className="mt-5 flex items-center justify-center gap-8 text-xs uppercase tracking-widest text-muted-foreground w-full">
+                    <span className="flex items-center gap-2"><span className="h-3 w-3 bg-[#E2D4C8]" />Activos</span>
+                    <span className="flex items-center gap-2"><span className="h-3 w-3 bg-[#A9AFA3] dark:bg-slate-700" />Perdidos</span>
                 </div>
             </CardContent>
         </Card>
@@ -243,23 +245,23 @@ function DataQualityCard({ leads }) {
     }, [leads])
 
     return (
-        <Card className="relative overflow-hidden rounded-2xl border-emerald-800 bg-gradient-to-br from-emerald-900 to-emerald-950 text-white shadow-sm">
-            <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-700/30" />
-            <div className="absolute -bottom-8 -right-8 h-28 w-28 rounded-full bg-emerald-800/40" />
-            <CardHeader className="relative pb-2">
-                <CardTitle className="text-sm font-semibold text-emerald-100">Data Quality</CardTitle>
+        <Card className="relative overflow-hidden rounded-none border border-border bg-card text-foreground shadow-sm">
+            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-secondary/50 blur-3xl opacity-50" />
+            <div className="absolute -bottom-8 -left-8 h-40 w-40 rounded-full bg-primary/20 blur-3xl opacity-50" />
+            <CardHeader className="relative pb-4">
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Data Quality</CardTitle>
             </CardHeader>
-            <CardContent className="relative grid grid-cols-2 gap-2">
+            <CardContent className="relative grid grid-cols-2 gap-4">
                 {[
                     { icon: Phone, val: stats.phone, label: 'Sin teléfono' },
-                    { icon: Calendar, val: stats.event, label: 'Sin fecha evento' },
+                    { icon: Calendar, val: stats.event, label: 'Sin fecha' },
                     { icon: AlertTriangle, val: stats.origen, label: 'Origen desc.' },
-                    { icon: MapPin, val: stats.salon, label: 'Salón indeciso' },
+                    { icon: MapPin, val: stats.salon, label: 'Indecisos' },
                 ].map(({ icon: Icon, val, label }) => (
-                    <div key={label} className="rounded-xl bg-white/10 p-3">
-                        <Icon className="mb-1 h-4 w-4 text-emerald-300" />
-                        <p className="text-lg font-bold tabular-nums">{val}%</p>
-                        <p className="text-xs text-emerald-200">{label}</p>
+                    <div key={label} className="bg-secondary/40 p-5 border border-transparent hover:border-border transition-colors">
+                        <Icon className="mb-3 h-5 w-5 text-muted-foreground stroke-[1.5]" />
+                        <p className="font-numbers text-3xl tabular-nums">{val}%</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">{label}</p>
                     </div>
                 ))}
             </CardContent>
@@ -271,65 +273,64 @@ function DataQualityCard({ leads }) {
    LEADS TABLE
    ═══════════════════════════════════════ */
 function LeadsTable({ leads, loading, onSelectLead }) {
+    const [visibleCount, setVisibleCount] = useState(15)
+
     const rows = useMemo(() => {
         return [...leads]
             .sort((a, b) => (b.fecha_primer_mensaje || '').localeCompare(a.fecha_primer_mensaje || ''))
-            .slice(0, 15)
-    }, [leads])
+            .slice(0, visibleCount)
+    }, [leads, visibleCount])
 
     const getBadge = (field, value) => {
-        if (isSinInfo(value)) return <Badge variant="outline" className="rounded-full text-xs border-slate-300 text-slate-400">Sin Info</Badge>
+        if (isSinInfo(value)) return <Badge variant="outline" className="rounded-full text-xs border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500">Sin Info</Badge>
         if (field === 'fase_embudo') {
             const f = (value || '').toLowerCase()
-            if (f.includes('perdido')) return <Badge className="rounded-full bg-red-100 text-xs text-red-700">Perdido</Badge>
-            if (f.includes('+24hrs')) return <Badge className="rounded-full bg-amber-100 text-xs text-amber-700">+24H</Badge>
-            if (f.includes('contrato')) return <Badge className="rounded-full bg-emerald-100 text-xs text-emerald-700">{value}</Badge>
-            return <Badge className="rounded-full bg-blue-100 text-xs text-blue-700">{value}</Badge>
+            if (f.includes('perdido')) return <Badge className="rounded-full bg-red-100 dark:bg-red-900/30 text-xs text-red-700 dark:text-red-400">Perdido</Badge>
+            if (f.includes('+24hrs')) return <Badge className="rounded-none bg-secondary text-xs text-foreground uppercase tracking-widest border border-border">+24H</Badge>
+            if (f.includes('contrato')) return <Badge className="rounded-none bg-primary text-xs text-primary-foreground uppercase tracking-widest">{value}</Badge>
+            return <Badge className="rounded-full bg-blue-100 dark:bg-blue-900/30 text-xs text-blue-700 dark:text-blue-400">{value}</Badge>
         }
         if (field === 'salon' && (value || '').toLowerCase().includes('no est'))
-            return <Badge className="rounded-full bg-slate-100 text-xs text-slate-600">Indeciso</Badge>
-        return <span className="text-sm text-slate-700">{value}</span>
+            return <Badge className="rounded-full bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300">Indeciso</Badge>
+        return <span className="text-sm text-slate-700 dark:text-slate-300">{value}</span>
     }
 
     if (loading) {
         return (
-            <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+            <Card className="rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm">
                 <CardContent className="p-6">
-                    <Skeleton className="mb-4 h-5 w-32 bg-slate-100" />
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="mb-3 h-12 w-full rounded-lg bg-slate-100" />)}
+                    <Skeleton className="mb-4 h-5 w-32 bg-slate-100 dark:bg-slate-800" />
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="mb-3 h-12 w-full rounded-lg bg-slate-100 dark:bg-slate-800" />)}
                 </CardContent>
             </Card>
         )
     }
 
     return (
-        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-800">Recent Leads</CardTitle>
-                <Button variant="outline" size="sm" className="rounded-full border-slate-200 text-xs">
-                    <Download className="mr-1 h-3 w-3" /> Export
-                </Button>
+        <Card className="rounded-none border-border bg-card shadow-sm mt-8">
+            <CardHeader className="flex flex-row items-center justify-between pb-6">
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Recent Leads</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b border-slate-100">
+                            <tr className="border-b border-slate-100 dark:border-slate-800">
                                 {['ID', 'Nombre', 'Evento', 'Fase', 'Vendedora', 'Canal', 'Origen', 'Teléfono', 'Salón'].map(h => (
-                                    <th key={h} className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">{h}</th>
+                                    <th key={h} className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">{h}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
                             {rows.map(lead => (
-                                <tr key={lead.lead_id} onClick={() => onSelectLead(lead)} className="cursor-pointer border-b border-slate-50 transition-colors hover:bg-slate-50">
-                                    <td className="px-3 py-2.5 text-sm font-medium text-slate-800 tabular-nums">#{lead.lead_id}</td>
-                                    <td className="px-3 py-2.5 text-sm font-medium text-slate-800">{lead.nombre}</td>
-                                    <td className="px-3 py-2.5 text-sm text-slate-600">{lead.evento}</td>
+                                <tr key={lead.lead_id} onClick={() => onSelectLead(lead)} className="cursor-pointer border-b border-slate-50 dark:border-slate-800/50 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                                    <td className="px-3 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 tabular-nums">#{lead.lead_id}</td>
+                                    <td className="px-3 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100">{lead.nombre}</td>
+                                    <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400">{lead.evento}</td>
                                     <td className="px-3 py-2.5">{getBadge('fase_embudo', lead.fase_embudo)}</td>
-                                    <td className="px-3 py-2.5 text-sm text-slate-600">{lead.vendedora}</td>
-                                    <td className="px-3 py-2.5 text-sm text-slate-600">{normalizeCanal(lead.canal_de_contacto)}</td>
-                                    <td className="px-3 py-2.5 text-sm text-slate-600">{lead.como_nos_encontro}</td>
+                                    <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400">{lead.vendedora}</td>
+                                    <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400">{normalizeCanal(lead.canal_de_contacto)}</td>
+                                    <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400">{lead.como_nos_encontro}</td>
                                     <td className="px-3 py-2.5">{getBadge('telefono', lead.telefono)}</td>
                                     <td className="px-3 py-2.5">{getBadge('salon', lead.salon)}</td>
                                 </tr>
@@ -337,6 +338,17 @@ function LeadsTable({ leads, loading, onSelectLead }) {
                         </tbody>
                     </table>
                 </div>
+                {visibleCount < leads.length && (
+                    <div className="mt-4 flex justify-center border-t border-slate-100 dark:border-slate-800 pt-4 pb-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setVisibleCount(prev => prev + 50)}
+                            className="rounded-full border-slate-200 dark:border-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-900 dark:hover:text-slate-100"
+                        >
+                            Cargar más leads ({visibleCount} de {leads.length})
+                        </Button>
+                    </div>
+                )}
             </CardContent>
         </Card>
     )
@@ -364,35 +376,35 @@ function LeadDetailSheet({ lead, open, onClose }) {
 
     return (
         <Sheet open={open} onOpenChange={onClose}>
-            <SheetContent className="w-full border-slate-200 bg-white sm:max-w-md overflow-y-auto">
+            <SheetContent className="w-full border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 sm:max-w-md overflow-y-auto">
                 <SheetHeader className="mb-6">
-                    <SheetTitle className="text-lg font-bold text-slate-900">Detalle del Lead</SheetTitle>
+                    <SheetTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">Detalle del Lead</SheetTitle>
                 </SheetHeader>
                 <div className="space-y-4">
-                    <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
+                    <div className="flex items-center gap-4 rounded-2xl bg-slate-50 dark:bg-slate-900 p-4">
                         <Avatar className="h-14 w-14">
-                            <AvatarFallback className="bg-emerald-100 text-lg font-bold text-emerald-700">
+                            <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/30 text-lg font-bold text-emerald-700 dark:text-emerald-400">
                                 {lead.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
                             </AvatarFallback>
                         </Avatar>
                         <div>
-                            <p className="text-lg font-bold text-slate-900">{lead.nombre}</p>
-                            <p className="text-sm text-slate-500">#{lead.lead_id}</p>
+                            <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{lead.nombre}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">#{lead.lead_id}</p>
                         </div>
                     </div>
-                    <Separator />
+                    <Separator className="dark:bg-slate-800" />
                     <div className="space-y-2">
                         {fields.map(({ label, key, icon }) => {
                             const val = lead[key]
                             const missing = isSinInfo(val)
                             return (
-                                <div key={key} className="flex items-start gap-3 rounded-xl p-3 hover:bg-slate-50">
+                                <div key={key} className="flex items-start gap-3 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-900/50">
                                     <span className="text-base">{icon}</span>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-slate-400">{label}</p>
+                                        <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{label}</p>
                                         {missing
-                                            ? <Badge variant="outline" className="mt-1 rounded-full text-xs border-slate-300 text-slate-400">Sin Información</Badge>
-                                            : <p className="text-sm font-medium text-slate-800 break-all">{val}</p>
+                                            ? <Badge variant="outline" className="mt-1 rounded-full text-xs border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500">Sin Información</Badge>
+                                            : <p className="text-sm font-medium text-slate-800 dark:text-slate-200 break-all">{val}</p>
                                         }
                                     </div>
                                 </div>
@@ -422,28 +434,28 @@ function DataQualityDetails({ leads }) {
     }, [leads])
 
     return (
-        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+        <Card className="rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm">
             <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-800">Detalle de campos faltantes</CardTitle>
+                <CardTitle className="text-sm font-semibold text-slate-800 dark:text-slate-100">Detalle de campos faltantes</CardTitle>
             </CardHeader>
             <CardContent>
                 <table className="w-full text-left">
                     <thead>
-                        <tr className="border-b border-slate-100">
-                            <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Campo</th>
-                            <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Faltantes</th>
-                            <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Total</th>
-                            <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">%</th>
+                        <tr className="border-b border-slate-100 dark:border-slate-800">
+                            <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Campo</th>
+                            <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Faltantes</th>
+                            <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Total</th>
+                            <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">%</th>
                         </tr>
                     </thead>
                     <tbody>
                         {missingByField.map(r => (
-                            <tr key={r.field} className="border-b border-slate-50">
-                                <td className="px-3 py-2.5 text-sm font-medium text-slate-800">{r.field}</td>
-                                <td className="px-3 py-2.5 text-sm text-red-600 tabular-nums">{r.missing}</td>
-                                <td className="px-3 py-2.5 text-sm text-slate-600 tabular-nums">{r.total}</td>
+                            <tr key={r.field} className="border-b border-slate-50 dark:border-slate-800/50">
+                                <td className="px-3 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100">{r.field}</td>
+                                <td className="px-3 py-2.5 text-sm text-red-600 dark:text-red-400 tabular-nums">{r.missing}</td>
+                                <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400 tabular-nums">{r.total}</td>
                                 <td className="px-3 py-2.5">
-                                    <Badge className={`rounded-full text-xs ${r.pct > 20 ? 'bg-red-100 text-red-700' : r.pct > 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                    <Badge className={`rounded-none uppercase font-mono tracking-widest text-xs ${r.pct > 20 ? 'bg-secondary text-foreground border border-border' : r.pct > 5 ? 'bg-secondary/50 text-muted-foreground border border-transparent' : 'bg-primary/10 text-primary border border-primary/20'}`}>
                                         {r.pct}%
                                     </Badge>
                                 </td>
@@ -459,93 +471,107 @@ function DataQualityDetails({ leads }) {
 /* ═══════════════════════════════════════
    MAIN DASHBOARD PAGE
    ═══════════════════════════════════════ */
-export default function Dashboard({ searchValue = '' }) {
-    const { leads: apiLeads, loading } = useLeads()
+export default function Dashboard() {
+    const { leads: apiLeads, loading, error } = useLeads()
     const [selectedLead, setSelectedLead] = useState(null)
-    const [sheetOpen, setSheetOpen] = useState(false)
     const [vendedoraView, setVendedoraView] = useState('total')
 
-    // Use API leads if available, fallback to mock
-    const allLeads = apiLeads.length > 0 ? apiLeads : mockLeads
-
-    // Search filter
-    const leads = useMemo(() => {
-        if (!searchValue.trim()) return allLeads
-        const q = searchValue.toLowerCase()
-        return allLeads.filter(l =>
-            (l.nombre || '').toLowerCase().includes(q) ||
-            (l.telefono || '').toLowerCase().includes(q) ||
-            (l.lead_id || '').toLowerCase().includes(q)
-        )
-    }, [allLeads, searchValue])
+    // Context / computed
+    const filteredLeads = useFilteredLeads(apiLeads || [])
+    const { filters, isExportOpen, setIsExportOpen } = useFilters()
 
     const handleSelectLead = useCallback((lead) => {
         setSelectedLead(lead)
-        setSheetOpen(true)
     }, [])
+
+    // This variable is introduced by the user's snippet, assuming it's meant to be `loading`
+    const hasInitialLoading = loading && apiLeads.length === 0;
+
+    if (loading && apiLeads.length === 0) {
+        return (
+            <div className="space-y-6">
+                <Skeleton className="h-24 w-full rounded-2xl bg-white/50" />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl bg-white/50 dark:bg-slate-950/50" />)}
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-6 text-center text-red-600 dark:text-red-400">
+                <AlertTriangle className="mx-auto mb-2 h-8 w-8 text-red-500 dark:text-red-400" />
+                <h3 className="text-lg font-semibold">Error cargando leads</h3>
+                <p className="text-sm">{error}</p>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-6">
+            <FilterBar leads={apiLeads || []} />
+
             {/* 10 KPI CARDS */}
-            <KpiCards leads={leads} loading={loading} />
+            <KpiCards leads={filteredLeads} loading={loading} />
 
             {/* TABBED ANALYTICS */}
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="inline-flex rounded-xl bg-slate-100 p-1">
-                    <TabsTrigger value="overview" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-slate-500">
+                <TabsList className="grid w-full grid-cols-4 rounded-xl bg-slate-100 dark:bg-slate-900 p-1">
+                    <TabsTrigger value="overview" className="rounded-none text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground">
                         Overview
                     </TabsTrigger>
-                    <TabsTrigger value="pipeline" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-slate-500">
+                    <TabsTrigger value="pipeline" className="rounded-none text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground">
                         Pipeline
                     </TabsTrigger>
-                    <TabsTrigger value="acquisition" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-slate-500">
+                    <TabsTrigger value="acquisition" className="rounded-none text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground">
                         Acquisition
                     </TabsTrigger>
-                    <TabsTrigger value="dataquality" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm text-slate-500">
+                    <TabsTrigger value="dataquality" className="rounded-none text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground">
                         Data Quality
                     </TabsTrigger>
                 </TabsList>
 
                 {/* ─── OVERVIEW ─── */}
-                <TabsContent value="overview" className="mt-4 space-y-4">
+                <TabsContent value="overview" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
                     {/* Row 1: Leads/day + Reminders + Recent leads */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
                         <div className="lg:col-span-5">
-                            <LeadsByDayChart leads={leads} loading={loading} />
+                            <LeadsByDayChart leads={filteredLeads} loading={loading} />
                         </div>
                         <div className="lg:col-span-3">
-                            <RemindersCard leads={leads} />
+                            <RemindersCard leads={filteredLeads} />
                         </div>
                         <div className="lg:col-span-4">
-                            <RecentLeadsList leads={leads} onSelectLead={handleSelectLead} />
+                            <RecentLeadsList leads={filteredLeads} onSelectLead={handleSelectLead} />
                         </div>
                     </div>
 
                     {/* Row 2: Team + Pipeline donut + Data quality widget */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
                         <div className="lg:col-span-5">
-                            <TeamCard leads={leads} />
+                            <TeamCard leads={filteredLeads} />
                         </div>
                         <div className="lg:col-span-3">
-                            <PipelineDonut leads={leads} loading={loading} />
+                            <PipelineDonut leads={filteredLeads} loading={loading} />
                         </div>
                         <div className="lg:col-span-4">
-                            <DataQualityCard leads={leads} />
+                            <DataQualityCard leads={filteredLeads} />
                         </div>
                     </div>
                 </TabsContent>
 
                 {/* ─── PIPELINE ─── */}
-                <TabsContent value="pipeline" className="mt-4 space-y-4">
+                <TabsContent value="pipeline" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        <LeadsByFaseChart leads={leads} loading={loading} />
+                        <LeadsByFaseChart leads={filteredLeads} loading={loading} />
                         <div>
                             <div className="mb-3 flex gap-2">
                                 <Button
                                     size="sm"
                                     variant={vendedoraView === 'total' ? 'default' : 'outline'}
                                     onClick={() => setVendedoraView('total')}
-                                    className={`rounded-full text-xs ${vendedoraView === 'total' ? 'bg-emerald-700 text-white hover:bg-emerald-800' : 'border-slate-200'}`}
+                                    className={`rounded-none text-xs tracking-widest uppercase ${vendedoraView === 'total' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-border text-muted-foreground hover:bg-secondary'}`}
                                 >
                                     Total
                                 </Button>
@@ -553,42 +579,58 @@ export default function Dashboard({ searchValue = '' }) {
                                     size="sm"
                                     variant={vendedoraView === 'stacked' ? 'default' : 'outline'}
                                     onClick={() => setVendedoraView('stacked')}
-                                    className={`rounded-full text-xs ${vendedoraView === 'stacked' ? 'bg-emerald-700 text-white hover:bg-emerald-800' : 'border-slate-200'}`}
+                                    className={`rounded-none text-xs tracking-widest uppercase ${vendedoraView === 'stacked' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-border text-muted-foreground hover:bg-secondary'}`}
                                 >
                                     Por fase
                                 </Button>
                             </div>
-                            <LeadsByVendedoraChart leads={leads} loading={loading} stacked={vendedoraView === 'stacked'} />
+                            <LeadsByVendedoraChart leads={filteredLeads} loading={loading} stacked={vendedoraView === 'stacked'} />
                         </div>
                     </div>
                 </TabsContent>
 
                 {/* ─── ACQUISITION ─── */}
-                <TabsContent value="acquisition" className="mt-4 space-y-4">
+                <TabsContent value="acquisition" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        <TopOrigenesChart leads={leads} loading={loading} />
-                        <LeadsByCanalChart leads={leads} loading={loading} />
+                        <TopOrigenesChart leads={filteredLeads} loading={loading} />
+                        <LeadsByCanalChart leads={filteredLeads} loading={loading} />
                     </div>
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        <LeadsByEventoChart leads={leads} loading={loading} />
-                        <LeadsByHourChart leads={leads} loading={loading} />
+                        <LeadsByEventoChart leads={filteredLeads} loading={loading} />
+                        <LeadsByHourChart leads={filteredLeads} loading={loading} />
                     </div>
                 </TabsContent>
 
                 {/* ─── DATA QUALITY ─── */}
-                <TabsContent value="dataquality" className="mt-4 space-y-4">
+                <TabsContent value="dataquality" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        <DataQualityChart leads={leads} loading={loading} />
-                        <DataQualityDetails leads={leads} />
+                        <LeadsByEventoChart leads={filteredLeads} loading={hasInitialLoading} />
+                        <DataQualityChart leads={filteredLeads} loading={hasInitialLoading} />
                     </div>
                 </TabsContent>
             </Tabs>
 
             {/* LEADS TABLE */}
-            <LeadsTable leads={leads} loading={loading} onSelectLead={handleSelectLead} />
+            <LeadsTable
+                leads={filteredLeads}
+                loading={hasInitialLoading}
+                onSelectLead={setSelectedLead}
+            />
 
             {/* DETAIL SHEET */}
-            <LeadDetailSheet lead={selectedLead} open={sheetOpen} onClose={() => setSheetOpen(false)} />
+            <LeadDetailSheet
+                lead={selectedLead}
+                open={!!selectedLead}
+                onClose={() => setSelectedLead(null)}
+            />
+
+            <ExportReportDialog
+                open={isExportOpen}
+                onOpenChange={setIsExportOpen}
+                filteredLeads={filteredLeads}
+                allLeadsCount={apiLeads?.length || 0}
+                activeFiltersState={filters}
+            />
         </div>
     )
 }

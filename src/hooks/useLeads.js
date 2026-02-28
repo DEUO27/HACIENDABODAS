@@ -1,41 +1,66 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
-// Module-level in-memory cache
-let cachedLeads = null
+// Global state mechanism
+let globalLeads = null
+let globalLoading = false
+let globalError = null
+let isFetchingCounter = 0
+const listeners = new Set()
+
+function notifyListeners() {
+    listeners.forEach(listener => listener({
+        leads: globalLeads || [],
+        loading: globalLoading,
+        error: globalError
+    }))
+}
 
 export function useLeads() {
-    const [leads, setLeads] = useState(cachedLeads || [])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
-    const fetchingRef = useRef(false)
+    const [state, setState] = useState({
+        leads: globalLeads || [],
+        loading: globalLoading,
+        error: globalError
+    })
+
+    useEffect(() => {
+        listeners.add(setState)
+        // Ensure fresh state on mount
+        setState({
+            leads: globalLeads || [],
+            loading: globalLoading,
+            error: globalError
+        })
+        return () => listeners.delete(setState)
+    }, [])
 
     const refresh = useCallback(async (force = true) => {
-        if (fetchingRef.current) return
+        if (isFetchingCounter > 0) return
 
         // If we have cached data and not forcing, skip
-        if (!force && cachedLeads) {
-            setLeads(cachedLeads)
+        if (!force && globalLeads) {
+            notifyListeners()
             return
         }
 
-        fetchingRef.current = true
-        setLoading(true)
-        setError(null)
+        isFetchingCounter++
+        globalLoading = true
+        globalError = null
+        notifyListeners()
 
         try {
             const res = await fetch(import.meta.env.VITE_WEBHOOK_URL)
             if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`)
             const data = await res.json()
             const leadsData = data.leads || data || []
-            cachedLeads = leadsData
-            setLeads(leadsData)
+            globalLeads = leadsData
         } catch (err) {
-            setError(err.message)
+            globalError = err.message
         } finally {
-            setLoading(false)
-            fetchingRef.current = false
+            globalLoading = false
+            isFetchingCounter--
+            notifyListeners()
         }
     }, [])
 
-    return { leads, loading, error, refresh }
+    return { ...state, refresh }
 }

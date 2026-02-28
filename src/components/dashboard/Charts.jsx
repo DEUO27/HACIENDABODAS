@@ -11,17 +11,22 @@ import { es } from 'date-fns/locale'
 
 /* ─ PALETTE ─ */
 const COLORS = [
-    '#059669', '#0891b2', '#2563eb', '#7c3aed', '#d97706',
-    '#dc2626', '#db2777', '#ea580c', '#65a30d', '#4f46e5',
-    '#0d9488', '#e11d48',
+    '#E2D4C8', // pastel beige
+    '#D8CDC4', // pastel warm gray
+    '#C4C5B9', // pastel sage green
+    '#B4BCAE', // pastel olive
+    '#A9AFA3', // muted green-gray
+    '#CFC4BD', // pastel taupe
+    '#DCE1DF', // silvery green
+    '#E8DCD1', // lighter beige
 ]
 
 /* ─ SHARED ─ */
 const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-lg text-sm">
-            <p className="font-medium text-slate-600 mb-1">{label}</p>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-3 shadow-lg text-sm">
+            <p className="font-medium text-slate-600 dark:text-slate-300 mb-1">{label}</p>
             {payload.map((p, i) => (
                 <p key={i} className="font-semibold" style={{ color: p.color || p.fill }}>
                     {p.name}: {p.value}
@@ -33,23 +38,23 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 function ChartSkeleton({ height = 250 }) {
     return (
-        <Card className="rounded-2xl border-slate-200 bg-white shadow-sm">
+        <Card className="rounded-none border-border bg-card shadow-sm">
             <CardContent className="p-6">
-                <Skeleton className="mb-4 h-5 w-40 bg-slate-100" />
-                <Skeleton className={`w-full rounded-xl bg-slate-100`} style={{ height }} />
+                <Skeleton className="mb-4 h-5 w-40 bg-secondary" />
+                <Skeleton className={`w-full rounded-none bg-secondary`} style={{ height }} />
             </CardContent>
         </Card>
     )
 }
 
-function ChartCard({ title, subtitle, children, className = '' }) {
+function ChartCard({ title, subtitle, children, className = '', exportId }) {
     return (
-        <Card className={`rounded-2xl border-slate-200 bg-white shadow-sm ${className}`}>
-            <CardHeader className="pb-1">
-                <CardTitle className="text-sm font-semibold text-slate-800">{title}</CardTitle>
-                {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
+        <Card data-export-id={exportId} className={`rounded-none border-border bg-card shadow-sm flex flex-col pt-2 ${className}`}>
+            <CardHeader className="pb-4">
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">{title}</CardTitle>
+                {subtitle && <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{subtitle}</p>}
             </CardHeader>
-            <CardContent className="pt-2">{children}</CardContent>
+            <CardContent className="pt-0 flex-grow">{children}</CardContent>
         </Card>
     )
 }
@@ -75,20 +80,20 @@ export function LeadsByDayChart({ leads, loading }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Leads por día" subtitle="Basado en fecha de primer mensaje">
+        <ChartCard title="Leads por día" subtitle="Basado en fecha de primer mensaje" exportId="leads_by_day">
             <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={data}>
                     <defs>
                         <linearGradient id="gradientLeads" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#059669" stopOpacity={0.3} />
-                            <stop offset="100%" stopColor="#059669" stopOpacity={0.02} />
+                            <stop offset="0%" stopColor="#D8CDC4" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="#E2D4C8" stopOpacity={0.05} />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                     <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Area type="monotone" dataKey="leads" stroke="#059669" strokeWidth={2} fill="url(#gradientLeads)" />
+                    <Area type="monotone" dataKey="leads" stroke="#C4C5B9" strokeWidth={2} fill="url(#gradientLeads)" />
                 </AreaChart>
             </ResponsiveContainer>
         </ChartCard>
@@ -111,14 +116,14 @@ export function LeadsByFaseChart({ leads, loading }) {
     if (loading) return <ChartSkeleton height={Math.max(250, data.length * 35)} />
 
     return (
-        <ChartCard title="Leads por fase del embudo" subtitle="Ordenado por volumen descendente">
+        <ChartCard title="Leads por fase del embudo" subtitle="Ordenado por volumen descendente" exportId="leads_by_fase">
             <ResponsiveContainer width="100%" height={Math.max(250, data.length * 38)}>
                 <BarChart data={data} layout="vertical" margin={{ left: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-                    <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                    <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={11} width={140} tickLine={false} />
+                    <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={11} width={140} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" name="Leads" fill="#059669" radius={[0, 6, 6, 0]} barSize={20} />
+                    <Bar dataKey="value" name="Leads" fill="#E2D4C8" radius={[0, 0, 0, 0]} barSize={20} />
                 </BarChart>
             </ResponsiveContainer>
         </ChartCard>
@@ -143,14 +148,14 @@ export function TopOrigenesChart({ leads, loading, topN = 8 }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Top orígenes" subtitle={`Cómo nos encontró — Top ${topN}`}>
+        <ChartCard title="Top orígenes" subtitle={`Cómo nos encontró — Top ${topN}`} exportId="top_origenes">
             <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-20} textAnchor="end" height={60} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-20} textAnchor="end" height={60} tickLine={false} axisLine={false} />
                     <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" name="Leads" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={28} />
+                    <Bar dataKey="value" name="Leads" fill="#CFC4BD" radius={[0, 0, 0, 0]} barSize={28} />
                 </BarChart>
             </ResponsiveContainer>
         </ChartCard>
@@ -173,9 +178,9 @@ export function LeadsByCanalChart({ leads, loading }) {
     if (loading) return <ChartSkeleton height={280} />
 
     return (
-        <ChartCard title="Leads por canal" subtitle="Canal de contacto">
+        <ChartCard title="Leads por canal" subtitle="Canal de contacto" exportId="leads_by_canal">
             <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
+                <PieChart margin={{ bottom: 20 }}>
                     <Pie
                         data={data}
                         cx="50%"
@@ -193,6 +198,7 @@ export function LeadsByCanalChart({ leads, loading }) {
                         ))}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: 11, paddingTop: '20px', fontFamily: 'Inter' }} />
                 </PieChart>
             </ResponsiveContainer>
         </ChartCard>
@@ -236,16 +242,16 @@ export function LeadsByVendedoraChart({ leads, loading, stacked = false }) {
 
     if (stacked && data.fases) {
         return (
-            <ChartCard title="Leads por vendedora" subtitle="Desglose por fase del embudo">
+            <ChartCard title="Leads por vendedora" subtitle="Desglose por fase del embudo" exportId="leads_by_vendedora">
                 <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={data.rows}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-15} textAnchor="end" height={60} tickLine={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-15} textAnchor="end" height={60} tickLine={false} axisLine={false} />
                         <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'Inter' }} />
                         {data.fases.map((f, i) => (
-                            <Bar key={f} dataKey={f} stackId="a" fill={COLORS[i % COLORS.length]} radius={i === data.fases.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]} />
+                            <Bar key={f} dataKey={f} stackId="a" fill={COLORS[i % COLORS.length]} radius={[0, 0, 0, 0]} />
                         ))}
                     </BarChart>
                 </ResponsiveContainer>
@@ -254,14 +260,14 @@ export function LeadsByVendedoraChart({ leads, loading, stacked = false }) {
     }
 
     return (
-        <ChartCard title="Leads por vendedora" subtitle="Total de leads asignados">
+        <ChartCard title="Leads por vendedora" subtitle="Total de leads asignados" exportId="leads_by_vendedora">
             <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-15} textAnchor="end" height={60} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-15} textAnchor="end" height={60} tickLine={false} axisLine={false} />
                     <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" name="Leads" fill="#0891b2" radius={[6, 6, 0, 0]} barSize={28} />
+                    <Bar dataKey="value" name="Leads" fill="#B4BCAE" radius={[0, 0, 0, 0]} barSize={28} />
                 </BarChart>
             </ResponsiveContainer>
         </ChartCard>
@@ -284,14 +290,14 @@ export function LeadsByEventoChart({ leads, loading }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Leads por tipo de evento" subtitle="Distribución por evento">
+        <ChartCard title="Leads por tipo de evento" subtitle="Distribución por evento" exportId="leads_by_evento">
             <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-15} textAnchor="end" height={60} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-15} textAnchor="end" height={60} tickLine={false} axisLine={false} />
                     <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" name="Leads" fill="#7c3aed" radius={[6, 6, 0, 0]} barSize={28} />
+                    <Bar dataKey="value" name="Leads" fill="#A9AFA3" radius={[0, 0, 0, 0]} barSize={28} />
                 </BarChart>
             </ResponsiveContainer>
         </ChartCard>
@@ -315,14 +321,14 @@ export function LeadsByHourChart({ leads, loading }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Leads por hora del día" subtitle="Basado en primer mensaje">
+        <ChartCard title="Leads por hora del día" subtitle="Basado en primer mensaje" exportId="leads_by_hour">
             <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="hour" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="hour" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                     <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" name="Leads" fill="#d97706" radius={[6, 6, 0, 0]} barSize={14} />
+                    <Bar dataKey="value" name="Leads" fill="#D8CDC4" radius={[0, 0, 0, 0]} barSize={14} />
                 </BarChart>
             </ResponsiveContainer>
         </ChartCard>
@@ -352,14 +358,14 @@ export function DataQualityChart({ leads, loading }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Data Quality" subtitle="% de campos con información faltante">
+        <ChartCard title="Data Quality" subtitle="% de campos con información faltante" exportId="data_quality">
             <ResponsiveContainer width="100%" height={Math.max(220, data.length * 36)}>
                 <BarChart data={data} layout="vertical" margin={{ left: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-                    <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} unit="%" domain={[0, 100]} />
-                    <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={11} width={90} tickLine={false} />
+                    <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} unit="%" domain={[0, 100]} />
+                    <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={11} width={90} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" name="% Faltante" fill="#dc2626" radius={[0, 6, 6, 0]} barSize={18} />
+                    <Bar dataKey="value" name="% Faltante" fill="#E8DCD1" radius={[0, 0, 0, 0]} barSize={18} />
                 </BarChart>
             </ResponsiveContainer>
         </ChartCard>

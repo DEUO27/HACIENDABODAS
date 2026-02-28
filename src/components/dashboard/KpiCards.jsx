@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
+import { GlowingCards, GlowingCard } from '@/components/ui/glowing-cards'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { isSinInfo, parseLeadDate } from '@/lib/leadUtils'
@@ -78,11 +79,11 @@ export default function KpiCards({ leads, loading }) {
         return (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 {Array.from({ length: 10 }).map((_, i) => (
-                    <Card key={i} className="rounded-2xl border-slate-200 bg-white shadow-sm">
+                    <Card key={i} className="rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm">
                         <CardContent className="p-4">
-                            <Skeleton className="mb-2 h-4 w-20 bg-slate-100" />
-                            <Skeleton className="mb-1 h-8 w-14 bg-slate-100" />
-                            <Skeleton className="h-3 w-16 bg-slate-100" />
+                            <Skeleton className="mb-2 h-4 w-20 bg-slate-100 dark:bg-slate-800" />
+                            <Skeleton className="mb-1 h-8 w-14 bg-slate-100 dark:bg-slate-800" />
+                            <Skeleton className="h-3 w-16 bg-slate-100 dark:bg-slate-800" />
                         </CardContent>
                     </Card>
                 ))}
@@ -90,35 +91,47 @@ export default function KpiCards({ leads, loading }) {
         )
     }
 
+    const hexColors = {
+        emerald: '#C4C5B9', // pastel sage green
+        blue: '#CFC4BD',    // pastel taupe
+        cyan: '#B4BCAE',    // pastel olive
+        red: '#E8DCD1',     // lighter beige
+        amber: '#D8CDC4',   // pastel warm gray
+        orange: '#E2D4C8',  // pastel beige
+        slate: '#A9AFA3',   // muted green-gray
+    }
+
     return (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <GlowingCards className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {kpiDefs.map((def) => {
                 const val = kpis[def.key] ?? 0
                 const Icon = def.icon
                 const isHero = def.hero
+                const glowColor = hexColors[def.color] || hexColors.slate
 
                 return (
-                    <Card
+                    <GlowingCard
                         key={def.key}
-                        className={`relative overflow-hidden rounded-2xl border shadow-sm transition-shadow hover:shadow-md ${isHero
-                                ? 'border-emerald-200 bg-gradient-to-br from-emerald-700 to-emerald-900 text-white'
-                                : 'border-slate-200 bg-white'
+                        glowColor={glowColor}
+                        className={`relative overflow-hidden rounded-none border shadow-sm transition-all hover:shadow-md ${isHero
+                            ? 'bg-primary border-primary-foreground text-primary-foreground'
+                            : 'border-border bg-card text-foreground'
                             }`}
                     >
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-1">
-                                <p className={`text-xs font-medium truncate ${isHero ? 'text-emerald-100' : 'text-slate-500'}`}>
+                        <CardContent className="p-6 flex-1">
+                            <div className="flex items-center justify-between mb-4">
+                                <p className={`text-xs uppercase tracking-widest font-medium truncate ${isHero ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                                     {def.label}
                                 </p>
-                                <Icon className={`h-4 w-4 flex-shrink-0 ${isHero ? 'text-emerald-200' : 'text-slate-300'}`} />
+                                <Icon className={`h-5 w-5 flex-shrink-0 stroke-[1.5] ${isHero ? 'text-primary-foreground/60' : 'text-muted-foreground'}`} />
                             </div>
-                            <p className={`text-2xl font-bold tabular-nums ${isHero ? 'text-white' : 'text-slate-900'}`}>
+                            <p className={`font-numbers text-4xl tabular-nums ${isHero ? 'text-primary-foreground' : 'text-foreground'}`}>
                                 {def.pct ? `${val}%` : val}
                             </p>
                         </CardContent>
-                    </Card>
+                    </GlowingCard>
                 )
             })}
-        </div>
+        </GlowingCards>
     )
 }
