@@ -58,8 +58,8 @@ function SidebarContent({ onClose }) {
     return (
         <div className="flex h-full flex-col bg-white dark:bg-slate-950">
             {/* Logo */}
-            <div className="flex items-center justify-center gap-0 px-5 py-10">
-                <span className="font-heading text-2xl tracking-widest text-foreground">Hacienda Bodas</span>
+            <div className="flex items-center justify-center gap-0 px-5 py-8">
+                <img src="/logo.png" alt="Hacienda Bodas Logo" className="h-[75px] w-auto object-contain dark:brightness-0 dark:invert" />
             </div>
 
             {/* Menu */}
@@ -132,24 +132,7 @@ function SidebarContent({ onClose }) {
             {/* Spacer */}
             <div className="flex-1" />
 
-            {/* Bottom promo card */}
-            <div className="p-6">
-                <div className="relative overflow-hidden bg-primary p-6 text-primary-foreground">
-                    <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/20" />
-                    <div className="absolute -bottom-6 -right-6 h-20 w-20 rounded-full bg-black/5" />
-                    <div className="relative text-center flex flex-col items-center">
-                        <Download className="mb-4 h-5 w-5 stroke-[1.5]" />
-                        <p className="font-heading text-lg">Descarga la App</p>
-                        <p className="mt-2 text-xs opacity-70">Gestiona leads desde tu móvil</p>
-                        <Button
-                            size="sm"
-                            className="mt-6 w-full rounded-none bg-foreground text-background hover:bg-foreground/90 font-medium tracking-wider text-xs"
-                        >
-                            DOWNLOAD
-                        </Button>
-                    </div>
-                </div>
-            </div>
+
         </div>
     )
 }

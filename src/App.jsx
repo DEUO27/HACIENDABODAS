@@ -6,6 +6,8 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
+import ImportAdmin from '@/pages/ImportAdmin'
+import Unauthorized from '@/pages/Unauthorized'
 import { useLeads } from '@/hooks/useLeads'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 
@@ -20,7 +22,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route element={<ProtectedRoute />}>
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route element={
           <FilterProvider>
             <DashboardLayout
@@ -31,6 +34,7 @@ function AppRoutes() {
         }>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
+          <Route path="/admin/import-leads" element={<ImportAdmin />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

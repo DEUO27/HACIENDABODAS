@@ -77,54 +77,53 @@ export default function Login() {
     }
 
     return (
-        <div className="relative flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 transition-colors">
+        <div className="relative flex min-h-screen items-center justify-center bg-background p-4 transition-colors">
             <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="absolute right-4 top-4 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="absolute right-4 top-4 rounded-none text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
                 {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            <Card className="w-full max-w-md rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
-                <CardHeader className="space-y-1 text-center pb-2">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-700 dark:bg-emerald-600 shadow-lg shadow-emerald-600/20 dark:shadow-emerald-900/20">
-                        <Sparkles className="h-7 w-7 text-white" />
+            <Card className="w-full max-w-[420px] rounded-none border-border bg-card shadow-lg">
+                <CardHeader className="space-y-3 text-center pb-8 pt-8 border-b border-border mb-6">
+                    <div className="mx-auto mb-2 flex items-center justify-center">
+                        <img src="/logo.png" alt="Hacienda Bodas Logo" className="h-[90px] w-auto object-contain dark:brightness-0 dark:invert" />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">Hacienda Bodas</CardTitle>
-                    <CardDescription className="text-slate-500 dark:text-slate-400">
-                        Accede o crea tu cuenta para gestionar leads
+                    <CardDescription className="text-[10px] uppercase font-semibold tracking-widest text-muted-foreground">
+                        ACCEDE O CREA TU CUENTA PARA GESTIONAR LEADS
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pb-8">
                     <Tabs defaultValue="login" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 rounded-xl bg-slate-100 dark:bg-slate-800 mb-4">
+                        <TabsList className="grid w-full grid-cols-2 rounded-none bg-secondary p-1 mb-8">
                             <TabsTrigger
                                 value="login"
-                                className="rounded-lg data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-slate-500 dark:text-slate-400 dark:data-[state=active]:bg-emerald-600"
+                                className="rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-[10px] uppercase tracking-widest font-semibold text-muted-foreground transition-all"
                             >
-                                Iniciar Sesión
+                                INICIAR SESIÓN
                             </TabsTrigger>
                             <TabsTrigger
                                 value="signup"
-                                className="rounded-lg data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-slate-500 dark:text-slate-400 dark:data-[state=active]:bg-emerald-600"
+                                className="rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-[10px] uppercase tracking-widest font-semibold text-muted-foreground transition-all"
                             >
-                                Crear Cuenta
+                                CREAR CUENTA
                             </TabsTrigger>
                         </TabsList>
 
                         {/* LOGIN */}
-                        <TabsContent value="login">
-                            <form onSubmit={handleLogin} className="space-y-4">
+                        <TabsContent value="login" className="mt-0">
+                            <form onSubmit={handleLogin} className="space-y-6">
                                 {loginError && (
-                                    <Alert variant="destructive" className="rounded-xl border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400">
+                                    <Alert variant="destructive" className="rounded-none border-l-4 border-l-red-500 border-y-0 border-r-0 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400">
                                         <AlertCircle className="h-4 w-4" />
-                                        <AlertDescription>{loginError}</AlertDescription>
+                                        <AlertDescription className="text-xs">{loginError}</AlertDescription>
                                     </Alert>
                                 )}
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="login-email" className="text-slate-700 dark:text-slate-300">Correo electrónico</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="login-email" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Correo electrónico</Label>
                                     <Input
                                         id="login-email"
                                         type="email"
@@ -132,12 +131,12 @@ export default function Login() {
                                         value={loginEmail}
                                         onChange={(e) => setLoginEmail(e.target.value)}
                                         required
-                                        className="rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                                        className="rounded-none border-border bg-background h-10 focus-visible:ring-1 focus-visible:ring-primary transition-colors"
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="login-password" className="text-slate-700 dark:text-slate-300">Contraseña</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="login-password" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Contraseña</Label>
                                     <Input
                                         id="login-password"
                                         type="password"
@@ -145,54 +144,55 @@ export default function Login() {
                                         value={loginPassword}
                                         onChange={(e) => setLoginPassword(e.target.value)}
                                         required
-                                        className="rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                                        className="rounded-none border-border bg-background h-10 focus-visible:ring-1 focus-visible:ring-primary transition-colors"
                                     />
                                 </div>
 
-                                <Button
-                                    type="submit"
-                                    disabled={loginLoading}
-                                    className="w-full rounded-full bg-emerald-700 dark:bg-emerald-600 font-semibold text-white shadow-lg shadow-emerald-600/20 dark:shadow-emerald-900/20 hover:bg-emerald-800 dark:hover:bg-emerald-700"
-                                >
-                                    {loginLoading ? (
-                                        <span className="flex items-center gap-2">
-                                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                            Entrando...
-                                        </span>
-                                    ) : (
-                                        <span className="flex items-center gap-2">
-                                            <LogIn className="h-4 w-4" />
-                                            Entrar
-                                        </span>
-                                    )}
-                                </Button>
-
-                                <div className="text-center">
-                                    <button type="button" className="text-sm text-emerald-700 dark:text-emerald-500 hover:text-emerald-800 dark:hover:text-emerald-400 transition-colors">
-                                        ¿Olvidaste tu contraseña?
-                                    </button>
+                                <div>
+                                    <Button
+                                        type="submit"
+                                        disabled={loginLoading}
+                                        className="w-full rounded-none bg-primary text-primary-foreground hover:bg-primary/90 font-heading text-lg tracking-widest uppercase h-12"
+                                    >
+                                        {loginLoading ? (
+                                            <span className="flex items-center gap-3">
+                                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                                                ENTRANDO...
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center gap-3">
+                                                <LogIn className="h-4 w-4" />
+                                                ENTRAR
+                                            </span>
+                                        )}
+                                    </Button>
+                                    <div className="text-center mt-3">
+                                        <button type="button" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
+                                            ¿OLVIDASTE TU CONTRASEÑA?
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
                         </TabsContent>
 
                         {/* SIGNUP */}
-                        <TabsContent value="signup">
-                            <form onSubmit={handleSignup} className="space-y-4">
+                        <TabsContent value="signup" className="mt-0">
+                            <form onSubmit={handleSignup} className="space-y-6">
                                 {signupError && (
-                                    <Alert variant="destructive" className="rounded-xl border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400">
+                                    <Alert variant="destructive" className="rounded-none border-l-4 border-l-red-500 border-y-0 border-r-0 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400">
                                         <AlertCircle className="h-4 w-4" />
-                                        <AlertDescription>{signupError}</AlertDescription>
+                                        <AlertDescription className="text-xs">{signupError}</AlertDescription>
                                     </Alert>
                                 )}
                                 {signupSuccess && (
-                                    <Alert className="rounded-xl border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400">
+                                    <Alert className="rounded-none border-l-4 border-l-emerald-500 border-y-0 border-r-0 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400">
                                         <CheckCircle2 className="h-4 w-4" />
-                                        <AlertDescription>{signupSuccess}</AlertDescription>
+                                        <AlertDescription className="text-xs">{signupSuccess}</AlertDescription>
                                     </Alert>
                                 )}
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="signup-email" className="text-slate-700 dark:text-slate-300">Correo electrónico</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="signup-email" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Correo electrónico</Label>
                                     <Input
                                         id="signup-email"
                                         type="email"
@@ -200,48 +200,48 @@ export default function Login() {
                                         value={signupEmail}
                                         onChange={(e) => setSignupEmail(e.target.value)}
                                         required
-                                        className="rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                                        className="rounded-none border-border bg-background h-10 focus-visible:ring-1 focus-visible:ring-primary transition-colors"
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="signup-password" className="text-slate-700 dark:text-slate-300">Contraseña</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="signup-password" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Contraseña</Label>
                                     <Input
                                         id="signup-password"
                                         type="password"
-                                        placeholder="Mínimo 6 caracteres"
+                                        placeholder="MÍN. 6 CARACTERES"
                                         value={signupPassword}
                                         onChange={(e) => setSignupPassword(e.target.value)}
                                         required
-                                        className="rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                                        className="rounded-none border-border bg-background h-10 focus-visible:ring-1 focus-visible:ring-primary transition-colors"
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="signup-confirm" className="text-slate-700 dark:text-slate-300">Confirmar contraseña</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="signup-confirm" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Confirmar contraseña</Label>
                                     <Input
                                         id="signup-confirm"
                                         type="password"
-                                        placeholder="Repite tu contraseña"
+                                        placeholder="REPITE TU CONTRASEÑA"
                                         value={signupConfirm}
                                         onChange={(e) => setSignupConfirm(e.target.value)}
                                         required
-                                        className="rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-emerald-500 focus:ring-emerald-500/20"
+                                        className="rounded-none border-border bg-background h-10 focus-visible:ring-1 focus-visible:ring-primary transition-colors"
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="signup-role" className="text-slate-700 dark:text-slate-300">Rol</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="signup-role" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Rol</Label>
                                     <Select value={signupRole} onValueChange={setSignupRole}>
-                                        <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200">
-                                            <SelectValue placeholder="Selecciona tu rol" />
+                                        <SelectTrigger className="rounded-none border-border bg-background h-10 focus:ring-1 focus:ring-primary transition-colors">
+                                            <SelectValue placeholder="SELECCIONA TU ROL" />
                                         </SelectTrigger>
-                                        <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-                                            <SelectItem value="admin" className="focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">🛡️ Administrador</SelectItem>
-                                            <SelectItem value="esposos" className="focus:bg-slate-100 dark:focus:bg-slate-800 focus:text-slate-900 dark:focus:text-slate-100">💍 Esposos</SelectItem>
+                                        <SelectContent className="rounded-none border-border bg-background">
+                                            <SelectItem value="admin" className="focus:bg-secondary focus:text-foreground rounded-none text-xs">🛡️ ADMINISTRADOR</SelectItem>
+                                            <SelectItem value="esposos" className="focus:bg-secondary focus:text-foreground rounded-none text-xs">💍 ESPOSOS</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1.5">
                                         {signupRole === 'admin'
                                             ? 'Acceso completo al dashboard y gestión de leads'
                                             : 'Acceso a tu información de evento'}
@@ -251,17 +251,17 @@ export default function Login() {
                                 <Button
                                     type="submit"
                                     disabled={signupLoading}
-                                    className="w-full rounded-full bg-emerald-700 dark:bg-emerald-600 font-semibold text-white shadow-lg shadow-emerald-600/20 dark:shadow-emerald-900/20 hover:bg-emerald-800 dark:hover:bg-emerald-700"
+                                    className="w-full rounded-none bg-primary text-primary-foreground hover:bg-primary/90 font-heading text-lg tracking-widest uppercase h-12"
                                 >
                                     {signupLoading ? (
-                                        <span className="flex items-center gap-2">
-                                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                            Creando cuenta...
+                                        <span className="flex items-center gap-3">
+                                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                                            CREANDO...
                                         </span>
                                     ) : (
-                                        <span className="flex items-center gap-2">
+                                        <span className="flex items-center gap-3">
                                             <UserPlus className="h-4 w-4" />
-                                            Crear Cuenta
+                                            CREAR CUENTA
                                         </span>
                                     )}
                                 </Button>
