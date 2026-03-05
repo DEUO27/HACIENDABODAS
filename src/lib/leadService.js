@@ -1,0 +1,187 @@
+import { supabase } from './supabase'
+
+/**
+ * Synchronizes an array of leads with the Supabase database.
+ * This function uses an idempotent "upsert" with ignoreDuplicates: true.
+ * This maps to SQL's "INSERT ... ON CONFLICT (lead_id) DO NOTHING".
+ * 
+ * Existing leads (matching lead_id) are ignored completely, keeping their original data intact.
+ * Only completely new leads are inserted.
+ * 
+ * @param {Array} leadsArray - Array of lead objects to sync.
+ * @returns {Promise<{ success: boolean, count: number, error: any }>}
+ */
+export async function syncLeads(leadsArray, provider = 0) {
+    if (!leadsArray || leadsArray.length === 0) {
+        return { success: true, count: 0, error: null }
+    }
+
+    // 1. Validate incoming leads structure
+    const validLeads = leadsArray.filter(l => l && l.lead_id)
+
+    if (validLeads.length === 0) {
+        console.warn('SyncLeads: No valid leads with a lead_id found to sync.')
+        return { success: false, count: 0, error: 'NO_VALID_LEADS' }
+    }
+
+    try {
+        const incomingIds = validLeads.map(l => l.lead_id)
+
+        // 2. Filter Known DB Leads (Chunking to prevent URL length limits in Supabase .in() filter)
+        const CHUNK_SIZE = 100;
+        let allExistingData = [];
+
+        for (let i = 0; i < incomingIds.length; i += CHUNK_SIZE) {
+            const chunk = incomingIds.slice(i, i + CHUNK_SIZE);
+            const { data: chunkData, error: fetchError } = await supabase
+                .from('leads')
+                .select('lead_id')
+                .in('lead_id', chunk)
+
+            if (fetchError) {
+                console.error('[Supabase Sync] Fetch existing error:', fetchError)
+                return { success: false, count: 0, error: fetchError }
+            }
+            if (chunkData) {
+                allExistingData = [...allExistingData, ...chunkData];
+            }
+        }
+
+        // Coerce all IDs to String to prevent type mismatch (API sends numbers, DB returns strings)
+        const existingIds = new Set(allExistingData.map(d => String(d.lead_id)))
+
+        // 3. Isolate Genuinely New Leads
+        const newLeads = validLeads.filter(l => !existingIds.has(String(l.lead_id)))
+
+        console.log(`[Supabase Sync] Total incoming: ${validLeads.length} | Already exist: ${existingIds.size} | New to insert: ${newLeads.length}`)
+
+        if (newLeads.length === 0) {
+            // Nothing to do, but it's a success
+            return { success: true, count: 0, error: null }
+        }
+
+        // 4. AI Normalization Call (batched to avoid Edge Function timeouts)
+        const AI_BATCH_SIZE = 5;
+        let allEnrichedLeads = [];
+
+        console.log(`[Supabase Sync] Processing ${newLeads.length} new leads in batches of ${AI_BATCH_SIZE} using provider ${provider}...`);
+
+        for (let i = 0; i < newLeads.length; i += AI_BATCH_SIZE) {
+            const batch = newLeads.slice(i, i + AI_BATCH_SIZE);
+            const batchNum = Math.floor(i / AI_BATCH_SIZE) + 1;
+            console.log(`[Supabase Sync] Sending batch ${batchNum} (${batch.length} leads) to AI Normalizer...`);
+            console.log(`[Supabase Sync] Batch JSON Payload:`, JSON.stringify(batch, null, 2));
+
+            const { data: enrichedBatch, error: invokeError } = await supabase.functions.invoke('normalize-leads', {
+                body: { leads: batch, provider }
+            });
+
+            // The edge function might return 200 OK but with an { error: "..." } inside the payload
+            const actualError = invokeError || (enrichedBatch && enrichedBatch.error ? enrichedBatch.error : null);
+
+            if (actualError || !enrichedBatch) {
+                console.error(`[Supabase Sync] AI Normalization Error on batch ${batchNum}:`, actualError);
+                // Partial success: insert what we have so far
+                if (allEnrichedLeads.length > 0) {
+                    console.log(`[Supabase Sync] Saving ${allEnrichedLeads.length} leads processed before error...`);
+                    await supabase.from('leads').upsert(allEnrichedLeads, { onConflict: 'lead_id', ignoreDuplicates: true });
+                }
+                return { success: false, count: allEnrichedLeads.length, error: actualError };
+            }
+
+            // The AI may return an array or an object with a leads property
+            const enrichedArray = Array.isArray(enrichedBatch) ? enrichedBatch : (enrichedBatch.leads || [enrichedBatch]);
+            allEnrichedLeads = [...allEnrichedLeads, ...enrichedArray];
+
+            // Short delay between batches to avoid rate limits
+            if (i + AI_BATCH_SIZE < newLeads.length) {
+                console.log(`[Supabase Sync] Waiting 3 seconds before next batch...`);
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+        }
+
+        // 5. Idempotent Insert (Failsafe fallback still using ignoreDuplicates)
+        console.log(`[Supabase Sync] Upserting ${allEnrichedLeads.length} enriched leads to DB...`)
+        const { error: upsertError } = await supabase
+            .from('leads')
+            .upsert(allEnrichedLeads, {
+                onConflict: 'lead_id',
+                ignoreDuplicates: true
+            })
+
+        if (upsertError) {
+            console.error('[Supabase Sync] Upsert Error:', upsertError)
+            return { success: false, count: 0, error: upsertError }
+        }
+
+        return { success: true, count: allEnrichedLeads.length, error: null }
+
+    } catch (err) {
+        console.error('[Supabase Sync Catch Error]', err)
+        return { success: false, count: 0, error: err }
+    }
+}
+
+/**
+ * Creates a single lead manually, processes it through AI normalization, and saves it.
+ */
+export async function createLead(leadData) {
+    try {
+        // Enforce a unique lead_id if not provided
+        const lead = {
+            ...leadData,
+            lead_id: leadData.lead_id || Number(new Date().getTime().toString().slice(-8)),
+        }
+
+        // Run it through the specific Edge Function
+        const { data: enrichedBatch, error: invokeError } = await supabase.functions.invoke('normalize-leads', {
+            body: { leads: [lead], provider: 1 } // Using OpenAI provider as default
+        });
+
+        let finalLead = lead;
+        if (!invokeError && enrichedBatch) {
+            const enrichedArray = Array.isArray(enrichedBatch) ? enrichedBatch : (enrichedBatch.leads || [enrichedBatch]);
+            if (enrichedArray.length > 0) {
+                finalLead = enrichedArray[0];
+            }
+        } else {
+            console.error('[Create Lead] AI Normalization skipped or failed:', invokeError || enrichedBatch?.error);
+        }
+
+        const { error: insertError } = await supabase
+            .from('leads')
+            .insert([finalLead])
+
+        if (insertError) {
+            console.error('[Create Lead] DB Insert Error:', insertError)
+            return { success: false, error: insertError }
+        }
+
+        return { success: true, lead: finalLead, error: null }
+    } catch (err) {
+        console.error('[Create Lead Catch Error]', err)
+        return { success: false, error: err }
+    }
+}
+
+/**
+ * Deletes a single lead by its lead_id.
+ */
+export async function deleteLead(leadId) {
+    try {
+        const { error } = await supabase
+            .from('leads')
+            .delete()
+            .eq('lead_id', leadId)
+
+        if (error) {
+            console.error('[Delete Lead] DB Delete Error:', error)
+            return { success: false, error }
+        }
+
+        return { success: true, error: null }
+    } catch (err) {
+        console.error('[Delete Lead Catch Error]', err)
+        return { success: false, error: err }
+    }
+}

@@ -1,7 +1,10 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLeads } from '@/hooks/useLeads'
 import { isSinInfo, parseLeadDate, normalizeCanal } from '@/lib/leadUtils'
 import { useFilteredLeads, useFilters } from '@/contexts/FilterContext'
+import { syncLeads, createLead, deleteLead } from '@/lib/leadService'
+import { supabase } from '@/lib/supabase'
 
 import FilterBar from '@/components/dashboard/FilterBar'
 import KpiCards from '@/components/dashboard/KpiCards'
@@ -20,6 +23,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
@@ -31,12 +35,19 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet'
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
+import {
     PieChart, Pie, Cell, ResponsiveContainer,
 } from 'recharts'
 import {
     TrendingUp, Users, UserCheck, UserX, PhoneOff, Clock,
-    Plus, User, ArrowUpRight, Calendar, Phone, MapPin,
-    AlertTriangle, CheckCircle2, Download,
+    Plus, User, ArrowUpRight, Calendar, Phone, MapPin, UploadCloud,
+    AlertTriangle, CheckCircle2, Download, Edit2, Check, X, Trash2
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -46,42 +57,117 @@ import { es } from 'date-fns/locale'
    ═══════════════════════════════════════ */
 
 /* Reminders */
-function RemindersCard({ leads }) {
-    const reminder = useMemo(() => {
-        return leads.find(l => (l.fase_embudo || '').toLowerCase().includes('+24hrs')) || leads[0]
-    }, [leads])
-    if (!reminder) return null
+function RemindersCard({ leads, onSelectLead }) {
+    const reminders = useMemo(() => {
+        const items = []
 
-    const d = parseLeadDate(reminder.fecha_primer_mensaje)
+        // 1. Leads that haven't responded in +24hrs — oldest first (longest waiting)
+        const noResponse = leads
+            .filter(l => (l.fase_embudo || '').toLowerCase().includes('+24hrs'))
+            .sort((a, b) => {
+                const da = parseLeadDate(a.fecha_primer_mensaje)
+                const db = parseLeadDate(b.fecha_primer_mensaje)
+                return (da ? da.getTime() : 0) - (db ? db.getTime() : 0)
+            })
+        noResponse.slice(0, 3).forEach(l => {
+            items.push({ lead: l, type: 'urgent', label: 'No contesta (+24h)', icon: '🔴' })
+        })
+
+        // 2. Leads without vendedora assigned (en fase "Atendiendo") — oldest first
+        const noVendedora = leads
+            .filter(l => {
+                const fase = (l.fase_embudo || '').toLowerCase()
+                const vendedora = (l.vendedora || '').toLowerCase()
+                return fase.includes('atendiendo') && (!vendedora || vendedora === 'sin informacion' || vendedora === 'sin información')
+            })
+            .sort((a, b) => {
+                const da = parseLeadDate(a.fecha_primer_mensaje)
+                const db = parseLeadDate(b.fecha_primer_mensaje)
+                return (da ? da.getTime() : 0) - (db ? db.getTime() : 0)
+            })
+        noVendedora.slice(0, 2).forEach(l => {
+            items.push({ lead: l, type: 'warning', label: 'Sin vendedora asignada', icon: '🟡' })
+        })
+
+        // 3. Leads with event date coming up in the next 30 days — nearest event first
+        const now = new Date()
+        const in30d = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+        const upcoming = []
+        leads.forEach(l => {
+            if (!l.fecha_evento) return
+            const parts = l.fecha_evento.split('/')
+            if (parts.length !== 3) return
+            const evDate = new Date(parts[2], parts[1] - 1, parts[0])
+            if (evDate >= now && evDate <= in30d) {
+                if (!items.find(i => i.lead.lead_id === l.lead_id)) {
+                    const daysLeft = Math.ceil((evDate - now) / (1000 * 60 * 60 * 24))
+                    upcoming.push({ lead: l, type: 'info', label: `Evento en ${daysLeft} día${daysLeft !== 1 ? 's' : ''}`, icon: '📅', _sortKey: evDate.getTime() })
+                }
+            }
+        })
+        upcoming.sort((a, b) => a._sortKey - b._sortKey)
+        upcoming.slice(0, 3).forEach(u => items.push(u))
+
+        return items.slice(0, 5)
+    }, [leads])
+
+    const typeStyles = {
+        urgent: 'border-l-4 border-red-400 bg-red-50/50 dark:bg-red-950/20',
+        warning: 'border-l-4 border-amber-400 bg-amber-50/50 dark:bg-amber-950/20',
+        info: 'border-l-4 border-blue-400 bg-blue-50/50 dark:bg-blue-950/20',
+    }
 
     return (
         <Card className="rounded-none border-border bg-card shadow-sm">
-            <CardHeader className="pb-4">
-                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Reminders</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="bg-secondary/30 p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Clock className="h-4 w-4 text-primary" />
-                        <span className="text-xs uppercase tracking-widest text-muted-foreground">Seguimiento pendiente</span>
-                    </div>
-                    <p className="text-base font-medium text-foreground">{reminder.nombre}</p>
-                    <p className="text-xs text-muted-foreground mt-2 uppercase tracking-wide">Lead #{reminder.lead_id} · {reminder.evento}</p>
-                    {d && <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">{format(d, "dd MMM yyyy, HH:mm", { locale: es })}</p>}
-                    <Button size="sm" className="mt-5 rounded-none bg-primary text-xs font-medium tracking-widest text-primary-foreground hover:bg-primary/90 w-full uppercase">
-                        Open Lead
-                    </Button>
+            <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Recordatorios</CardTitle>
+                    <Badge variant="outline" className="rounded-none text-xs tabular-nums">{reminders.length}</Badge>
                 </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                {reminders.length === 0 ? (
+                    <div className="text-center py-6">
+                        <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">Todo al día, sin pendientes</p>
+                    </div>
+                ) : (
+                    reminders.map((r, i) => (
+                        <button
+                            key={`${r.lead.lead_id}-${i}`}
+                            onClick={() => onSelectLead && onSelectLead(r.lead)}
+                            className={`w-full text-left p-3 transition-all hover:opacity-80 ${typeStyles[r.type]}`}
+                        >
+                            <div className="flex items-start gap-2">
+                                <span className="text-sm mt-0.5">{r.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">{r.label}</p>
+                                    <p className="text-sm font-medium text-foreground truncate">{r.lead.nombre}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">#{r.lead.lead_id} · {r.lead.evento || 'Sin evento'}</p>
+                                </div>
+                                <ArrowUpRight className="h-3 w-3 text-muted-foreground mt-1 shrink-0" />
+                            </div>
+                        </button>
+                    ))
+                )}
             </CardContent>
         </Card>
     )
 }
 
 /* Recent Leads list */
-function RecentLeadsList({ leads, onSelectLead }) {
+function RecentLeadsList({ leads, allLeads, onSelectLead, onLeadAdded }) {
+    const [isNewLeadOpen, setIsNewLeadOpen] = useState(false)
+    const navigate = useNavigate()
     const recent = useMemo(() => {
         return [...leads]
-            .sort((a, b) => (b.fecha_primer_mensaje || '').localeCompare(a.fecha_primer_mensaje || ''))
+            .sort((a, b) => {
+                const da = parseLeadDate(a.fecha_primer_mensaje)
+                const db = parseLeadDate(b.fecha_primer_mensaje)
+                const ta = da ? da.getTime() : 0
+                const tb = db ? db.getTime() : 0
+                return tb - ta
+            })
             .slice(0, 6)
     }, [leads])
 
@@ -99,7 +185,7 @@ function RecentLeadsList({ leads, onSelectLead }) {
         <Card className="rounded-none border-border bg-card shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-4">
                 <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Leads Recientes</CardTitle>
-                <Button variant="outline" size="sm" className="rounded-none border-foreground text-xs uppercase tracking-widest hover:bg-secondary">
+                <Button variant="outline" size="sm" onClick={() => setIsNewLeadOpen(true)} className="rounded-none border-foreground text-xs uppercase tracking-widest hover:bg-secondary">
                     <Plus className="mr-2 h-3 w-3" /> New
                 </Button>
             </CardHeader>
@@ -126,6 +212,16 @@ function RecentLeadsList({ leads, onSelectLead }) {
                     )
                 })}
             </CardContent>
+
+            <NewLeadDialog
+                leads={allLeads || leads}
+                open={isNewLeadOpen}
+                onClose={() => setIsNewLeadOpen(false)}
+                onSuccess={() => {
+                    setIsNewLeadOpen(false)
+                    if (onLeadAdded) onLeadAdded()
+                }}
+            />
         </Card>
     )
 }
@@ -189,8 +285,8 @@ function PipelineDonut({ leads, loading }) {
     }, [leads])
 
     const data = [
-        { name: 'Activos', value: activos, fill: '#E2D4C8' },
-        { name: 'Perdidos', value: perdidos, fill: '#A9AFA3' },
+        { name: 'Activos', value: activos, fill: '#A6E3B8' }, // Pastel Green
+        { name: 'Perdidos', value: perdidos, fill: '#FFA6A6' }, // Pastel Red
     ]
 
     if (loading) {
@@ -223,8 +319,8 @@ function PipelineDonut({ leads, loading }) {
                     </div>
                 </div>
                 <div className="mt-5 flex items-center justify-center gap-8 text-xs uppercase tracking-widest text-muted-foreground w-full">
-                    <span className="flex items-center gap-2"><span className="h-3 w-3 bg-[#E2D4C8]" />Activos</span>
-                    <span className="flex items-center gap-2"><span className="h-3 w-3 bg-[#A9AFA3] dark:bg-slate-700" />Perdidos</span>
+                    <span className="flex items-center gap-2"><span className="h-3 w-3 bg-[#A6E3B8]" />Activos</span>
+                    <span className="flex items-center gap-2"><span className="h-3 w-3 bg-[#FFA6A6] dark:bg-slate-700" />Perdidos</span>
                 </div>
             </CardContent>
         </Card>
@@ -272,12 +368,20 @@ function DataQualityCard({ leads }) {
 /* ═══════════════════════════════════════
    LEADS TABLE
    ═══════════════════════════════════════ */
-function LeadsTable({ leads, loading, onSelectLead }) {
+function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
     const [visibleCount, setVisibleCount] = useState(15)
+    const [isNewLeadOpen, setIsNewLeadOpen] = useState(false)
+    const navigate = useNavigate()
 
     const rows = useMemo(() => {
         return [...leads]
-            .sort((a, b) => (b.fecha_primer_mensaje || '').localeCompare(a.fecha_primer_mensaje || ''))
+            .sort((a, b) => {
+                const da = parseLeadDate(a.fecha_primer_mensaje)
+                const db = parseLeadDate(b.fecha_primer_mensaje)
+                const ta = da ? da.getTime() : 0
+                const tb = db ? db.getTime() : 0
+                return tb - ta
+            })
             .slice(0, visibleCount)
     }, [leads, visibleCount])
 
@@ -309,7 +413,17 @@ function LeadsTable({ leads, loading, onSelectLead }) {
     return (
         <Card className="rounded-none border-border bg-card shadow-sm mt-8">
             <CardHeader className="flex flex-row items-center justify-between pb-6">
-                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Recent Leads</CardTitle>
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">RECENT LEADS</CardTitle>
+                <div className="flex gap-2">
+                    <Button size="sm" onClick={() => navigate('/admin/import-leads')} className="flex items-center gap-2 rounded-full px-4 border border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-600 dark:hover:bg-emerald-900/50">
+                        <UploadCloud className="h-4 w-4" />
+                        Importar Excel
+                    </Button>
+                    <Button size="sm" onClick={() => setIsNewLeadOpen(true)} className="flex items-center gap-2 rounded-full px-4">
+                        <Plus className="h-4 w-4" />
+                        Nuevo Lead
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
                 <div className="overflow-x-auto">
@@ -329,7 +443,7 @@ function LeadsTable({ leads, loading, onSelectLead }) {
                                     <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400">{lead.evento}</td>
                                     <td className="px-3 py-2.5">{getBadge('fase_embudo', lead.fase_embudo)}</td>
                                     <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400">{lead.vendedora}</td>
-                                    <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400">{normalizeCanal(lead.canal_de_contacto)}</td>
+                                    <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400">{lead.canal_normalizado || normalizeCanal(lead.canal_de_contacto)}</td>
                                     <td className="px-3 py-2.5 text-sm text-slate-600 dark:text-slate-400">{lead.como_nos_encontro}</td>
                                     <td className="px-3 py-2.5">{getBadge('telefono', lead.telefono)}</td>
                                     <td className="px-3 py-2.5">{getBadge('salon', lead.salon)}</td>
@@ -350,6 +464,16 @@ function LeadsTable({ leads, loading, onSelectLead }) {
                     </div>
                 )}
             </CardContent>
+
+            <NewLeadDialog
+                leads={allLeads || leads}
+                open={isNewLeadOpen}
+                onClose={() => setIsNewLeadOpen(false)}
+                onSuccess={() => {
+                    setIsNewLeadOpen(false)
+                    if (onLeadAdded) onLeadAdded()
+                }}
+            />
         </Card>
     )
 }
@@ -357,59 +481,369 @@ function LeadsTable({ leads, loading, onSelectLead }) {
 /* ═══════════════════════════════════════
    LEAD DETAIL SHEET
    ═══════════════════════════════════════ */
-function LeadDetailSheet({ lead, open, onClose }) {
+function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelete }) {
+    const [isEditing, setIsEditing] = useState(false)
+    const [editData, setEditData] = useState({})
+    const [isSaving, setIsSaving] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [isCustomVendedora, setIsCustomVendedora] = useState(false)
+
+    // Default system users plus any dynamically discovered from ALL leads (not filtered)
+    const vendedoras = useMemo(() => {
+        const defaults = ['Sin Información']
+        const source = allLeads || leads || []
+        const dbVendedoras = source.map(l => l.vendedora).filter(v => v && !isSinInfo(v))
+        return Array.from(new Set([...defaults, ...dbVendedoras]))
+    }, [allLeads, leads])
+
+    useEffect(() => {
+        if (open && lead) {
+            setIsEditing(false)
+            setEditData({ ...lead })
+            setIsCustomVendedora(false)
+        }
+    }, [open, lead])
+
     if (!lead) return null
 
+    const handleSave = async () => {
+        setIsSaving(true)
+        const updatedLead = { ...editData }
+
+        // Convert internal YYYY-MM-DD back to DD/MM/YYYY for consistency
+        if (updatedLead.fecha_evento && updatedLead.fecha_evento.includes('-')) {
+            const parts = updatedLead.fecha_evento.split('-')
+            updatedLead.fecha_evento = `${parts[2]}/${parts[1]}/${parts[0]}`
+        }
+
+        if (onSave) await onSave(lead.lead_id, updatedLead)
+        setIsSaving(false)
+        setIsEditing(false)
+    }
+
     const fields = [
-        { label: 'Lead ID', key: 'lead_id', icon: '🆔' },
+        { label: 'Lead ID', key: 'lead_id', icon: '🆔', readonly: true },
         { label: 'Nombre', key: 'nombre', icon: '👤' },
         { label: 'Teléfono', key: 'telefono', icon: '📱' },
-        { label: 'Canal', key: 'canal_de_contacto', icon: '📨' },
-        { label: 'Evento', key: 'evento', icon: '🎉' },
-        { label: 'Fecha Evento', key: 'fecha_evento', icon: '📅' },
+        { label: 'Canal Original', key: 'canal_de_contacto', icon: '📨' },
         { label: 'Cómo nos encontró', key: 'como_nos_encontro', icon: '🔍' },
+        { label: 'Canal Normalizado (IA)', key: 'canal_normalizado', icon: '✨', readonly: true },
+        { label: 'Evento Original', key: 'evento', icon: '🎉' },
+        { label: 'Evento Normalizado (IA)', key: 'evento_normalizado', icon: '✨', readonly: true },
+        { label: 'Fecha Evento', key: 'fecha_evento', icon: '📅' },
         { label: 'Fase', key: 'fase_embudo', icon: '📊' },
-        { label: 'Primer Mensaje', key: 'fecha_primer_mensaje', icon: '💬' },
+        { label: 'Primer Mensaje', key: 'fecha_primer_mensaje', icon: '💬', readonly: true },
         { label: 'Vendedora', key: 'vendedora', icon: '👩‍💼' },
         { label: 'Salón', key: 'salon', icon: '🏛️' },
     ]
 
+    const displayNombre = isEditing ? editData.nombre : lead.nombre
+
     return (
         <Sheet open={open} onOpenChange={onClose}>
-            <SheetContent className="w-full border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 sm:max-w-md overflow-y-auto">
+            <SheetContent className="w-full border-border bg-card sm:max-w-md overflow-y-auto">
                 <SheetHeader className="mb-6">
-                    <SheetTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">Detalle del Lead</SheetTitle>
+                    <div className="flex items-center justify-between mt-6">
+                        <SheetTitle className="font-heading text-xl tracking-wider text-foreground">DETALLE DEL LEAD</SheetTitle>
+                        {!isEditing ? (
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
+                                    <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={isDeleting}
+                                    onClick={async () => {
+                                        if (window.confirm('¿Estás seguro de que deseas eliminar este lead? Esta acción no se puede deshacer.')) {
+                                            setIsDeleting(true);
+                                            if (onDelete) await onDelete(lead.lead_id);
+                                            setIsDeleting(false);
+                                        }
+                                    }}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => setIsEditing(false)} disabled={isSaving} className="text-muted-foreground">
+                                    <X className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={handleSave} disabled={isSaving} className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50">
+                                    <Check className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </SheetHeader>
-                <div className="space-y-4">
-                    <div className="flex items-center gap-4 rounded-2xl bg-slate-50 dark:bg-slate-900 p-4">
-                        <Avatar className="h-14 w-14">
-                            <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/30 text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                                {lead.nombre?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
+                <div className="space-y-4 px-2">
+                    <div className="flex items-center gap-4 border border-border bg-secondary/30 p-4">
+                        <Avatar className="h-14 w-14 rounded-none">
+                            <AvatarFallback className="bg-primary/10 text-lg font-heading tracking-widest text-primary rounded-none">
+                                {displayNombre?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
                             </AvatarFallback>
                         </Avatar>
                         <div>
-                            <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{lead.nombre}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">#{lead.lead_id}</p>
+                            <p className="font-heading text-lg tracking-wider text-foreground">{displayNombre}</p>
+                            <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">#{lead.lead_id}</p>
                         </div>
                     </div>
-                    <Separator className="dark:bg-slate-800" />
-                    <div className="space-y-2">
-                        {fields.map(({ label, key, icon }) => {
-                            const val = lead[key]
+                    <div className="space-y-0 border-t border-border pt-4 pb-8">
+                        {fields.map(({ label, key, icon, value, readonly }) => {
+                            const val = value !== undefined ? value : (isEditing ? editData[key] : lead[key])
                             const missing = isSinInfo(val)
+                            const isEditable = isEditing && !readonly
+
                             return (
-                                <div key={key} className="flex items-start gap-3 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                                    <span className="text-base">{icon}</span>
+                                <div key={key || label} className="flex items-start gap-4 p-3 border-b border-border/50 hover:bg-secondary/30 transition-colors group">
+                                    <span className="text-base mt-1 opacity-70 group-hover:opacity-100 transition-opacity">{icon}</span>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{label}</p>
-                                        {missing
-                                            ? <Badge variant="outline" className="mt-1 rounded-full text-xs border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500">Sin Información</Badge>
-                                            : <p className="text-sm font-medium text-slate-800 dark:text-slate-200 break-all">{val}</p>
-                                        }
+                                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
+                                        {isEditable ? (
+                                            key === 'vendedora' ? (
+                                                (() => {
+                                                    const isOther = isCustomVendedora || (val !== '' && !vendedoras.includes(val));
+                                                    return (
+                                                        <div className="flex flex-col gap-1 w-full mt-1">
+                                                            <Select
+                                                                value={isCustomVendedora ? 'Otro' : (val || 'Sin Información')}
+                                                                onValueChange={(v) => {
+                                                                    if (v === 'Otro') {
+                                                                        setIsCustomVendedora(true)
+                                                                        setEditData(p => ({ ...p, [key]: '' }))
+                                                                    } else {
+                                                                        setIsCustomVendedora(false)
+                                                                        setEditData(p => ({ ...p, [key]: v }))
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <SelectTrigger className="h-8 text-sm bg-background border-border rounded-none">
+                                                                    <SelectValue placeholder="Selecciona..." />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {vendedoras.map(v => (
+                                                                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                                                                    ))}
+                                                                    <SelectItem value="Otro">Otro</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            {isOther && (
+                                                                <Input
+                                                                    value={val}
+                                                                    onChange={(e) => setEditData(p => ({ ...p, [key]: e.target.value }))}
+                                                                    className="h-8 text-sm bg-white dark:bg-slate-950 mt-1 w-full"
+                                                                    placeholder="Escribe el nombre de la vendedora..."
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    )
+                                                })()
+                                            ) : key === 'fase_embudo' ? (
+                                                <Select value={val} onValueChange={(v) => setEditData(p => ({ ...p, [key]: v }))}>
+                                                    <SelectTrigger className="mt-1 h-8 text-sm bg-background border-border rounded-none w-full">
+                                                        <SelectValue placeholder="Selecciona..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Atendiendo">Atendiendo</SelectItem>
+                                                        <SelectItem value="+24HRS (NO CONTESTA)">+24HRS (NO CONTESTA)</SelectItem>
+                                                        <SelectItem value="ENVIADO CON VENDEDORA">ENVIADO CON VENDEDORA</SelectItem>
+                                                        <SelectItem value="Venta Perdido">Venta Perdido</SelectItem>
+                                                        <SelectItem value="Otros">Otros</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            ) : (
+                                                <Input
+                                                    type={key === 'fecha_evento' ? 'date' : 'text'}
+                                                    value={
+                                                        key === 'fecha_evento' && val && val.includes('/')
+                                                            ? val.split('/').reverse().join('-')
+                                                            : (val || '')
+                                                    }
+                                                    onChange={(e) => setEditData(prev => ({ ...prev, [key]: e.target.value }))}
+                                                    className="mt-1 h-8 text-sm bg-background w-full rounded-none"
+                                                />
+                                            )
+                                        ) : (
+                                            missing
+                                                ? <Badge variant="outline" className="rounded-none text-[10px] uppercase tracking-widest border-border text-muted-foreground">Sin Información</Badge>
+                                                : <p className="text-sm font-medium text-foreground break-words">{val}</p>
+                                        )}
                                     </div>
                                 </div>
                             )
                         })}
+                    </div>
+                </div>
+            </SheetContent>
+        </Sheet>
+    )
+}
+
+/* ═══════════════════════════════════════
+   NEW LEAD DIALOG
+   ═══════════════════════════════════════ */
+function NewLeadDialog({ leads, open, onClose, onSuccess }) {
+    const [formData, setFormData] = useState({
+        nombre: '', telefono: '', canal_de_contacto: '', evento: '', fecha_evento: '', como_nos_encontro: '', fase_embudo: 'NUEVO', vendedora: '', salon: ''
+    })
+    const [isSaving, setIsSaving] = useState(false)
+    const [errorMsg, setErrorMsg] = useState(null)
+    const [isCustomVendedora, setIsCustomVendedora] = useState(false)
+
+    // Default system users plus any dynamically discovered from existant leads
+    const vendedoras = useMemo(() => {
+        const defaults = ['Sin Información']
+        const dbVendedoras = (leads || []).map(l => l.vendedora).filter(v => v && !isSinInfo(v))
+        return Array.from(new Set([...defaults, ...dbVendedoras]))
+    }, [leads])
+
+    const handleSave = async () => {
+        if (!formData.nombre) {
+            setErrorMsg("El nombre es requerido");
+            return;
+        }
+        setIsSaving(true)
+        setErrorMsg(null)
+
+        // Use current local timestamp formatted simply as fallback for fecha_primer_mensaje
+        const now = new Date();
+        const fallbackDate = now.toISOString()
+
+        const newLead = { ...formData, fecha_primer_mensaje: fallbackDate }
+
+        // Convert internal YYYY-MM-DD back to DD/MM/YYYY for consistency
+        if (newLead.fecha_evento && newLead.fecha_evento.includes('-')) {
+            const parts = newLead.fecha_evento.split('-')
+            newLead.fecha_evento = `${parts[2]}/${parts[1]}/${parts[0]}`
+        }
+
+        const { success, error } = await createLead(newLead)
+        setIsSaving(false)
+        if (success) {
+            setFormData({ nombre: '', telefono: '', canal_de_contacto: '', evento: '', fecha_evento: '', como_nos_encontro: '', fase_embudo: 'NUEVO', vendedora: '', salon: '' })
+            setIsCustomVendedora(false)
+            if (onSuccess) onSuccess()
+        } else {
+            setErrorMsg("Error al guardar el lead: " + (error?.message || "Desconocido"))
+        }
+    }
+
+    const fields = [
+        { label: 'Nombre *', key: 'nombre' },
+        { label: 'Teléfono', key: 'telefono' },
+        { label: 'Canal Original', key: 'canal_de_contacto' },
+        { label: 'Cómo nos encontró', key: 'como_nos_encontro' },
+        { label: 'Evento Original', key: 'evento' },
+        { label: 'Fecha Evento', key: 'fecha_evento', placeholder: 'ej. 15/10/2026' },
+        { label: 'Fase', key: 'fase_embudo' },
+        { label: 'Vendedora', key: 'vendedora' },
+        { label: 'Salón', key: 'salon' },
+    ]
+
+    return (
+        <Sheet open={open} onOpenChange={onClose}>
+            <SheetContent className="w-full border-border bg-card sm:max-w-md overflow-y-auto">
+                <SheetHeader className="mb-6 mt-4 border-b border-border pb-4">
+                    <SheetTitle className="font-heading text-xl tracking-wider text-foreground">AGREGAR NUEVO LEAD</SheetTitle>
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Llena los datos manualmente. La IA normalizará canales.</p>
+                </SheetHeader>
+
+                {errorMsg && (
+                    <div className="mb-6 p-4 border-l-4 border-red-500 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 text-sm">
+                        {errorMsg}
+                    </div>
+                )}
+
+                <div className="space-y-5 pb-8 px-2">
+                    {fields.map(({ label, key, placeholder, type }) => {
+                        if (key === 'vendedora') {
+                            const isOther = isCustomVendedora || (formData[key] !== '' && !vendedoras.includes(formData[key]))
+                            return (
+                                <div key={key} className="flex flex-col gap-1.5">
+                                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{label}</label>
+                                    <Select
+                                        value={isCustomVendedora ? 'Otro' : (formData[key] || 'Sin Información')}
+                                        onValueChange={(v) => {
+                                            if (v === 'Otro') {
+                                                setIsCustomVendedora(true)
+                                                setFormData(p => ({ ...p, [key]: '' }))
+                                            } else {
+                                                setIsCustomVendedora(false)
+                                                setFormData(p => ({ ...p, [key]: v }))
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger className="bg-background border-border rounded-none focus:ring-1 focus:ring-primary">
+                                            <SelectValue placeholder="Selecciona..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {vendedoras.map(v => (
+                                                <SelectItem key={v} value={v}>{v}</SelectItem>
+                                            ))}
+                                            <SelectItem value="Otro">Otro</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {isOther && (
+                                        <Input
+                                            value={formData[key]}
+                                            onChange={(e) => setFormData(p => ({ ...p, [key]: e.target.value }))}
+                                            className="bg-background border-border rounded-none mt-1 focus-visible:ring-1 focus-visible:ring-primary w-full"
+                                            placeholder="Escribe el nombre de la vendedora..."
+                                        />
+                                    )}
+                                </div>
+                            )
+                        }
+
+                        if (key === 'fase_embudo') {
+                            return (
+                                <div key={key} className="flex flex-col gap-1.5">
+                                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{label}</label>
+                                    <Select value={formData[key]} onValueChange={(v) => setFormData(p => ({ ...p, [key]: v }))}>
+                                        <SelectTrigger className="bg-background border-border rounded-none focus:ring-1 focus:ring-primary">
+                                            <SelectValue placeholder="Selecciona..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Atendiendo">Atendiendo</SelectItem>
+                                            <SelectItem value="+24HRS (NO CONTESTA)">+24HRS (NO CONTESTA)</SelectItem>
+                                            <SelectItem value="ENVIADO CON VENDEDORA">ENVIADO CON VENDEDORA</SelectItem>
+                                            <SelectItem value="Venta Perdido">Venta Perdido</SelectItem>
+                                            <SelectItem value="Otros">Otros</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )
+                        }
+
+                        return (
+                            <div key={key} className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{label}</label>
+                                <Input
+                                    type={key === 'fecha_evento' ? 'date' : 'text'}
+                                    value={
+                                        // HTML type="date" requires YYYY-MM-DD
+                                        key === 'fecha_evento' && formData[key] && formData[key].includes('/')
+                                            ? formData[key].split('/').reverse().join('-')
+                                            : formData[key]
+                                    }
+                                    placeholder={placeholder || ''}
+                                    onChange={(e) => {
+                                        let val = e.target.value;
+                                        // Keep standard YYYY-MM-DD internally, convert on save
+                                        setFormData(p => ({ ...p, [key]: val }))
+                                    }}
+                                    className="bg-background rounded-none border-border block w-full focus-visible:ring-1 focus-visible:ring-primary"
+                                />
+                            </div>
+                        )
+                    })}
+                    <div className="pt-6 flex justify-end gap-3 border-t border-border">
+                        <Button variant="ghost" onClick={onClose} disabled={isSaving} className="rounded-none text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground">Cancelar</Button>
+                        <Button onClick={handleSave} disabled={isSaving} className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90 text-xs uppercase tracking-widest">
+                            {isSaving ? 'Guardando...' : 'Guardar Lead'}
+                        </Button>
                     </div>
                 </div>
             </SheetContent>
@@ -425,12 +859,17 @@ function DataQualityDetails({ leads }) {
     const labels = { telefono: 'Teléfono', fecha_evento: 'Fecha Evento', canal_de_contacto: 'Canal', como_nos_encontro: 'Origen', vendedora: 'Vendedora', salon: 'Salón', evento: 'Evento' }
 
     const missingByField = useMemo(() => {
-        return fields.map(f => ({
-            field: labels[f],
-            missing: leads.filter(l => isSinInfo(l[f])).length,
-            total: leads.length,
-            pct: leads.length ? Math.round((leads.filter(l => isSinInfo(l[f])).length / leads.length) * 100) : 0,
-        })).sort((a, b) => b.pct - a.pct)
+        return fields.map(f => {
+            const val = l => f === 'canal_de_contacto' ? (l.canal_normalizado || l.canal_de_contacto) :
+                f === 'evento' ? (l.evento_normalizado || l.evento) : l[f]
+            const missingCount = leads.filter(l => isSinInfo(val(l))).length
+            return {
+                field: labels[f],
+                missing: missingCount,
+                total: leads.length,
+                pct: leads.length ? Math.round((missingCount / leads.length) * 100) : 0,
+            }
+        }).sort((a, b) => b.pct - a.pct)
     }, [leads])
 
     return (
@@ -472,9 +911,28 @@ function DataQualityDetails({ leads }) {
    MAIN DASHBOARD PAGE
    ═══════════════════════════════════════ */
 export default function Dashboard() {
-    const { leads: apiLeads, loading, error } = useLeads()
+    const { leads: apiLeads, loading, error, refresh } = useLeads()
     const [selectedLead, setSelectedLead] = useState(null)
-    const [vendedoraView, setVendedoraView] = useState('total')
+    const [vendedoraView, setVendedoraView] = useState('stacked')
+
+    // Add delete handler
+    const handleDeleteLead = async (leadId) => {
+        const { success } = await deleteLead(leadId)
+        if (success) {
+            setSelectedLead(null)
+            refresh(true)
+        } else {
+            alert('Error al eliminar el lead.')
+        }
+    }
+
+    const [aiProvider, setAiProvider] = useState(0) // 0 = Gemini, 1 = OpenAI
+
+    // Optional: Refresh periodically
+    useEffect(() => {
+        const interval = setInterval(() => refresh(false), 5 * 60 * 1000)
+        return () => clearInterval(interval)
+    }, [refresh])
 
     // Context / computed
     const filteredLeads = useFilteredLeads(apiLeads || [])
@@ -483,6 +941,29 @@ export default function Dashboard() {
     const handleSelectLead = useCallback((lead) => {
         setSelectedLead(lead)
     }, [])
+
+    const handleSaveLead = async (leadId, modifications) => {
+        try {
+            // Remove system fields to prevent DB conflict
+            const { lead_id, fecha_primer_mensaje, ...updates } = modifications
+
+            const { error: updateError } = await supabase
+                .from('leads')
+                .update(updates)
+                .eq('lead_id', leadId)
+
+            if (updateError) throw updateError
+
+            await refresh(true)
+
+            if (selectedLead && selectedLead.lead_id === leadId) {
+                setSelectedLead(prev => ({ ...prev, ...updates }))
+            }
+        } catch (err) {
+            console.error('Error updating lead:', err)
+            alert('Error al guardar el lead: ' + err.message)
+        }
+    }
 
     // This variable is introduced by the user's snippet, assuming it's meant to be `loading`
     const hasInitialLoading = loading && apiLeads.length === 0;
@@ -510,6 +991,7 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-6">
+
             <FilterBar leads={apiLeads || []} />
 
             {/* 10 KPI CARDS */}
@@ -540,10 +1022,10 @@ export default function Dashboard() {
                             <LeadsByDayChart leads={filteredLeads} loading={loading} />
                         </div>
                         <div className="lg:col-span-3">
-                            <RemindersCard leads={filteredLeads} />
+                            <RemindersCard leads={filteredLeads} onSelectLead={handleSelectLead} />
                         </div>
                         <div className="lg:col-span-4">
-                            <RecentLeadsList leads={filteredLeads} onSelectLead={handleSelectLead} />
+                            <RecentLeadsList leads={filteredLeads} allLeads={apiLeads} onSelectLead={handleSelectLead} onLeadAdded={() => refresh(true)} />
                         </div>
                     </div>
 
@@ -613,15 +1095,21 @@ export default function Dashboard() {
             {/* LEADS TABLE */}
             <LeadsTable
                 leads={filteredLeads}
+                allLeads={apiLeads}
                 loading={hasInitialLoading}
                 onSelectLead={setSelectedLead}
+                onLeadAdded={() => refresh(true)}
             />
 
             {/* DETAIL SHEET */}
             <LeadDetailSheet
+                leads={filteredLeads}
+                allLeads={apiLeads}
                 lead={selectedLead}
                 open={!!selectedLead}
                 onClose={() => setSelectedLead(null)}
+                onSave={handleSaveLead}
+                onDelete={handleDeleteLead}
             />
 
             <ExportReportDialog

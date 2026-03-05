@@ -65,7 +65,8 @@ export function buildAIPayload(leads, kpis, dateRangeString) {
     // ── Acquisition: top canales ──
     const canales = {}
     leads.forEach(l => {
-        const c = isSinInfo(l.canal_de_contacto) ? 'Sin Info' : l.canal_de_contacto
+        const rawC = l.canal_normalizado || l.canal_de_contacto
+        const c = isSinInfo(rawC) ? 'Sin Info' : rawC
         canales[c] = (canales[c] || 0) + 1
     })
     const topCanales = Object.entries(canales)
@@ -76,7 +77,8 @@ export function buildAIPayload(leads, kpis, dateRangeString) {
     // ── Events: top tipos ──
     const eventos = {}
     leads.forEach(l => {
-        const e = isSinInfo(l.evento) ? 'Sin Info' : l.evento
+        const rawE = l.evento_normalizado || l.evento
+        const e = isSinInfo(rawE) ? 'Sin Info' : rawE
         eventos[e] = (eventos[e] || 0) + 1
     })
     const topEventos = Object.entries(eventos)
@@ -110,12 +112,13 @@ export function buildAIPayload(leads, kpis, dateRangeString) {
         { key: 'como_nos_encontro', label: 'origen' },
         { key: 'salon', label: 'salon' },
         { key: 'vendedora', label: 'vendedora' },
-        { key: 'canal_de_contacto', label: 'canal' },
-        { key: 'evento', label: 'evento' },
+        { key: 'canal_de_contacto', label: 'canal', val: l => l.canal_normalizado || l.canal_de_contacto },
+        { key: 'evento', label: 'evento', val: l => l.evento_normalizado || l.evento },
     ]
     const dataQuality = {}
-    fieldsToCheck.forEach(({ key, label }) => {
-        const missing = leads.filter(l => isSinInfo(l[key])).length
+    fieldsToCheck.forEach(({ key, label, val }) => {
+        const valueFn = val || (l => l[key])
+        const missing = leads.filter(l => isSinInfo(valueFn(l))).length
         dataQuality[label] = Math.round((missing / total) * 100)
     })
 

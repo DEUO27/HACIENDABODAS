@@ -109,6 +109,7 @@ export function prepareKpiData(leads) {
         noContesta: 0, pctSinTel: 0, pctSinFecha: 0,
         topOrigenName: 'N/A', topOrigenPct: 0,
         topVendedoraName: 'N/A', topVendedoraCount: 0,
+        canalBreakdown: [],
     }
 
     const now = new Date()
@@ -124,6 +125,7 @@ export function prepareKpiData(leads) {
 
     const origenes = {}
     const vendedoras = {}
+    const canales = {}
 
     leads.forEach((l) => {
         const d = parseLeadDate(l.fecha_primer_mensaje)
@@ -143,10 +145,18 @@ export function prepareKpiData(leads) {
 
         const v = isSinInfo(l.vendedora) ? 'Sin Asignar' : l.vendedora
         vendedoras[v] = (vendedoras[v] || 0) + 1
+
+        // Canal breakdown
+        const canal = l.canal_normalizado || (isSinInfo(l.canal_de_contacto) ? 'Sin Info' : l.canal_de_contacto) || 'Sin Info'
+        canales[canal] = (canales[canal] || 0) + 1
     })
 
     const topOrigen = Object.entries(origenes).sort((a, b) => b[1] - a[1])[0]
     const topVendedora = Object.entries(vendedoras).sort((a, b) => b[1] - a[1])[0]
+
+    const canalBreakdown = Object.entries(canales)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count, pct: Math.round((count / total) * 100) }))
 
     return {
         total,
@@ -161,6 +171,7 @@ export function prepareKpiData(leads) {
         topOrigenPct: topOrigen ? Math.round((topOrigen[1] / total) * 100) : 0,
         topVendedoraName: topVendedora ? topVendedora[0] : 'N/A',
         topVendedoraCount: topVendedora ? topVendedora[1] : 0,
+        canalBreakdown,
     }
 }
 
@@ -207,7 +218,8 @@ export function prepareExecutiveSummary(leads, kpis) {
             vendedora24h[v] = (vendedora24h[v] || 0) + 1
         }
 
-        const canal = isSinInfo(l.canal_de_contacto) ? 'Sin Info' : l.canal_de_contacto
+        const cVal = l.canal_normalizado || l.canal_de_contacto
+        const canal = isSinInfo(cVal) ? 'Sin Info' : cVal
         canales[canal] = (canales[canal] || 0) + 1
     })
 
@@ -302,7 +314,8 @@ export function prepareInsightsAndActions(leads, kpis) {
         if (faseL.includes('+24hrs')) vendedora24h[v] = (vendedora24h[v] || 0) + 1
         if (faseL.includes('perdido')) vendedoraPerdidos[v] = (vendedoraPerdidos[v] || 0) + 1
 
-        const canal = isSinInfo(l.canal_de_contacto) ? 'Sin Info' : l.canal_de_contacto
+        const cVal = l.canal_normalizado || l.canal_de_contacto
+        const canal = isSinInfo(cVal) ? 'Sin Info' : cVal
         canales[canal] = (canales[canal] || 0) + 1
 
         const origen = isSinInfo(l.como_nos_encontro) ? 'Sin Info' : l.como_nos_encontro
@@ -319,15 +332,16 @@ export function prepareInsightsAndActions(leads, kpis) {
     const fields = [
         { key: 'telefono', label: 'Teléfono' },
         { key: 'fecha_evento', label: 'Fecha Evento' },
-        { key: 'canal_de_contacto', label: 'Canal' },
+        { key: 'canal_de_contacto', label: 'Canal', val: l => l.canal_normalizado || l.canal_de_contacto },
         { key: 'como_nos_encontro', label: 'Origen' },
         { key: 'vendedora', label: 'Vendedora' },
         { key: 'salon', label: 'Salón' },
-        { key: 'evento', label: 'Evento' },
+        { key: 'evento', label: 'Evento', val: l => l.evento_normalizado || l.evento },
     ]
     let worstField = { label: 'N/A', pct: 0 }
-    fields.forEach(({ key, label }) => {
-        const missing = leads.filter(l => isSinInfo(l[key])).length
+    fields.forEach(({ key, label, val }) => {
+        const valueFn = val || (l => l[key])
+        const missing = leads.filter(l => isSinInfo(valueFn(l))).length
         const pct = Math.round((missing / total) * 100)
         if (pct > worstField.pct) worstField = { label, pct }
     })
@@ -342,7 +356,8 @@ export function prepareInsightsAndActions(leads, kpis) {
     const canalPerdidos = {}
     leads.forEach(l => {
         if ((l.fase_embudo || '').toLowerCase().includes('perdido')) {
-            const canal = isSinInfo(l.canal_de_contacto) ? 'Sin Info' : l.canal_de_contacto
+            const cVal = l.canal_normalizado || l.canal_de_contacto
+            const canal = isSinInfo(cVal) ? 'Sin Info' : cVal
             canalPerdidos[canal] = (canalPerdidos[canal] || 0) + 1
         }
     })

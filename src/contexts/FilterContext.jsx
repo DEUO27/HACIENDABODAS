@@ -126,11 +126,12 @@ export function useFilteredLeads(leads) {
                 if (!filters.vendedoras.includes(vendedora)) return false
             }
             if (filters.eventos.length > 0) {
-                const evento = isSinInfo(lead.evento) ? 'Sin Información' : lead.evento
-                if (!filters.eventos.includes(evento)) return false
+                const evento = lead.evento_normalizado || lead.evento
+                const eVal = isSinInfo(evento) ? 'Sin Información' : evento
+                if (!filters.eventos.includes(eVal)) return false
             }
             if (filters.canales.length > 0) {
-                const canal = normalizeCanal(lead.canal_de_contacto)
+                const canal = lead.canal_normalizado || normalizeCanal(lead.canal_de_contacto)
                 if (!filters.canales.includes(canal)) return false
             }
             if (filters.origenes.length > 0) {
@@ -149,10 +150,10 @@ export function useFilteredLeads(leads) {
             if (filters.datosIncompletos) {
                 const isIncomplete = isSinInfo(lead.telefono) ||
                     isSinInfo(lead.fecha_evento) ||
-                    isSinInfo(lead.canal_de_contacto) ||
+                    isSinInfo(lead.canal_normalizado || lead.canal_de_contacto) ||
                     isSinInfo(lead.como_nos_encontro) ||
                     isSinInfo(lead.salon) ||
-                    isSinInfo(lead.evento) ||
+                    isSinInfo(lead.evento_normalizado || lead.evento) ||
                     isSinInfo(lead.vendedora)
                 if (!isIncomplete) return false
             }

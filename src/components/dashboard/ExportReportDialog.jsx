@@ -181,8 +181,8 @@ export default function ExportReportDialog({
                                         <SelectValue placeholder="Selecciona motor IA" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-none border-border bg-card text-foreground">
-                                        <SelectItem value="gemini" className="focus:bg-secondary">Google Gemini 2.5 Flash</SelectItem>
-                                        <SelectItem value="openai" className="focus:bg-secondary">OpenAI GPT-5 mini</SelectItem>
+                                        <SelectItem value="gemini" className="focus:bg-secondary">Google Gemini 3 Flash</SelectItem>
+                                        <SelectItem value="openai" className="focus:bg-secondary">OpenAI GPT-4o-mini</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -206,7 +206,7 @@ export default function ExportReportDialog({
                                 <Sparkles className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-heading tracking-widest text-foreground uppercase">Resumen con IA</p>
-                                    <p className="text-xs text-muted-foreground mt-1">El reporte incluirá un análisis ejecutivo con insights usando {aiProvider === 'openai' ? 'OpenAI GPT-5 mini' : 'Google Gemini'}.</p>
+                                    <p className="text-xs text-muted-foreground mt-1">El reporte incluirá un análisis ejecutivo con insights usando {aiProvider === 'openai' ? 'OpenAI GPT-4o-mini' : 'Google Gemini 3 Flash'}.</p>
                                 </div>
                             </div>
 

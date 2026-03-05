@@ -11,14 +11,14 @@ import { es } from 'date-fns/locale'
 
 /* ─ PALETTE ─ */
 const COLORS = [
-    '#E2D4C8', // pastel beige
-    '#D8CDC4', // pastel warm gray
-    '#C4C5B9', // pastel sage green
-    '#B4BCAE', // pastel olive
-    '#A9AFA3', // muted green-gray
-    '#CFC4BD', // pastel taupe
-    '#DCE1DF', // silvery green
-    '#E8DCD1', // lighter beige
+    '#FFA6A6', // Pastel Red/Pink
+    '#A6C8FF', // Pastel Blue
+    '#A6E3B8', // Pastel Green
+    '#FFD28A', // Pastel Yellow/Orange
+    '#D7A6FF', // Pastel Purple
+    '#FFC2A6', // Pastel Peach
+    '#A6EAE3', // Pastel Teal
+    '#BAB8E8', // Pastel Indigo
 ]
 
 /* ─ SHARED ─ */
@@ -167,7 +167,7 @@ export function LeadsByCanalChart({ leads, loading }) {
     const data = useMemo(() => {
         const counts = {}
         leads.forEach((l) => {
-            const canal = normalizeCanal(l.canal_de_contacto)
+            const canal = l.canal_normalizado || normalizeCanal(l.canal_de_contacto)
             counts[canal] = (counts[canal] || 0) + 1
         })
         return Object.entries(counts)
@@ -190,7 +190,26 @@ export function LeadsByCanalChart({ leads, loading }) {
                         paddingAngle={3}
                         dataKey="value"
                         nameKey="name"
-                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        label={({ cx, cy, midAngle, outerRadius, value, name, percent }) => {
+                            const RADIAN = Math.PI / 180
+                            const radius = outerRadius * 1.15
+                            const x = cx + radius * Math.cos(-midAngle * RADIAN)
+                            const y = cy + radius * Math.sin(-midAngle * RADIAN)
+                            return (
+                                <text
+                                    x={x}
+                                    y={y}
+                                    fill="#475569"
+                                    textAnchor={x > cx ? 'start' : 'end'}
+                                    dominantBaseline="central"
+                                    fontSize={12}
+                                    fontFamily="sans-serif"
+                                    fontWeight="500"
+                                >
+                                    {`${name} (${(percent * 100).toFixed(0)}%)`}
+                                </text>
+                            )
+                        }}
                         labelLine
                     >
                         {data.map((_, i) => (
@@ -279,7 +298,8 @@ export function LeadsByEventoChart({ leads, loading }) {
     const data = useMemo(() => {
         const counts = {}
         leads.forEach((l) => {
-            const ev = isSinInfo(l.evento) ? 'Sin evento' : l.evento
+            const val = l.evento_normalizado || l.evento
+            const ev = isSinInfo(val) ? 'Sin evento' : val
             counts[ev] = (counts[ev] || 0) + 1
         })
         return Object.entries(counts)
@@ -342,15 +362,16 @@ export function DataQualityChart({ leads, loading }) {
         const fields = [
             { key: 'telefono', label: 'Teléfono' },
             { key: 'fecha_evento', label: 'Fecha Evento' },
-            { key: 'canal_de_contacto', label: 'Canal' },
+            { key: 'canal_de_contacto', label: 'Canal', val: l => l.canal_normalizado || l.canal_de_contacto },
             { key: 'como_nos_encontro', label: 'Origen' },
             { key: 'vendedora', label: 'Vendedora' },
             { key: 'salon', label: 'Salón' },
-            { key: 'evento', label: 'Evento' },
+            { key: 'evento', label: 'Evento', val: l => l.evento_normalizado || l.evento },
         ]
         const total = leads.length
-        return fields.map(({ key, label }) => {
-            const missing = leads.filter((l) => isSinInfo(l[key])).length
+        return fields.map(({ key, label, val }) => {
+            const valueFn = val || (l => l[key])
+            const missing = leads.filter((l) => isSinInfo(valueFn(l))).length
             return { name: label, value: parseFloat(((missing / total) * 100).toFixed(1)), missing, total }
         }).sort((a, b) => b.value - a.value)
     }, [leads])

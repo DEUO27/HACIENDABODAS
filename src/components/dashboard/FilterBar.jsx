@@ -21,10 +21,12 @@ import {
 import { Search, X, Filter, ChevronDown, ChevronUp } from 'lucide-react'
 
 // Helper to get unique sorted values from leads
-function getUniqueVals(leads, key, normalizer = (v) => v) {
+function getUniqueVals(leads, keyOrFn, normalizer = (v) => v) {
     const set = new Set()
+    const extractor = typeof keyOrFn === 'function' ? keyOrFn : (l) => l[keyOrFn]
     leads.forEach((l) => {
-        const val = isSinInfo(l[key]) ? 'Sin Información' : normalizer(l[key])
+        const raw = extractor(l)
+        const val = isSinInfo(raw) ? 'Sin Información' : normalizer(raw)
         set.add(val)
     })
     return Array.from(set).sort()
@@ -70,8 +72,8 @@ export default function FilterBar({ leads }) {
     const opts = useMemo(() => ({
         fases: getUniqueVals(leads, 'fase_embudo'),
         vendedoras: getUniqueVals(leads, 'vendedora'),
-        eventos: getUniqueVals(leads, 'evento'),
-        canales: getUniqueVals(leads, 'canal_de_contacto', normalizeCanal),
+        eventos: getUniqueVals(leads, l => l.evento_normalizado || l.evento),
+        canales: getUniqueVals(leads, l => l.canal_normalizado || l.canal_de_contacto, normalizeCanal),
         origenes: getUniqueVals(leads, 'como_nos_encontro'),
         salones: getUniqueVals(leads, 'salon'),
     }), [leads])

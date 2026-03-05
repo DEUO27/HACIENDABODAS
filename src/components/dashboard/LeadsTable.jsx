@@ -108,7 +108,7 @@ export default function LeadsTable({ leads, loading }) {
                                         <TableCell className="text-sm"><StatusBadge value={lead.evento} field="evento" /></TableCell>
                                         <TableCell className="text-sm"><StatusBadge value={lead.fase_embudo} field="fase_embudo" /></TableCell>
                                         <TableCell className="text-sm"><StatusBadge value={lead.vendedora} field="vendedora" /></TableCell>
-                                        <TableCell className="text-sm"><StatusBadge value={lead.canal_de_contacto} field="canal_de_contacto" /></TableCell>
+                                        <TableCell className="text-sm"><StatusBadge value={lead.canal_normalizado || lead.canal_de_contacto} field="canal_de_contacto" /></TableCell>
                                         <TableCell className="text-sm"><StatusBadge value={lead.como_nos_encontro} field="como_nos_encontro" /></TableCell>
                                         <TableCell className="text-sm"><StatusBadge value={lead.fecha_evento} field="fecha_evento" /></TableCell>
                                         <TableCell className="text-sm"><StatusBadge value={lead.telefono} field="telefono" /></TableCell>

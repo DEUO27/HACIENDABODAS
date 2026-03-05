@@ -1,5 +1,5 @@
-import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image, Font, Svg, Path, Circle, G } from '@react-pdf/renderer';
+import { logoBase64, bgBase64 } from './logoBase64';
 
 // Using standard PDF fonts (Times-Roman and Helvetica) for stability.
 // Custom TTF URLs are prone to 404s and format errors in @react-pdf/renderer.
@@ -35,17 +35,41 @@ const s = StyleSheet.create({
     page: {
         backgroundColor: C.bg,
         paddingTop: 50,
-        paddingBottom: 60,
+        paddingBottom: 50,
         paddingHorizontal: 40,
         fontFamily: 'Helvetica',
         color: C.text,
     },
     coverPage: {
-        backgroundColor: C.primary,
-        padding: 0,
-        fontFamily: 'Times-Roman',
         position: 'relative',
+        backgroundColor: '#000000', // Solid black back to help contrast
+        justifyContent: 'center',
+        paddingHorizontal: 40,
+        fontFamily: 'Times-Roman',
         overflow: 'hidden',
+    },
+    coverBackground: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: 0.8, // Increased opacity to make image pop more
+    },
+    coverOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: C.primary,
+        opacity: 0.6, // Lowered overlay to reveal image behind
+    },
+    coverInner: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 60,
     },
     /* Decorative Cover Circles */
     circle1: {
@@ -440,6 +464,82 @@ function KpiCard({ label, value, extra, highlight = false, warn = false, danger 
     );
 }
 
+/* ═══════════════════════════════════════
+   NATIVE PDF DONUT CHART (no html-to-image)
+   ═══════════════════════════════════════ */
+const PDF_CHART_COLORS = [
+    '#FFA6A6', '#A6C8FF', '#A6E3B8', '#FFD28A',
+    '#D7A6FF', '#FFC2A6', '#A6EAE3', '#BAB8E8',
+]
+
+function polarToXY(cx, cy, r, angleDeg) {
+    const rad = (angleDeg - 90) * (Math.PI / 180)
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+}
+
+function donutArcPath(cx, cy, r, innerR, startAngle, endAngle) {
+    const outerStart = polarToXY(cx, cy, r, startAngle)
+    const outerEnd = polarToXY(cx, cy, r, endAngle)
+    const innerStart = polarToXY(cx, cy, innerR, endAngle)
+    const innerEnd = polarToXY(cx, cy, innerR, startAngle)
+    const largeArc = (endAngle - startAngle) > 180 ? 1 : 0
+    return [
+        `M ${outerStart.x} ${outerStart.y}`,
+        `A ${r} ${r} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y}`,
+        `L ${innerStart.x} ${innerStart.y}`,
+        `A ${innerR} ${innerR} 0 ${largeArc} 0 ${innerEnd.x} ${innerEnd.y}`,
+        'Z'
+    ].join(' ')
+}
+
+function PdfDonutChart({ data, width = 200, height = 200 }) {
+    if (!data || data.length === 0) return null
+    const cx = width / 2
+    const cy = height / 2
+    const r = Math.min(cx, cy) * 0.72
+    const innerR = r * 0.52
+    const total = data.reduce((s, d) => s + d.count, 0)
+    if (total === 0) return null
+
+    let currentAngle = 0
+    const slices = data.map((d, i) => {
+        const pct = d.count / total
+        const startAngle = currentAngle
+        const sweep = pct * 360
+        currentAngle += sweep
+        return { ...d, pct, startAngle, endAngle: currentAngle, color: PDF_CHART_COLORS[i % PDF_CHART_COLORS.length] }
+    })
+
+    return (
+        <View style={{ alignItems: 'center', width: '100%' }}>
+            {/* Donut — compact, centered */}
+            <Svg width={width} height={height * 0.65}>
+                {slices.map((s, i) => (
+                    <Path key={i}
+                        d={donutArcPath(cx, cy * 0.65, r * 0.8, innerR * 0.8, s.startAngle, s.endAngle - 0.5)}
+                        fill={s.color}
+                    />
+                ))}
+            </Svg>
+
+            {/* Legend grid — 2 columns, all sectors shown, no clipping */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', marginTop: 6, paddingHorizontal: 4 }}>
+                {slices.map((s, i) => (
+                    <View key={i} style={{ width: '48%', flexDirection: 'row', alignItems: 'center', marginBottom: 4, marginRight: '2%' }}>
+                        <View style={{ width: 9, height: 9, backgroundColor: s.color, marginRight: 5, flexShrink: 0 }} />
+                        <Text style={{ fontSize: 8.5, color: '#333333', fontFamily: 'Helvetica', flex: 1 }}>
+                            {s.name}
+                        </Text>
+                        <Text style={{ fontSize: 8.5, color: '#666666', fontFamily: 'Helvetica', fontWeight: 700, marginLeft: 4, flexShrink: 0 }}>
+                            {Math.round(s.pct * 100)}%
+                        </Text>
+                    </View>
+                ))}
+            </View>
+        </View>
+    )
+}
+
 function ChartBlock({ title, imageData, height = 200, insight = null }) {
     if (!imageData) return null;
     return (
@@ -466,13 +566,17 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
         <Document>
             {/* ═══ PAGE 1: COVER ═══ */}
             <Page size="A4" style={s.coverPage}>
+                <Image src={bgBase64} style={s.coverBackground} />
+                <View style={s.coverOverlay} />
+
                 {/* Decorative Circles */}
                 <View style={s.circle1} />
                 <View style={s.circle2} />
                 <View style={s.circle3} />
 
                 <View style={s.coverInner}>
-                    <Text style={s.coverBrand}>Hacienda Bodas — CRM</Text>
+                    <Image src={logoBase64} style={{ width: 180, marginBottom: 20 }} />
+                    <Text style={s.coverBrand}>San Jose Actipan Hacienda — CRM</Text>
                     <Text style={s.coverTitle}>Reporte Ejecutivo</Text>
                     <Text style={s.coverTitle}>de Leads</Text>
                     <Text style={s.coverSubtitle}>{dateRangeString}</Text>
@@ -637,7 +741,17 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 <Header dateRange={dateRangeString} />
                 <Text style={s.sectionTitle}>Canales de Adquisición</Text>
                 <ChartBlock title="Top Orígenes — ¿Cómo nos encontraron?" imageData={images.top_origenes} height={220} insight={summary?.chart_insights?.top_origenes} />
-                <ChartBlock title="Leads por Canal de Contacto" imageData={images.leads_by_canal} height={220} insight={summary?.chart_insights?.leads_by_canal} />
+                {/* Native PDF donut chart — bypass html-to-image SVG text issues */}
+                <View style={[s.chartBox, { marginTop: 8 }]}>
+                    <Text style={s.chartTitle}>Leads por Canal de Contacto</Text>
+                    <PdfDonutChart data={kpis.canalBreakdown || []} width={360} height={280} />
+                    {summary?.chart_insights?.leads_by_canal && (
+                        <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>
+                            <Text style={{ fontSize: 9, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>✦ Interpretación IA</Text>
+                            <Text style={{ fontSize: 9, fontFamily: 'Helvetica', fontWeight: 400, color: C.textMid, lineHeight: 1.5 }}>{summary.chart_insights.leads_by_canal}</Text>
+                        </View>
+                    )}
+                </View>
                 <Footer generatedAt={generatedAt} />
             </Page>
 

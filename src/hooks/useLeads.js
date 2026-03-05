@@ -1,5 +1,8 @@
 import { useState, useCallback, useEffect } from 'react'
 
+import { supabase } from '@/lib/supabase'
+import { syncLeads } from '@/lib/leadService'
+
 // Global state mechanism
 let globalLeads = null
 let globalLoading = false
@@ -47,12 +50,30 @@ export function useLeads() {
         globalError = null
         notifyListeners()
 
+        // Sync with Make Webhook if forcing a refresh
+        if (force && import.meta.env.VITE_WEBHOOK_URL) {
+            try {
+                const resData = await fetch(import.meta.env.VITE_WEBHOOK_URL)
+                if (resData.ok) {
+                    const data = await resData.json()
+                    const rawLeads = data.leads || data || []
+                    const aiProvider = Number(localStorage.getItem('aiProvider')) || 0
+                    await syncLeads(rawLeads, aiProvider)
+                }
+            } catch (err) {
+                console.error('[Sync] Error during background sync from webhook:', err)
+            }
+        }
+
         try {
-            const res = await fetch(import.meta.env.VITE_WEBHOOK_URL)
-            if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`)
-            const data = await res.json()
-            const leadsData = data.leads || data || []
-            globalLeads = leadsData
+            const { data, error } = await supabase
+                .from('leads')
+                .select('*')
+                .order('fecha_primer_mensaje', { ascending: false })
+
+            if (error) throw error
+
+            globalLeads = data || []
         } catch (err) {
             globalError = err.message
         } finally {

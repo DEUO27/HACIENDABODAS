@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFilters } from '@/contexts/FilterContext'
 import { useNavigate } from 'react-router-dom'
@@ -19,6 +20,29 @@ export default function Topbar({ onRefresh, refreshing }) {
     const { setIsExportOpen } = useFilters()
     const { theme, setTheme } = useTheme()
     const navigate = useNavigate()
+
+    const [aiProvider, setAiProvider] = useState(() => Number(localStorage.getItem('aiProvider')) || 0)
+    const [isAltPressed, setIsAltPressed] = useState(false)
+    const [isHoveringRefresh, setIsHoveringRefresh] = useState(false)
+
+    useEffect(() => {
+        const handleKeyDown = (e) => { if (e.key === 'Alt') setIsAltPressed(true) }
+        const handleKeyUp = (e) => { if (e.key === 'Alt') setIsAltPressed(false) }
+        window.addEventListener('keydown', handleKeyDown)
+        window.addEventListener('keyup', handleKeyUp)
+        window.addEventListener('blur', () => setIsAltPressed(false))
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown)
+            window.removeEventListener('keyup', handleKeyUp)
+            window.removeEventListener('blur', () => setIsAltPressed(false))
+        }
+    }, [])
+
+    const handleProviderChange = (e) => {
+        const val = Number(e.target.value)
+        setAiProvider(val)
+        localStorage.setItem('aiProvider', val)
+    }
 
     const handleLogout = async () => {
         await signOut()
@@ -101,15 +125,36 @@ export default function Topbar({ onRefresh, refreshing }) {
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gestiona y analiza todos tus leads en un solo lugar.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button
-                        onClick={onRefresh}
-                        disabled={refreshing}
-                        variant="outline"
-                        className="rounded-none border-foreground px-6 py-5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900/50"
+                    <div
+                        className="relative flex items-center"
+                        onMouseEnter={() => setIsHoveringRefresh(true)}
+                        onMouseLeave={() => setIsHoveringRefresh(false)}
                     >
-                        <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </Button>
+                        {isHoveringRefresh && isAltPressed && (
+                            <div className="absolute right-full pr-2 h-full flex items-center z-50 animate-in fade-in zoom-in duration-200">
+                                <div className="flex items-center gap-2 px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded">
+                                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-widest whitespace-nowrap">AI:</span>
+                                    <select
+                                        value={aiProvider}
+                                        onChange={handleProviderChange}
+                                        className="text-xs bg-transparent border-none focus:outline-none focus:ring-0 text-slate-700 dark:text-slate-300 font-medium cursor-pointer"
+                                    >
+                                        <option value={0}>Gemini</option>
+                                        <option value={1}>OpenAI</option>
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+                        <Button
+                            onClick={onRefresh}
+                            disabled={refreshing}
+                            variant="outline"
+                            className="rounded-none border-foreground px-6 py-5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-900/50"
+                        >
+                            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
+                    </div>
                     <Button
                         onClick={() => setIsExportOpen(true)}
                         className="rounded-none bg-primary px-6 py-5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
