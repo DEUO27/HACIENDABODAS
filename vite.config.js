@@ -18,12 +18,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  optimizeDeps: {
-    include: ['xlsx'],
-  },
-  build: {
-    commonjsOptions: {
-      include: [/xlsx/, /node_modules/],
-    },
-  },
 })

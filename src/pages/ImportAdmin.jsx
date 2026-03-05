@@ -166,7 +166,7 @@ export default function ImportAdmin() {
                                     disabled={leads.length === 0}
                                     className="w-full sm:w-auto rounded-none bg-emerald-600 text-white hover:bg-emerald-700 text-xs uppercase tracking-widest disabled:opacity-50 transition-colors"
                                 >
-                                    Importar a Supabase
+                                    Importar Leads
                                 </Button>
                             </div>
                         </CardContent>
