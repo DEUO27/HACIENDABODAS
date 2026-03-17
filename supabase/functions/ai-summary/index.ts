@@ -289,6 +289,10 @@ REGLAS ESTRICTAS DE REDACCION (OBLIGATORIAS):
    - Redacta un parrafo corto (maximo 2 lineas) para interpretar cada metrica clave (tendencias, fases, canales, etc.).
    - No describas la grafica visualmente, interpreta lo que el dato significa para el negocio (ej: "El pico de leads a las 18:00 sugiere que las campanas deben reforzarse en la tarde").
 
+11. MANEJO DE DATOS DEL SISTEMA AMOCRM:
+   - Si observas el origen o canal "com.amocrm.amocrmwa", TRATALO ESTRICTAMENTE como un dato "Sin Informacion" (metadata interna del sistema que perdio su trazabilidad original).
+   - Si esto aparece en multiples leads, levanta una alerta recomendando a Operaciones corregir la captura o revisar el "como nos encontro" original.
+
 ---
 ESTRUCTURA JSON DE RESPUESTA (devuelve SOLO este JSON, sin markdown, sin texto adicional, "chart_insights" es REQUERIDO):
 {
