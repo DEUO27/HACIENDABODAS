@@ -44,7 +44,6 @@ export function normalizeTelefono(telRaw) {
  */
 const CANALES_PERMITIDOS = [
     'Sin Informacion',
-    'com.amocrm.amocrmwa',
     'WhatsApp',
     'Google',
     'TikTok',
@@ -58,14 +57,21 @@ const CANALES_PERMITIDOS = [
 export function normalizeCanalExcel(canal_de_contacto, como_nos_encontro) {
     let canal_base = 'Sin Informacion'
 
+    // Función de apoyo para también descartar el identificador interno de AmoCRM
+    const isValidCanal = (val) => {
+        if (!isValInfo(val)) return false
+        if (String(val).toLowerCase().includes('com.amocrm.amocrmwa')) return false
+        return true
+    }
+
     // Determinar canal_base
-    if (isValInfo(canal_de_contacto)) {
+    if (isValidCanal(canal_de_contacto)) {
         canal_base = String(canal_de_contacto).trim()
-    } else if (isValInfo(como_nos_encontro)) {
+    } else if (isValidCanal(como_nos_encontro)) {
         canal_base = String(como_nos_encontro).trim()
     }
 
-    if (!isValInfo(canal_base)) {
+    if (!isValidCanal(canal_base)) {
         return {
             canal_base: 'Sin Informacion',
             canal_normalizado: 'Sin Informacion',
@@ -78,11 +84,7 @@ export function normalizeCanalExcel(canal_de_contacto, como_nos_encontro) {
     let canal_razon = 'Fallback'
 
     // Reglas de prioridad
-    if (canal_base.includes('com.amocrm.amocrmwa')) {
-        canal_normalizado = 'com.amocrm.amocrmwa'
-        canal_razon = 'ExactMatch'
-    }
-    else if (testStr.includes('whatsapp') || testStr.includes('wa')) {
+    if (testStr.includes('whatsapp') || testStr.includes('wa')) {
         canal_normalizado = 'WhatsApp'
         canal_razon = 'Keyword_WhatsApp'
     }
