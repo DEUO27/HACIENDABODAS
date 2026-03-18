@@ -22,7 +22,7 @@ function StatusBadge({ value, field }) {
             return <Badge variant="outline" className="border-red-700/50 bg-red-950/30 text-red-400 text-xs">{value}</Badge>
         }
         if (value.toUpperCase().includes('+24') || value.toUpperCase().includes('NO CONTESTA')) {
-            return <Badge variant="outline" className="border-orange-700/50 bg-orange-950/30 text-orange-400 text-xs">{value}</Badge>
+            return <Badge variant="outline" className="border-orange-700/50 bg-orange-950/30 text-orange-400 text-xs">Seguimientos (NO CONTESTA)</Badge>
         }
     }
 

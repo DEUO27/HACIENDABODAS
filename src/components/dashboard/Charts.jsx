@@ -105,7 +105,10 @@ export function LeadsByFaseChart({ leads, loading }) {
     const data = useMemo(() => {
         const counts = {}
         leads.forEach((l) => {
-            const fase = isSinInfo(l.fase_embudo) ? 'Sin fase' : l.fase_embudo
+            let fase = isSinInfo(l.fase_embudo) ? 'Sin fase' : l.fase_embudo
+            if (fase.toUpperCase().includes('+24HRS')) {
+                fase = 'Seguimientos (NO CONTESTA)'
+            }
             counts[fase] = (counts[fase] || 0) + 1
         })
         return Object.entries(counts)
@@ -328,25 +331,26 @@ export function LeadsByEventoChart({ leads, loading }) {
 export function LeadsByHourChart({ leads, loading }) {
     const data = useMemo(() => {
         const hours = Array.from({ length: 24 }, (_, i) => ({
-            hour: `${String(i).padStart(2, '0')}:00`,
+            hour: i === 0 ? 'Sin Info' : `${String(i).padStart(2, '0')}:00`,
             value: 0,
         }))
         leads.forEach((l) => {
             const d = parseLeadDate(l.fecha_primer_mensaje)
             if (d) hours[d.getHours()].value += 1
         })
+        
         return hours
     }, [leads])
 
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Leads por hora del día" subtitle="Basado en primer mensaje" exportId="leads_by_hour">
+        <ChartCard title="Leads por hora del día" subtitle="Basado en primer mensaje (Escala Raíz Cuadrada)" exportId="leads_by_hour">
             <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis dataKey="hour" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis scale="sqrt" domain={[0, 'auto']} stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                     <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="value" name="Leads" fill="#D8CDC4" radius={[0, 0, 0, 0]} barSize={14} />
                 </BarChart>

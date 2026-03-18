@@ -128,11 +128,13 @@ export function normalizeCanalExcel(canal_de_contacto, como_nos_encontro) {
  * 3. Normalizador de Evento
  */
 const EVENTOS_PERMITIDOS = [
+    'Bodas',
+    'Xv años',
+    'Empresarial',
+    'Comida familiar',
+    'Bautizo / Primera comunión',
+    'Cumpleaños',
     'Graduación',
-    'Boda',
-    'Fiesta / Evento Social',
-    'Evento Corporativo',
-    'Evento Familiar',
     'Otro',
     'Sin Informacion'
 ]
@@ -152,25 +154,33 @@ export function normalizeEventoExcel(evento) {
     let evento_normalizado = 'Otro'
     let evento_razon = 'Fallback'
 
-    if (testStr.includes('boda')) {
-        evento_normalizado = 'Boda'
-        evento_razon = 'Keyword_Boda'
+    if (testStr.includes('boda') || testStr.includes('nupcial') || testStr.includes('civil') || testStr.includes('matrimonio')) {
+        evento_normalizado = 'Bodas'
+        evento_razon = 'Keyword_Bodas'
+    }
+    else if (testStr.includes('xv') || testStr.includes('15 an') || testStr.includes('quince')) {
+        evento_normalizado = 'Xv años'
+        evento_razon = 'Keyword_XV'
+    }
+    else if (testStr.includes('corporativo') || testStr.includes('empresarial') || testStr.includes('empresa') || testStr.includes('fin de an') || testStr.includes('posada') || testStr.includes('conferencia') || testStr.includes('seminario')) {
+        evento_normalizado = 'Empresarial'
+        evento_razon = 'Keyword_Empresarial'
+    }
+    else if (testStr.includes('comida') || testStr.includes('cena familiar') || testStr.includes('reunion familiar') || testStr.includes('familiar') || testStr.includes('mama') || testStr.includes('papa') || testStr.includes('sesion')) {
+        evento_normalizado = 'Comida familiar'
+        evento_razon = 'Keyword_Comida_Familiar'
+    }
+    else if (testStr.includes('bautizo') || testStr.includes('comunion') || testStr.includes('primera comunion') || testStr.includes('confirmacion') || testStr.includes('presentacion')) {
+        evento_normalizado = 'Bautizo / Primera comunión'
+        evento_razon = 'Keyword_Bautizo_Comunion'
+    }
+    else if (testStr.includes('cumple') || testStr.includes('aniversario')) {
+        evento_normalizado = 'Cumpleaños'
+        evento_razon = 'Keyword_Cumpleanos'
     }
     else if (testStr.includes('gradu') || testStr.includes('ibero')) {
         evento_normalizado = 'Graduación'
         evento_razon = 'Keyword_Graduacion'
-    }
-    else if (testStr.includes('corporativo') || testStr.includes('empresarial') || testStr.includes('empresa') || testStr.includes('fin de an')) {
-        evento_normalizado = 'Evento Corporativo'
-        evento_razon = 'Keyword_Corporativo'
-    }
-    else if (testStr.includes('bautizo') || testStr.includes('comunion') || testStr.includes('familiar') || testStr.includes('sesion') || testStr.includes('mama') || testStr.includes('papa')) {
-        evento_normalizado = 'Evento Familiar'
-        evento_razon = 'Keyword_Familiar'
-    }
-    else if (testStr.includes('xv') || testStr.includes('15') || testStr.includes('cumple') || testStr.includes('fiesta')) {
-        evento_normalizado = 'Fiesta / Evento Social'
-        evento_razon = 'Keyword_Fiesta'
     }
     else if (testStr.includes('hospedaje') || testStr.includes('hotel')) {
         evento_normalizado = 'Otro'

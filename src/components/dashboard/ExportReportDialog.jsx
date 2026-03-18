@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Loader2, Download, CheckCircle2, AlertTriangle, FileText, Sparkles, BarChart3, FileDown, Database } from 'lucide-react'
-import { captureCharts, prepareKpiData, getCriticalLeads, prepareExecutiveSummary, prepareInsightsAndActions } from '@/lib/exportUtils'
+import { captureCharts, prepareKpiData } from '@/lib/exportUtils'
 import { buildAIPayload, fetchAISummary } from '@/lib/aiSummaryService'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -28,9 +28,8 @@ export default function ExportReportDialog({
     activeFiltersState
 }) {
     const [isGenerating, setIsGenerating] = useState(false)
-    const [step, setStep] = useState('idle') // idle, preparing, ai-summary, capturing, building, downloading, done, error
+    const [step, setStep] = useState('idle')
     const [errorMsg, setErrorMsg] = useState(null)
-    const [includePhones, setIncludePhones] = useState(false)
     const [aiFallback, setAiFallback] = useState(false)
     const [aiProvider, setAiProvider] = useState('gemini')
 
@@ -43,7 +42,6 @@ export default function ExportReportDialog({
             // STEP 1: Prepare KPIs and Data
             setStep('preparing')
             const kpis = prepareKpiData(filteredLeads)
-            const criticalLeads = getCriticalLeads(filteredLeads)
 
             // Format dates
             const now = new Date()
@@ -75,36 +73,22 @@ export default function ExportReportDialog({
 
             // STEP 3: Call Gemini AI for summary (slow network request)
             setStep('ai-summary')
-            let summary, insightsActions, isAIGenerated = false
+            let summary = { chart_insights: {} }
 
             try {
                 const payloadBuilder = buildAIPayload(filteredLeads, kpis, dateRangeString)
                 const payload = { ...payloadBuilder, provider: aiProvider }
                 const aiResult = await fetchAISummary(payload)
 
-                // Use AI-generated data
                 console.log('[PDF Export] AI chart_insights received:', aiResult.chart_insights)
 
                 summary = {
-                    resumen_ejecutivo: aiResult.resumen_ejecutivo,
                     chart_insights: aiResult.chart_insights || {},
                 }
-                insightsActions = {
-                    top_insights: aiResult.top_insights,
-                    next_actions: aiResult.next_actions,
-                    impacto_esperado: aiResult.impacto_esperado,
-                    nota_comparativo: aiResult.nota_comparativo,
-                }
-                isAIGenerated = aiProvider
                 console.log('[PDF Export] AI summary generated successfully:', aiResult.model)
             } catch (aiError) {
-                console.warn('[PDF Export] AI summary failed, using rule-based fallback:', aiError)
-                console.error('[PDF Export] Full AI Error Details:', aiError.cause || aiError)
-                // Fallback to rule-based
-                summary = prepareExecutiveSummary(filteredLeads, kpis)
-                summary.chart_insights = {}
-                insightsActions = prepareInsightsAndActions(filteredLeads, kpis)
-                isAIGenerated = false
+                console.warn('[PDF Export] AI summary failed, proceeding without chart insights:', aiError)
+                summary = { chart_insights: {} }
                 setAiFallback(true)
             }
 
@@ -119,11 +103,7 @@ export default function ExportReportDialog({
                     dateRangeString={dateRangeString}
                     generatedAt={generatedAt}
                     activeFiltersText={activeFiltersText}
-                    criticalLeads={criticalLeads}
-                    includePhones={includePhones}
                     summary={summary}
-                    insightsActions={insightsActions}
-                    isAIGenerated={isAIGenerated}
                 />
             ).toBlob()
 
@@ -186,20 +166,6 @@ export default function ExportReportDialog({
                                     </SelectContent>
                                 </Select>
                             </div>
-
-                            <div className="flex items-center space-x-2">
-                                <Switch
-                                    id="full-phones"
-                                    checked={includePhones}
-                                    onCheckedChange={setIncludePhones}
-                                />
-                                <Label htmlFor="full-phones" className="text-xs uppercase tracking-widest text-muted-foreground cursor-pointer">
-                                    Incluir números de teléfono completos
-                                </Label>
-                            </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Por defecto los teléfonos se ocultan (***1234). El resumen IA no incluye datos personales.
-                            </p>
 
                             {/* AI info badge */}
                             <div className="rounded-none bg-primary/5 p-3 flex items-start gap-2 border border-primary/20">

@@ -561,7 +561,7 @@ function ChartBlock({ title, imageData, height = 200, insight = null }) {
 /* ═══════════════════════════════════════
    MAIN DOCUMENT
    ═══════════════════════════════════════ */
-export function PdfDocument({ kpis, images, dateRangeString, generatedAt, activeFiltersText, criticalLeads, includePhones, summary, insightsActions, isAIGenerated }) {
+export function PdfDocument({ kpis, images, dateRangeString, generatedAt, activeFiltersText, summary }) {
     return (
         <Document>
             {/* ═══ PAGE 1: COVER ═══ */}
@@ -586,14 +586,6 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                             <Text style={s.coverStatValue}>{kpis.total || 0}</Text>
                             <Text style={s.coverStatLabel}>Total Leads</Text>
                         </View>
-                        <View style={s.coverStat}>
-                            <Text style={s.coverStatValue}>{kpis.activos || 0}</Text>
-                            <Text style={s.coverStatLabel}>Activos</Text>
-                        </View>
-                        <View style={s.coverStat}>
-                            <Text style={s.coverStatValue}>{kpis.perdidos || 0}</Text>
-                            <Text style={s.coverStatLabel}>Perdidos</Text>
-                        </View>
                     </View>
 
                     <View style={s.coverFiltersBox}>
@@ -607,70 +599,7 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 </View>
             </Page>
 
-            {/* ═══ PAGE 2: DIAGNOSTICO EJECUTIVO ═══ */}
-            <Page size="A4" style={s.page}>
-                <Header dateRange={dateRangeString} />
 
-                <Text style={s.sectionTitle}>Diagnostico Ejecutivo</Text>
-
-                {/* AI / Fallback badge */}
-                <View style={{ flexDirection: 'row', marginBottom: 12 }}>
-                    <View style={{ backgroundColor: isAIGenerated ? C.accentLight : '#fef3c7', paddingVertical: 4, paddingHorizontal: 10 }}>
-                        <Text style={{ fontSize: 8, color: isAIGenerated ? C.primary : '#92400e', fontFamily: 'Helvetica', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-                            {isAIGenerated === 'openai' ? '✦ Generado con IA (OpenAI)' : isAIGenerated === 'gemini' ? '✦ Generado con IA (Gemini)' : '⚙ Resumen automático (fallback)'}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* ── AI Executive Summary Layout ── */}
-                {isAIGenerated && summary?.resumen_ejecutivo?.length > 0 ? (
-                    <View style={{ backgroundColor: C.white, borderWidth: 1, borderColor: C.border, padding: 18, marginBottom: 16 }}>
-                        <Text style={{ fontSize: 12, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 14, textTransform: 'uppercase', letterSpacing: 1 }}>Sintesis Global de Negocio</Text>
-                        {summary.resumen_ejecutivo.map((parrafo, i) => (
-                            <Text key={i} style={{ fontSize: 11, color: C.textMid, lineHeight: 1.6, marginBottom: 10 }}>
-                                {parrafo}
-                            </Text>
-                        ))}
-                    </View>
-                ) : (
-                    <View>
-                        {/* Headline */}
-                        <View style={{ backgroundColor: C.primary, padding: 18, marginBottom: 18 }}>
-                            <Text style={{ fontSize: 13, fontFamily: 'Times-Roman', fontWeight: 600, color: C.white, lineHeight: 1.5 }}>
-                                {summary?.headline || ''}
-                            </Text>
-                        </View>
-
-                        {/* Bullets — Qué está pasando */}
-                        <View style={{ backgroundColor: C.white, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 16 }}>
-                            <Text style={{ fontSize: 11, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Qué está pasando</Text>
-                            {(summary?.bullets || []).map((b, i) => (
-                                <Text key={i} style={{ fontSize: 9.5, color: C.textMid, lineHeight: 1.7, marginBottom: 6 }}>
-                                    •  {b}
-                                </Text>
-                            ))}
-                        </View>
-
-                        {/* Alerts */}
-                        {summary?.alerts?.length > 0 && (
-                            <View style={{ marginBottom: 16 }}>
-                                <Text style={{ fontSize: 11, fontFamily: 'Times-Roman', fontWeight: 600, color: C.danger, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>⚠ Alertas</Text>
-                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                                    {summary.alerts.map((a, i) => (
-                                        <View key={i} style={{ backgroundColor: C.dangerBg, borderWidth: 1, borderColor: C.accent, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 6 }}>
-                                            <Text style={{ fontSize: 9, color: '#991b1b', fontFamily: 'Helvetica', fontWeight: 700 }}>
-                                                ⚠  {a}
-                                            </Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-                        )}
-                    </View>
-                )}
-
-                <Footer generatedAt={generatedAt} />
-            </Page>
 
             {/* ═══ PAGE 3: RESUMEN EJECUTIVO (KPIs) ═══ */}
             <Page size="A4" style={s.page}>
@@ -682,10 +611,9 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 <View style={s.kpiGrid}>
                     <KpiCard label="Total Leads" value={kpis.total} highlight />
                     <KpiCard label="Activos" value={kpis.activos} extra={`${kpis.total ? Math.round((kpis.activos / kpis.total) * 100) : 0}% del total`} />
-                    <KpiCard label="Perdidos" value={kpis.perdidos} danger extra={`${kpis.total ? Math.round((kpis.perdidos / kpis.total) * 100) : 0}% del total`} />
                     <KpiCard label="Nuevos Hoy" value={kpis.todayCount} />
                     <KpiCard label="Nuevos (7 días)" value={kpis.weekCount} />
-                    <KpiCard label="+24HRS sin respuesta" value={kpis.noContesta} warn />
+                    <KpiCard label="Seguimientos (NO CONTESTA)" value={kpis.noContesta} warn />
                     <KpiCard label="Top Origen" value={kpis.topOrigenName} extra={`${kpis.topOrigenPct}% de los leads`} />
                     <KpiCard label="Top Vendedora" value={kpis.topVendedoraName} extra={`${kpis.topVendedoraCount} leads`} />
                     <KpiCard label="Sin Tel / Sin Fecha" value={`${kpis.pctSinTel}% / ${kpis.pctSinFecha}%`} danger />
@@ -695,7 +623,7 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 <View style={s.insightBox}>
                     <Text style={s.insightTitle}>Resumen Rápido</Text>
                     <Text style={s.insightText}>
-                        • De los {kpis.total} leads analizados, {kpis.activos} están activos y {kpis.perdidos} marcados como perdidos.
+                        • De los {kpis.total} leads analizados, {kpis.activos} se mantienen activos.
                     </Text>
                     <Text style={s.insightText}>
                         • La fuente principal de leads es "{kpis.topOrigenName}" representando el {kpis.topOrigenPct}% del total.
@@ -718,21 +646,19 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 <Footer generatedAt={generatedAt} />
             </Page >
 
-            {/* ═══ PAGE 3: TENDENCIAS ═══ */}
+             {/* ═══ PAGE 3: TENDENCIAS ═══ */}
             <Page size="A4" style={s.page}>
                 <Header dateRange={dateRangeString} />
                 <Text style={s.sectionTitle}>Tendencias de Volumen</Text>
                 <ChartBlock title="Leads por Día" imageData={images.leads_by_day} height={220} insight={summary?.chart_insights?.leads_by_day} />
-                <ChartBlock title="Leads por Hora del Día" imageData={images.leads_by_hour} height={220} insight={summary?.chart_insights?.leads_by_hour} />
                 <Footer generatedAt={generatedAt} />
             </Page>
 
-            {/* ═══ PAGE 4: PIPELINE ═══ */}
+             {/* ═══ PAGE 4: PIPELINE ═══ */}
             <Page size="A4" style={s.page}>
                 <Header dateRange={dateRangeString} />
                 <Text style={s.sectionTitle}>Pipeline y Equipo</Text>
                 <ChartBlock title="Leads por Fase del Embudo" imageData={images.leads_by_fase} height={220} insight={summary?.chart_insights?.leads_by_fase} />
-                <ChartBlock title="Leads por Vendedora" imageData={images.leads_by_vendedora} height={220} insight={summary?.chart_insights?.leads_by_vendedora} />
                 <Footer generatedAt={generatedAt} />
             </Page>
 
@@ -740,7 +666,6 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
             <Page size="A4" style={s.page}>
                 <Header dateRange={dateRangeString} />
                 <Text style={s.sectionTitle}>Canales de Adquisición</Text>
-                <ChartBlock title="Top Orígenes — ¿Cómo nos encontraron?" imageData={images.top_origenes} height={220} insight={summary?.chart_insights?.top_origenes} />
                 {/* Native PDF donut chart — bypass html-to-image SVG text issues */}
                 <View style={[s.chartBox, { marginTop: 8 }]}>
                     <Text style={s.chartTitle}>Leads por Canal de Contacto</Text>
@@ -760,166 +685,12 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 <Header dateRange={dateRangeString} />
                 <Text style={s.sectionTitle}>Evento y Calidad de Datos</Text>
                 <ChartBlock title="Leads por Tipo de Evento" imageData={images.leads_by_evento} height={210} insight={summary?.chart_insights?.leads_by_evento} />
-                <ChartBlock title="Data Quality — % Campos Faltantes" imageData={images.data_quality} height={210} insight={summary?.chart_insights?.data_quality} />
-
-                <View style={s.insightBox}>
-                    <Text style={s.insightTitle}>Recomendaciones de Captura</Text>
-                    <Text style={s.insightText}>
-                        {(kpis.pctSinTel > 15 || kpis.pctSinFecha > 15)
-                            ? '• Priorizar la recolección de teléfonos y fechas de evento de forma temprana.'
-                            : '• La calidad general de datos es buena. Mantener las prácticas actuales.'
-                        }
-                    </Text>
-                    <Text style={s.insightText}>
-                        • {kpis.pctSinTel}% sin teléfono · {kpis.pctSinFecha}% sin fecha de evento.
-                    </Text>
-                </View>
 
             </Page>
 
-            {/* ═══ INSIGHTS & NEXT ACTIONS ═══ */}
-            <Page size="A4" style={s.page}>
-                <Header dateRange={dateRangeString} />
 
-                <Text style={s.sectionTitle}>Hallazgos Estrategicos y Plan de Accion</Text>
 
-                {/* AI / Fallback badge */}
-                <View style={{ flexDirection: 'row', marginBottom: 12 }}>
-                    <View style={{ backgroundColor: isAIGenerated ? C.accentLight : '#fef3c7', paddingVertical: 4, paddingHorizontal: 10 }}>
-                        <Text style={{ fontSize: 8, color: isAIGenerated ? C.primary : '#92400e', fontFamily: 'Helvetica', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-                            {isAIGenerated === 'openai' ? '✦ Generado con IA (OpenAI)' : isAIGenerated === 'gemini' ? '✦ Generado con IA (Gemini)' : '⚙ Resumen automático (fallback)'}
-                        </Text>
-                    </View>
-                </View>
 
-                {/* ── AI Executive Layout ── */}
-                {isAIGenerated && insightsActions?.top_insights ? (
-                    <View>
-                        <View style={{ flexDirection: 'row', gap: 14 }}>
-                            {/* LEFT: Top Insights */}
-                            <View style={{ width: '48%', backgroundColor: C.white, borderWidth: 1, borderColor: C.border, padding: 14 }}>
-                                <Text style={{ fontSize: 11, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Hallazgos Priorizados</Text>
-                                {(insightsActions?.top_insights || []).map((ins, i) => (
-                                    <View key={i} style={{ marginBottom: 10 }}>
-                                        <Text style={{ fontSize: 9.5, color: C.primaryMid, fontFamily: 'Helvetica', fontWeight: 700, marginBottom: 2 }}>{ins.hallazgo}</Text>
-                                        <Text style={{ fontSize: 9, color: C.textMid, lineHeight: 1.6 }}>Impacto: {ins.impacto}</Text>
-                                    </View>
-                                ))}
-                            </View>
-
-                            {/* RIGHT: Next Actions */}
-                            <View style={{ width: '48%', backgroundColor: C.accentLight, borderWidth: 1, borderColor: C.accent, padding: 14 }}>
-                                <Text style={{ fontSize: 11, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Plan de Accion Inmediato</Text>
-                                {(insightsActions?.next_actions || []).map((act, i) => (
-                                    <View key={i} style={{ marginBottom: 10, backgroundColor: C.white, padding: 8, borderWidth: 1, borderColor: C.border }}>
-                                        <Text style={{ fontSize: 9.5, color: C.primary, fontFamily: 'Helvetica', fontWeight: 700, marginBottom: 2 }}>{act.accion}</Text>
-                                        <Text style={{ fontSize: 8.5, color: C.textMid, marginTop: 2 }}>Responsable: <Text style={{ fontFamily: 'Helvetica', fontWeight: 700 }}>{act.responsable}</Text></Text>
-                                        <Text style={{ fontSize: 8.5, color: C.textMid }}>Meta: <Text style={{ fontFamily: 'Helvetica', fontWeight: 700 }}>{act.meta}</Text></Text>
-                                        <Text style={{ fontSize: 8.5, color: C.textMid }}>Plazo: <Text style={{ fontFamily: 'Helvetica', fontWeight: 700 }}>{act.tiempo}</Text></Text>
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-
-                        {/* Impacto Esperado */}
-                        {insightsActions.impacto_esperado && (
-                            <View style={{ marginTop: 14, backgroundColor: C.accentLight, borderWidth: 1, borderColor: C.accent, padding: 14 }}>
-                                <Text style={{ fontSize: 10, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Impacto Proyectado</Text>
-                                <Text style={{ fontSize: 9.5, color: C.textMid, lineHeight: 1.5 }}>{insightsActions.impacto_esperado}</Text>
-                            </View>
-                        )}
-
-                        {/* Comparativo */}
-                        {insightsActions.nota_comparativo && (
-                            <View style={{ marginTop: 8, paddingHorizontal: 4 }}>
-                                <Text style={{ fontSize: 8.5, color: C.textLight }}>* Nota: {insightsActions.nota_comparativo}</Text>
-                            </View>
-                        )}
-                    </View>
-                ) : (
-                    <View style={{ flexDirection: 'row', gap: 14 }}>
-                        {/* LEFT: Top Insights */}
-                        <View style={{ width: '48%', backgroundColor: C.white, borderWidth: 1, borderColor: C.border, padding: 14 }}>
-                            <Text style={{ fontSize: 11, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Top Insights</Text>
-                            {(insightsActions?.insights || []).map((ins, i) => (
-                                <View key={i} style={{ flexDirection: 'row', marginBottom: 8 }}>
-                                    <Text style={{ fontSize: 9, color: C.accent, fontFamily: 'Helvetica', fontWeight: 700, marginRight: 6 }}>▸</Text>
-                                    <Text style={{ fontSize: 9, color: C.textMid, lineHeight: 1.6, flex: 1 }}>{ins}</Text>
-                                </View>
-                            ))}
-                        </View>
-
-                        {/* RIGHT: Next Actions */}
-                        <View style={{ width: '48%', backgroundColor: C.accentLight, borderWidth: 1, borderColor: C.accent, padding: 14 }}>
-                            <Text style={{ fontSize: 11, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Plan de Acción</Text>
-                            {(insightsActions?.actions || []).map((act, i) => (
-                                <View key={i} style={{ flexDirection: 'row', marginBottom: 8, alignItems: 'flex-start' }}>
-                                    <Text style={{ fontSize: 9, color: C.primary, fontFamily: 'Helvetica', fontWeight: 700, marginRight: 6 }}>☐</Text>
-                                    <Text style={{ fontSize: 9, color: C.primaryMid, lineHeight: 1.6, flex: 1 }}>{act}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-                )}
-
-                <Footer generatedAt={generatedAt} />
-            </Page >
-
-            {/* ═══ PAGE 7+: ANEXO — TABLA DE LEADS ═══ */}
-            {
-                criticalLeads && criticalLeads.length > 0 && (
-                    <Page size="A4" style={s.page} orientation="landscape">
-                        <Header dateRange={dateRangeString} />
-
-                        <Text style={s.sectionTitle}>Anexo: Leads Críticos y Recientes</Text>
-                        <Text style={s.sectionSubtitle}>Top {criticalLeads.length} leads priorizados por urgencia y fecha de creación</Text>
-
-                        <View style={s.table}>
-                            <View style={s.tableHeader}>
-                                <Text style={[s.tc1, s.tableHeaderCell]}>ID</Text>
-                                <Text style={[s.tc2, s.tableHeaderCell]}>Nombre</Text>
-                                <Text style={[s.tc3, s.tableHeaderCell]}>Vendedora</Text>
-                                <Text style={[s.tc4, s.tableHeaderCell]}>Fase</Text>
-                                <Text style={[s.tc5, s.tableHeaderCell]}>Teléfono</Text>
-                                <Text style={[s.tc6, s.tableHeaderCell]}>Evento / Salón</Text>
-                                <Text style={[s.tc7, s.tableHeaderCell]}>Fecha</Text>
-                            </View>
-
-                            {criticalLeads.map((lead, i) => {
-                                const isAlert = (lead.fase_embudo || '').toLowerCase().includes('+24hrs');
-                                const isLost = (lead.fase_embudo || '').toLowerCase().includes('perdido');
-                                const rowStyle = i % 2 === 0 ? s.tableRow : s.tableRowAlt;
-
-                                return (
-                                    <View key={i} style={rowStyle} wrap={false}>
-                                        <Text style={[s.tc1, s.tableCell]}>{lead.lead_id}</Text>
-                                        <Text style={[s.tc2, s.tableCell]}>{(lead.nombre || '').substring(0, 22)}</Text>
-                                        <Text style={[s.tc3, s.tableCell]}>{lead.vendedora || 'N/A'}</Text>
-                                        <Text style={[
-                                            s.tc4,
-                                            s.tableCell,
-                                            isAlert ? s.badgeWarn : (isLost ? s.badgeDanger : {})
-                                        ]}>
-                                            {lead.fase_embudo || 'N/A'}
-                                        </Text>
-                                        <Text style={[s.tc5, s.tableCell]}>
-                                            {includePhones ? (lead.telefono || 'N/A') : '***' + String(lead.telefono || '').slice(-4)}
-                                        </Text>
-                                        <Text style={[s.tc6, s.tableCell]}>
-                                            {(lead.evento || 'N/A')} — {(lead.salon || '').substring(0, 12)}
-                                        </Text>
-                                        <Text style={[s.tc7, s.tableCell]}>
-                                            {(lead.fecha_primer_mensaje || '').split('T')[0]}
-                                        </Text>
-                                    </View>
-                                );
-                            })}
-                        </View>
-
-                        <Footer generatedAt={generatedAt} />
-                    </Page>
-                )
-            }
         </Document >
     );
 }

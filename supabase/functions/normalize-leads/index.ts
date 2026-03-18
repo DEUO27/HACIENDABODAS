@@ -310,11 +310,13 @@ PREPROCESAMIENTO B
 
 REGLA B2: NORMALIZAR evento_base A UNA CATEGORÍA (evento_normalizado)
 Categorías permitidas (solo estas):
+- Bodas
+- Xv años
+- Empresarial
+- Comida familiar
+- Bautizo / Primera comunión
+- Cumpleaños
 - Graduación
-- Boda
-- Fiesta / Evento Social
-- Evento Corporativo
-- Evento Familiar
 - Otro
 - Sin Informacion
 
@@ -323,32 +325,40 @@ PRIORIDAD B (aplica la primera que haga match)
    → evento_normalizado = "Sin Informacion"
    → evento_razon = "match: sin info"
 
-2) Si t_clean contiene "boda"
-   → evento_normalizado = "Boda"
-   → evento_razon = "match: boda"
+2) Si t_clean contiene "boda" o "nupcial" o "civil" (en contexto de boda) o "matrimonio"
+   → evento_normalizado = "Bodas"
+   → evento_razon = "match: boda/nupcial/matrimonio"
 
-3) Si t_clean contiene "gradu" (graduacion/graduación) o contiene "ibero" junto a contexto de graduación
+3) Si t_clean contiene "xv" o "15 años"/"15 anos" o "quince"
+   → evento_normalizado = "Xv años"
+   → evento_razon = "match: xv/quince"
+
+4) Si t_clean contiene "corporativo" o "empresarial" o "empresa" o "fin de año"/"fin de ano" o "posada" o "conferencia" o "seminario"
+   → evento_normalizado = "Empresarial"
+   → evento_razon = "match: corporativo/empresarial"
+
+5) Si t_clean contiene "comida" o "cena familiar" o "reunion familiar" o "familiar" o "sesion de fotos"
+   o referencias claras familiares (ej. "mi mamá", "mi mama", "mi papa")
+   → evento_normalizado = "Comida familiar"
+   → evento_razon = "match: comida/familiar"
+
+6) Si t_clean contiene "bautizo" o "comunion"/"comunión" o "primera comunion" o "confirmacion" o "presentacion"
+   → evento_normalizado = "Bautizo / Primera comunión"
+   → evento_razon = "match: bautizo/comunión"
+
+7) Si t_clean contiene "cumple" o "cumpleaños"/"cumpleanos" o "aniversario"
+   → evento_normalizado = "Cumpleaños"
+   → evento_razon = "match: cumpleaños/aniversario"
+
+8) Si t_clean contiene "gradu" (graduacion/graduación) o contiene "ibero" junto a contexto de graduación
    → evento_normalizado = "Graduación"
    → evento_razon = "match: gradu/ibero"
 
-4) Si t_clean contiene "corporativo" o "empresarial" o "empresa" o "fin de año" / "fin de ano"
-   → evento_normalizado = "Evento Corporativo"
-   → evento_razon = "match: corporativo/empresarial"
-
-5) Si t_clean contiene "bautizo" o "comunion"/"comunión" o "familiar" o "sesion de fotos"
-   o referencias claras familiares (ej. "mi mamá", "mi mama", "mi papa")
-   → evento_normalizado = "Evento Familiar"
-   → evento_razon = "match: familiar/bautizo/comunión"
-
-6) Si t_clean contiene "xv" o "15 años"/"15 anos" o "cumple" o "cumpleaños"/"cumpleanos" o "fiesta"
-   → evento_normalizado = "Fiesta / Evento Social"
-   → evento_razon = "match: fiesta/xv/cumple"
-
-7) Si t_clean contiene "hospedaje" o "hotel" o "solo hotel"
+9) Si t_clean contiene "hospedaje" o "hotel" o "solo hotel"
    → evento_normalizado = "Otro"
    → evento_razon = "match: hotel/hospedaje"
 
-8) En cualquier otro caso
+10) En cualquier otro caso
    → evento_normalizado = "Otro"
    → evento_razon = "fallback: otro"
 
@@ -360,19 +370,19 @@ Ejemplo 1:
 canal_de_contacto="Sin Informacion", como_nos_encontro="Tik Tok"
 evento="XV Años"
 → canal_base="Tik Tok" → canal_normalizado="TikTok"
-→ evento_base="XV Años" → evento_normalizado="Fiesta / Evento Social"
+→ evento_base="XV Años" → evento_normalizado="Xv años"
 
 Ejemplo 2:
 canal_de_contacto="WhatsApp", como_nos_encontro="Google"
 evento="Boda civil"
 → canal_base="WhatsApp" → canal_normalizado="WhatsApp"
-→ evento_base="Boda civil" → evento_normalizado="Boda"
+→ evento_base="Boda civil" → evento_normalizado="Bodas"
 
 Ejemplo 3:
 canal_de_contacto="Sin Informacion", como_nos_encontro="Publicidad en Facebook"
 evento="Cena de fin de año (corporativo) - 550 asistentes"
 → canal_base="Publicidad en Facebook" → canal_normalizado="Facebook"
-→ evento_base="Cena de fin de año (corporativo) - 550 asistentes" → evento_normalizado="Evento Corporativo"
+→ evento_base="Cena de fin de año (corporativo) - 550 asistentes" → evento_normalizado="Empresarial"
 
 Ejemplo 4:
 canal_de_contacto="Sin Informacion", como_nos_encontro="Bodas.com"

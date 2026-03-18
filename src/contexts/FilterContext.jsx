@@ -6,7 +6,7 @@ const FilterContext = createContext(null)
 
 const initialFilters = {
     search: '',
-    dateRange: 'all',
+    dateRange: '30d',
     customFrom: null,
     customTo: null,
     fases: [],

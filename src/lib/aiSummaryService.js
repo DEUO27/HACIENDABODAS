@@ -15,54 +15,33 @@ import { format } from 'date-fns'
 export function buildAIPayload(leads, kpis, dateRangeString) {
     const total = leads.length
 
-    // ── Trends: by day and by hour ──
+    // ── Trends: leads by day ──
     const byDay = {}
-    const byHour = {}
     leads.forEach(l => {
         const d = parseLeadDate(l.fecha_primer_mensaje)
         if (d) {
             const dayStr = format(d, 'yyyy-MM-dd')
-            const hourStr = format(d, 'HH:00')
             byDay[dayStr] = (byDay[dayStr] || 0) + 1
-            byHour[hourStr] = (byHour[hourStr] || 0) + 1
         }
     })
 
-    // Sort and keep most relevant trends (max 10 days for prompt brevity)
     const trendPorDia = Object.entries(byDay)
         .sort((a, b) => b[0].localeCompare(a[0]))
         .slice(0, 10)
         .reverse()
         .map(([date, count]) => ({ date, count }))
 
-    const trendPorHora = Object.entries(byHour)
-        .sort((a, b) => b[1] - a[1]) // highest traffic hours first
-        .slice(0, 5)
-        .map(([hour, count]) => ({ hora: hour, count }))
-
-    // ── Pipeline breakdown ──
+    // ── Pipeline breakdown (fases del embudo) ──
     const pipeline = {}
     leads.forEach(l => {
         const fase = isSinInfo(l.fase_embudo) ? 'Sin fase' : l.fase_embudo
         pipeline[fase] = (pipeline[fase] || 0) + 1
     })
-    // Convert to { fase: count, pct: % }
     const pipelineArr = Object.entries(pipeline)
         .sort((a, b) => b[1] - a[1])
         .map(([fase, count]) => ({ fase, count, pct: Math.round((count / total) * 100) }))
 
-    // ── Acquisition: top origenes ──
-    const origenes = {}
-    leads.forEach(l => {
-        const o = isSinInfo(l.como_nos_encontro) ? 'Sin Info' : l.como_nos_encontro
-        origenes[o] = (origenes[o] || 0) + 1
-    })
-    const topOrigenes = Object.entries(origenes)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([name, count]) => ({ name, count, pct: Math.round((count / total) * 100) }))
-
-    // ── Acquisition: top canales ──
+    // ── Canales de contacto ──
     const canales = {}
     leads.forEach(l => {
         const rawC = l.canal_normalizado || l.canal_de_contacto
@@ -71,10 +50,10 @@ export function buildAIPayload(leads, kpis, dateRangeString) {
     })
     const topCanales = Object.entries(canales)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
+        .slice(0, 5)
         .map(([name, count]) => ({ name, count, pct: Math.round((count / total) * 100) }))
 
-    // ── Events: top tipos ──
+    // ── Tipos de evento ──
     const eventos = {}
     leads.forEach(l => {
         const rawE = l.evento_normalizado || l.evento
@@ -86,65 +65,8 @@ export function buildAIPayload(leads, kpis, dateRangeString) {
         .slice(0, 5)
         .map(([name, count]) => ({ name, count, pct: Math.round((count / total) * 100) }))
 
-    // ── Team: vendedoras by volume ──
-    const vendedoraVol = {}
-    const vendedora24h = {}
-    leads.forEach(l => {
-        const v = isSinInfo(l.vendedora) ? 'Sin Asignar' : l.vendedora
-        vendedoraVol[v] = (vendedoraVol[v] || 0) + 1
-        if ((l.fase_embudo || '').toLowerCase().includes('+24hrs')) {
-            vendedora24h[v] = (vendedora24h[v] || 0) + 1
-        }
-    })
-    const porVolumen = Object.entries(vendedoraVol)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([name, count]) => ({ name, count }))
-    const por24h = Object.entries(vendedora24h)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([name, count]) => ({ name, count }))
-
-    // ── Data Quality: % missing per field ──
-    const fieldsToCheck = [
-        { key: 'telefono', label: 'telefono' },
-        { key: 'fecha_evento', label: 'fecha_evento' },
-        { key: 'como_nos_encontro', label: 'origen' },
-        { key: 'salon', label: 'salon' },
-        { key: 'vendedora', label: 'vendedora' },
-        { key: 'canal_de_contacto', label: 'canal', val: l => l.canal_normalizado || l.canal_de_contacto },
-        { key: 'evento', label: 'evento', val: l => l.evento_normalizado || l.evento },
-    ]
-    const dataQuality = {}
-    fieldsToCheck.forEach(({ key, label, val }) => {
-        const valueFn = val || (l => l[key])
-        const missing = leads.filter(l => isSinInfo(valueFn(l))).length
-        dataQuality[label] = Math.round((missing / total) * 100)
-    })
-
-    // ── Alerts flags ──
+    // ── Seguimientos (NO CONTESTA) ──
     const pct24h = total ? Math.round((kpis.noContesta / total) * 100) : 0
-    const alerts = {
-        pct_no_contesta: pct24h,
-        pct_no_contesta_alto: pct24h >= 10,
-        pct_missing_phone: kpis.pctSinTel,
-        pct_missing_phone_alto: kpis.pctSinTel >= 20,
-        pct_missing_event_date: kpis.pctSinFecha,
-        pct_missing_event_date_alto: kpis.pctSinFecha >= 25,
-        total_perdidos: kpis.perdidos,
-        pct_perdidos: total ? Math.round((kpis.perdidos / total) * 100) : 0,
-    }
-
-    // ── Critical leads (anonymized) ──
-    const criticalExamples = leads
-        .filter(l => (l.fase_embudo || '').toLowerCase().includes('+24hrs'))
-        .slice(0, 5)
-        .map(l => ({
-            lead_id: l.lead_id,
-            fase_embudo: l.fase_embudo,
-            created_at: (l.fecha_primer_mensaje || '').split('T')[0],
-            missing_fields: fieldsToCheck.filter(({ key }) => isSinInfo(l[key])).map(f => f.label),
-        }))
 
     return {
         timeframe: dateRangeString,
@@ -153,25 +75,15 @@ export function buildAIPayload(leads, kpis, dateRangeString) {
             nuevos_hoy: kpis.todayCount,
             nuevos_7d: kpis.weekCount,
             activos: kpis.activos,
-            perdidos: kpis.perdidos,
+            seguimientos_no_contesta: kpis.noContesta,
+            pct_no_contesta: pct24h,
         },
         trends: {
             ultimos_10_dias: trendPorDia,
-            horas_pico: trendPorHora,
         },
         pipeline: pipelineArr,
-        acquisition: {
-            top_origenes: topOrigenes,
-            top_canales: topCanales,
-        },
-        events: { top_eventos: topEventos },
-        team: {
-            por_volumen: porVolumen,
-            por_24h: por24h,
-        },
-        data_quality: dataQuality,
-        alerts,
-        examples: criticalExamples,
+        canales: topCanales,
+        eventos: topEventos,
     }
 }
 
@@ -195,14 +107,9 @@ export async function fetchAISummary(payload) {
         throw new Error(data.details ? `${errMsg} - ${data.details}` : errMsg)
     }
 
-    // Validate response shape
+    // Only chart_insights are used in the PDF
     return {
-        resumen_ejecutivo: Array.isArray(data.resumen_ejecutivo) ? data.resumen_ejecutivo : [],
-        top_insights: Array.isArray(data.top_insights) ? data.top_insights : [],
-        next_actions: Array.isArray(data.next_actions) ? data.next_actions : [],
         chart_insights: data.chart_insights || {},
-        impacto_esperado: data.impacto_esperado || '',
-        nota_comparativo: data.nota_comparativo || '',
         generated_at: data.generated_at || new Date().toISOString(),
         model: data.model || 'gemini',
     }

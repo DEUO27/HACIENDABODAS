@@ -81,7 +81,7 @@ export default function FilterBar({ leads }) {
     // Count active filters for "Active Filters" chip display
     const activeCount =
         (filters.search ? 1 : 0) +
-        (filters.dateRange !== 'all' ? 1 : 0) +
+        (filters.dateRange !== '30d' ? 1 : 0) +
         filters.fases.length +
         filters.vendedoras.length +
         filters.eventos.length +
@@ -178,7 +178,7 @@ export default function FilterBar({ leads }) {
                                 className={`cursor-pointer rounded-none px-4 py-1.5 text-xs font-medium tracking-wide transition-colors ${filters.solo24h ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground hover:bg-secondary/50'
                                     }`}
                             >
-                                Solo +24HRS
+                                Solo Seguimientos
                             </Badge>
 
                             <Badge

@@ -647,7 +647,7 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="Atendiendo">Atendiendo</SelectItem>
-                                                        <SelectItem value="+24HRS (NO CONTESTA)">+24HRS (NO CONTESTA)</SelectItem>
+                                                        <SelectItem value="+24HRS (NO CONTESTA)">Seguimientos (NO CONTESTA)</SelectItem>
                                                         <SelectItem value="ENVIADO CON VENDEDORA">ENVIADO CON VENDEDORA</SelectItem>
                                                         <SelectItem value="Venta Perdido">Venta Perdido</SelectItem>
                                                         <SelectItem value="Otros">Otros</SelectItem>
@@ -807,7 +807,7 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Atendiendo">Atendiendo</SelectItem>
-                                            <SelectItem value="+24HRS (NO CONTESTA)">+24HRS (NO CONTESTA)</SelectItem>
+                                            <SelectItem value="+24HRS (NO CONTESTA)">Seguimientos (NO CONTESTA)</SelectItem>
                                             <SelectItem value="ENVIADO CON VENDEDORA">ENVIADO CON VENDEDORA</SelectItem>
                                             <SelectItem value="Venta Perdido">Venta Perdido</SelectItem>
                                             <SelectItem value="Otros">Otros</SelectItem>
@@ -1016,28 +1016,19 @@ export default function Dashboard() {
 
                 {/* ─── OVERVIEW ─── */}
                 <TabsContent value="overview" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
-                    {/* Row 1: Leads/day + Reminders + Recent leads */}
+                    {/* Row 1: Leads/day + Recent leads */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                        <div className="lg:col-span-5">
+                        <div className="lg:col-span-7">
                             <LeadsByDayChart leads={filteredLeads} loading={loading} />
                         </div>
-                        <div className="lg:col-span-3">
-                            <RemindersCard leads={filteredLeads} onSelectLead={handleSelectLead} />
-                        </div>
-                        <div className="lg:col-span-4">
+                        <div className="lg:col-span-5">
                             <RecentLeadsList leads={filteredLeads} allLeads={apiLeads} onSelectLead={handleSelectLead} onLeadAdded={() => refresh(true)} />
                         </div>
                     </div>
 
-                    {/* Row 2: Team + Pipeline donut + Data quality widget */}
+                    {/* Row 2: Data quality widget full width */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                        <div className="lg:col-span-5">
-                            <TeamCard leads={filteredLeads} />
-                        </div>
-                        <div className="lg:col-span-3">
-                            <PipelineDonut leads={filteredLeads} loading={loading} />
-                        </div>
-                        <div className="lg:col-span-4">
+                        <div className="lg:col-span-12">
                             <DataQualityCard leads={filteredLeads} />
                         </div>
                     </div>
@@ -1085,8 +1076,7 @@ export default function Dashboard() {
 
                 {/* ─── DATA QUALITY ─── */}
                 <TabsContent value="dataquality" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        <LeadsByEventoChart leads={filteredLeads} loading={hasInitialLoading} />
+                    <div className="grid grid-cols-1 gap-4">
                         <DataQualityChart leads={filteredLeads} loading={hasInitialLoading} />
                     </div>
                 </TabsContent>

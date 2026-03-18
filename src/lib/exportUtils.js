@@ -40,7 +40,10 @@ export async function captureCharts() {
     })
 
     // Force explicit dimensions on chart containers so Recharts NEVER calculates 0
-    const chartNodes = document.querySelectorAll('[data-export-id]')
+    const allNodes = document.querySelectorAll('[data-export-id]')
+    const chartNodes = Array.from(allNodes).filter(n => 
+        ['leads_by_day', 'leads_by_fase', 'leads_by_evento'].includes(n.getAttribute('data-export-id'))
+    )
     const nodeRestorations = []
 
     chartNodes.forEach(node => {

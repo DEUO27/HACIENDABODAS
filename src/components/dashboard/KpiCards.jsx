@@ -15,12 +15,7 @@ const kpiDefs = [
     { key: 'today', label: 'Nuevos (hoy)', icon: TrendingUp, color: 'blue' },
     { key: 'week', label: 'Nuevos (7 días)', icon: TrendingUp, color: 'cyan' },
     { key: 'activos', label: 'Activos', icon: UserCheck, color: 'emerald' },
-    { key: 'perdidos', label: 'Perdidos', icon: UserX, color: 'red' },
-    { key: 'noContesta', label: '+24HRS No Contesta', icon: Clock, color: 'amber' },
-    { key: 'sinTel', label: 'Sin Teléfono', icon: PhoneMissed, color: 'orange' },
-    { key: 'sinFecha', label: 'Sin Fecha Evento', icon: CalendarOff, color: 'orange' },
-    { key: 'origenDesc', label: '% Origen Desconocido', icon: HelpCircle, color: 'slate', pct: true },
-    { key: 'salonIndeciso', label: '% Salón Indeciso', icon: MapPin, color: 'slate', pct: true },
+    { key: 'noContesta', label: 'Seguimientos (NO CONTESTA)', icon: Clock, color: 'amber' },
 ]
 
 function computeKpis(leads) {
@@ -35,10 +30,6 @@ function computeKpis(leads) {
     let activos = 0
     let perdidos = 0
     let noContesta = 0
-    let sinTel = 0
-    let sinFecha = 0
-    let origenDesc = 0
-    let salonIndeciso = 0
 
     leads.forEach((l) => {
         const d = parseLeadDate(l.fecha_primer_mensaje)
@@ -50,12 +41,6 @@ function computeKpis(leads) {
         else activos++
 
         if (fase.includes('+24hrs') || fase.includes('no contesta')) noContesta++
-        if (isSinInfo(l.telefono)) sinTel++
-        if (isSinInfo(l.fecha_evento)) sinFecha++
-        if (isSinInfo(l.como_nos_encontro)) origenDesc++
-
-        const salon = (l.salon || '').toLowerCase()
-        if (isSinInfo(l.salon) || salon.includes('no est')) salonIndeciso++
     })
 
     return {
@@ -65,10 +50,6 @@ function computeKpis(leads) {
         activos,
         perdidos,
         noContesta,
-        sinTel,
-        sinFecha,
-        origenDesc: total ? Math.round((origenDesc / total) * 100) : 0,
-        salonIndeciso: total ? Math.round((salonIndeciso / total) * 100) : 0,
     }
 }
 
