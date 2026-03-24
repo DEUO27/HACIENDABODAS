@@ -1,0 +1,28 @@
+[
+  {
+    "lead_id": 40081842,
+    "nombre": "Nicté Cortés",
+    "canal_de_contacto": "com.amocrm.amocrmwa",
+    "evento": "Boda",
+    "como_nos_encontro": "Instagram",
+    "fecha_evento": "19.12.2026",
+    "telefono": "2222055314",
+    "fase_embudo": "Atendiendo",
+    "fecha_primer_mensaje": "19/03/2026",
+    "vendedora": "Sin Informacion",
+    "salon": "Sin Informacion"
+  },
+  {
+    "lead_id": 39880764,
+    "nombre": "Erika Benítez",
+    "canal_de_contacto": "com.amocrm.amocrmwa",
+    "evento": "XV años",
+    "como_nos_encontro": "Facebook",
+    "fecha_evento": "11 sept 2027",
+    "telefono": "5579461133",
+    "fase_embudo": "Atendiendo",
+    "fecha_primer_mensaje": "17/03/2026",
+    "vendedora": "Sin Informacion",
+    "salon": "Sin Informacion"
+  }
+]

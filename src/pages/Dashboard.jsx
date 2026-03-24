@@ -206,7 +206,7 @@ function RecentLeadsList({ leads, allLeads, onSelectLead, onLeadAdded }) {
                                 <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">{d ? format(d, 'dd MMM', { locale: es }) : 'Sin fecha'}</p>
                             </div>
                             <Badge className={`rounded-full text-xs font-medium ${faseColor(lead.fase_embudo)}`}>
-                                {(lead.fase_embudo || 'Sin fase').split(' ').slice(0, 2).join(' ')}
+                                {(lead.fase_embudo || '').toLowerCase().includes('+24hrs') ? 'Seguimientos (NO CONTESTA)' : (lead.fase_embudo || 'Sin fase').split(' ').slice(0, 2).join(' ')}
                             </Badge>
                         </button>
                     )
@@ -390,7 +390,7 @@ function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
         if (field === 'fase_embudo') {
             const f = (value || '').toLowerCase()
             if (f.includes('perdido')) return <Badge className="rounded-full bg-red-100 dark:bg-red-900/30 text-xs text-red-700 dark:text-red-400">Perdido</Badge>
-            if (f.includes('+24hrs')) return <Badge className="rounded-none bg-secondary text-xs text-foreground uppercase tracking-widest border border-border">+24H</Badge>
+            if (f.includes('+24hrs')) return <Badge className="rounded-full bg-amber-100 dark:bg-amber-900/30 text-xs text-amber-700 dark:text-amber-400">Seguimientos (NO CONTESTA)</Badge>
             if (f.includes('contrato')) return <Badge className="rounded-none bg-primary text-xs text-primary-foreground uppercase tracking-widest">{value}</Badge>
             return <Badge className="rounded-full bg-blue-100 dark:bg-blue-900/30 text-xs text-blue-700 dark:text-blue-400">{value}</Badge>
         }

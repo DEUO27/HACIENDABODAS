@@ -8,10 +8,10 @@ import {
     Users, UserCheck, UserX, PhoneOff, CalendarOff,
     Clock, PhoneMissed, HelpCircle, MapPin, TrendingUp, TrendingDown,
 } from 'lucide-react'
-import { isToday, subDays, isAfter } from 'date-fns'
+import { isToday, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns'
 
 const kpiDefs = [
-    { key: 'total', label: 'Total Leads', icon: Users, color: 'emerald', hero: true },
+    { key: 'total', label: 'Total Leads (30 Días)', icon: Users, color: 'emerald', hero: true },
     { key: 'today', label: 'Nuevos (hoy)', icon: TrendingUp, color: 'blue' },
     { key: 'week', label: 'Nuevos (7 días)', icon: TrendingUp, color: 'cyan' },
     { key: 'activos', label: 'Activos', icon: UserCheck, color: 'emerald' },
@@ -23,7 +23,12 @@ function computeKpis(leads) {
     if (!total) return {}
 
     const now = new Date()
-    const sevenAgo = subDays(now, 7)
+    const todayBegin = startOfDay(now)
+    const sevenAgo = subDays(todayBegin, 7)
+    const end = endOfDay(now)
+    
+    // Create interval objects exactly like FilterContext
+    const weekInterval = { start: sevenAgo, end }
 
     let todayCount = 0
     let weekCount = 0
@@ -34,7 +39,7 @@ function computeKpis(leads) {
     leads.forEach((l) => {
         const d = parseLeadDate(l.fecha_primer_mensaje)
         if (d && isToday(d)) todayCount++
-        if (d && isAfter(d, sevenAgo)) weekCount++
+        if (d && isWithinInterval(d, weekInterval)) weekCount++
 
         const fase = (l.fase_embudo || '').toLowerCase()
         if (fase.includes('perdido')) perdidos++

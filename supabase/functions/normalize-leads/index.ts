@@ -14,7 +14,7 @@ interface AIProvider {
 // ------------------------------------------------------------------
 class GeminiProvider implements AIProvider {
   private apiKey: string;
-  private apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  private apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -34,7 +34,7 @@ class GeminiProvider implements AIProvider {
     };
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    const timeout = setTimeout(() => controller.abort(), 120000); // 120s timeout
 
     try {
       const response = await fetch(`${this.apiUrl}?key=${this.apiKey}`, {
@@ -96,7 +96,7 @@ class OpenAIProvider implements AIProvider {
     };
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    const timeout = setTimeout(() => controller.abort(), 120000); // 120s timeout
 
     try {
       const response = await fetch(this.apiUrl, {

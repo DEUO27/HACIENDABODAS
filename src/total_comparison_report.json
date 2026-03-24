@@ -1,0 +1,407 @@
+{
+  "totalN8n": 822,
+  "totalSupabase": 879,
+  "coinciden": 822,
+  "faltantesEnSupabase": 0,
+  "enSupabaseNoEnN8n": [
+    {
+      "lead_id": "90376566",
+      "nombre": "Cintia Vázquez",
+      "fecha_primer_mensaje": "2026-03-19T03:19:36.565Z",
+      "created_at": "2026-03-19T03:19:43.480992+00:00",
+      "vendedora": "María Raquel Espina"
+    },
+    {
+      "lead_id": "50392988",
+      "nombre": "Fabiola Paz",
+      "fecha_primer_mensaje": "2026-03-19T19:59:52.984Z",
+      "created_at": "2026-03-19T19:59:59.618854+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "50445749",
+      "nombre": "Samantha Carro",
+      "fecha_primer_mensaje": "2026-03-19T20:00:45.749Z",
+      "created_at": "2026-03-19T20:00:53.078967+00:00",
+      "vendedora": "María Raquel Espina"
+    },
+    {
+      "lead_id": "50527662",
+      "nombre": "Aylin Mejia",
+      "fecha_primer_mensaje": "2026-03-19T20:02:07.662Z",
+      "created_at": "2026-03-19T20:02:15.367076+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "23203051",
+      "nombre": "María D|e Lourdes Hernandez",
+      "fecha_primer_mensaje": "2026-03-21T20:00:03.045Z",
+      "created_at": "2026-03-21T20:00:08.388502+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "23284691",
+      "nombre": "Pamela",
+      "fecha_primer_mensaje": "2026-03-21T20:01:24.691Z",
+      "created_at": "2026-03-21T20:01:33.922068+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "23363955",
+      "nombre": "Samantha Espino",
+      "fecha_primer_mensaje": "2026-03-21T20:02:43.955Z",
+      "created_at": "2026-03-21T20:02:47.562812+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "23449575",
+      "nombre": "Andrea Diaz",
+      "fecha_primer_mensaje": "2026-03-21T20:04:09.575Z",
+      "created_at": "2026-03-21T20:04:13.832727+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "33072403",
+      "nombre": "Guadalupe Ramirez",
+      "fecha_primer_mensaje": "2026-03-21T22:44:32.402Z",
+      "created_at": "2026-03-21T22:44:36.797056+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "12408595",
+      "nombre": "Brenda",
+      "fecha_primer_mensaje": "2026-03-22T20:46:48.589Z",
+      "created_at": "2026-03-22T20:46:56.954419+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "28326681",
+      "nombre": "Sara Gallegos",
+      "fecha_primer_mensaje": "2026-03-23T01:12:06.680Z",
+      "created_at": "2026-03-23T01:12:12.663287+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "97296008",
+      "nombre": "Axel Perez",
+      "fecha_primer_mensaje": "2026-02-17",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296009",
+      "nombre": "Alejandro Flores",
+      "fecha_primer_mensaje": "2026-02-17",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296010",
+      "nombre": "Diana Lopez",
+      "fecha_primer_mensaje": "2026-02-17",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296032",
+      "nombre": "Ignacio Fuentes",
+      "fecha_primer_mensaje": "2026-02-22",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "40383694",
+      "nombre": "Hilda Vázquez",
+      "fecha_primer_mensaje": "2026-03-16T05:53:03.693Z",
+      "created_at": "2026-03-16T05:53:08.666585+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "2264686",
+      "nombre": "Daniel Carmona",
+      "fecha_primer_mensaje": "2026-03-16T23:04:24.686Z",
+      "created_at": "2026-03-16T23:04:29.477576+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "2363861",
+      "nombre": "Dacil Alvarado ",
+      "fecha_primer_mensaje": "2026-03-16T23:06:03.861Z",
+      "created_at": "2026-03-16T23:06:16.383833+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "67187638",
+      "nombre": "Leticia ",
+      "fecha_primer_mensaje": "2026-03-17T17:06:27.622Z",
+      "created_at": "2026-03-17T17:06:33.241259+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "80192290",
+      "nombre": "Estefania Vargas ",
+      "fecha_primer_mensaje": "2026-03-17T20:43:12.288Z",
+      "created_at": "2026-03-17T20:43:17.655973+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "97296017",
+      "nombre": "Ana Camacho",
+      "fecha_primer_mensaje": "2026-02-19",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296018",
+      "nombre": "AÃ­da Denisse Estrada",
+      "fecha_primer_mensaje": "2026-02-19",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296019",
+      "nombre": "Diana Heredia",
+      "fecha_primer_mensaje": "2026-02-19",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296020",
+      "nombre": "Celeste Jamileth JimÃ©nez C.",
+      "fecha_primer_mensaje": "2026-02-19",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296026",
+      "nombre": "Celeste Herrera Vazquez",
+      "fecha_primer_mensaje": "2026-02-20",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296027",
+      "nombre": "Blanca Azucena LÃ³pez Yebra",
+      "fecha_primer_mensaje": "2026-02-21",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296030",
+      "nombre": "Juan Carlos VÃ¡zquez Fuentes",
+      "fecha_primer_mensaje": "2026-02-22",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296034",
+      "nombre": "Jimena PeÃ±aloza Castro",
+      "fecha_primer_mensaje": "2026-02-22",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "40542053",
+      "nombre": "María Esther Alvarado",
+      "fecha_primer_mensaje": "2026-03-16T05:55:42.053Z",
+      "created_at": "2026-03-16T05:55:45.854488+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "40675889",
+      "nombre": "Carlos Treaconis",
+      "fecha_primer_mensaje": "2026-03-16T05:57:55.889Z",
+      "created_at": "2026-03-16T05:58:00.099781+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "41024971",
+      "nombre": "Javier Flores",
+      "fecha_primer_mensaje": "2026-03-16T06:03:44.971Z",
+      "created_at": "2026-03-16T06:03:48.875705+00:00",
+      "vendedora": ""
+    },
+    {
+      "lead_id": "80249155",
+      "nombre": "Maris Espino",
+      "fecha_primer_mensaje": "2026-03-17T20:44:09.155Z",
+      "created_at": "2026-03-17T20:44:14.421952+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "1873270",
+      "nombre": "Isai Paez Elizalde ",
+      "fecha_primer_mensaje": "2026-03-16T22:57:53.270Z",
+      "created_at": "2026-03-16T22:57:57.171938+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "2586989",
+      "nombre": "Heimy ",
+      "fecha_primer_mensaje": "2026-03-16T23:09:46.989Z",
+      "created_at": "2026-03-16T23:09:50.391076+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "2473193",
+      "nombre": "Mayra y Manuel",
+      "fecha_primer_mensaje": "2026-03-16T23:07:53.193Z",
+      "created_at": "2026-03-16T23:07:57.452419+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "97296000",
+      "nombre": "Guadalupe",
+      "fecha_primer_mensaje": "2026-02-16",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296001",
+      "nombre": "Alejandra RamÃ­rez",
+      "fecha_primer_mensaje": "2026-02-16",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296002",
+      "nombre": "Ricy Mendoza",
+      "fecha_primer_mensaje": "2026-02-16",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296003",
+      "nombre": "Sabine Melan",
+      "fecha_primer_mensaje": "2026-02-16",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296004",
+      "nombre": "Rebeca AmigÃ³n Soto",
+      "fecha_primer_mensaje": "2026-02-16",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296005",
+      "nombre": "Osiel Gustavo Ortiz Bringas",
+      "fecha_primer_mensaje": "2026-02-16",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296006",
+      "nombre": "Marisol Celestino",
+      "fecha_primer_mensaje": "2026-02-17",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296007",
+      "nombre": "Karla Galicia Torres",
+      "fecha_primer_mensaje": "2026-02-17",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296011",
+      "nombre": "Beatriz Coronado",
+      "fecha_primer_mensaje": "2026-02-17",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296012",
+      "nombre": "Daniela Marquez",
+      "fecha_primer_mensaje": "2026-02-18",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296013",
+      "nombre": "Guissel Bravo",
+      "fecha_primer_mensaje": "2026-02-18",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296014",
+      "nombre": "Esteffany Rosas Moreno",
+      "fecha_primer_mensaje": "2026-02-18",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296015",
+      "nombre": "Karla Ãlvarez Rojas",
+      "fecha_primer_mensaje": "2026-02-18",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "97296016",
+      "nombre": "Adriana Medel",
+      "fecha_primer_mensaje": "2026-02-19",
+      "created_at": "2026-03-05T18:43:25.959588+00:00",
+      "vendedora": "Sin asignar"
+    },
+    {
+      "lead_id": "40455578",
+      "nombre": "Denisse Tamayo",
+      "fecha_primer_mensaje": "2026-03-16T05:54:15.578Z",
+      "created_at": "2026-03-16T05:54:21.526564+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "40603514",
+      "nombre": "Roberto Torres",
+      "fecha_primer_mensaje": "2026-03-16T05:56:43.514Z",
+      "created_at": "2026-03-16T05:56:48.457533+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "40731106",
+      "nombre": "Juan Martínez",
+      "fecha_primer_mensaje": "2026-03-16T05:58:51.106Z",
+      "created_at": "2026-03-16T05:58:53.746347+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "40791208",
+      "nombre": "Mary Carmen Campos Patiño",
+      "fecha_primer_mensaje": "2026-03-16T05:59:51.208Z",
+      "created_at": "2026-03-16T05:59:57.563194+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "2036879",
+      "nombre": "Emiliano Francisco Galindo",
+      "fecha_primer_mensaje": "2026-03-16T23:00:36.879Z",
+      "created_at": "2026-03-16T23:00:42.015784+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "2430239",
+      "nombre": "Alma Hernandez ",
+      "fecha_primer_mensaje": "2026-03-16T23:07:10.239Z",
+      "created_at": "2026-03-16T23:07:14.975317+00:00",
+      "vendedora": "Maria Espina"
+    },
+    {
+      "lead_id": "1787434",
+      "nombre": "Yohana Paredes Cabrero",
+      "fecha_primer_mensaje": "2026-03-16T22:56:27.427Z",
+      "created_at": "2026-03-16T22:56:33.308738+00:00",
+      "vendedora": "Maria José Espina"
+    },
+    {
+      "lead_id": "2145671",
+      "nombre": "Fidel Fernando Croz",
+      "fecha_primer_mensaje": "2026-03-16T23:02:25.671Z",
+      "created_at": "2026-03-16T23:02:29.823661+00:00",
+      "vendedora": "Maria Espina"
+    }
+  ]
+}

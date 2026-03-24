@@ -1,6 +1,44 @@
 import { supabase } from './supabase'
 
 /**
+ * Invokes the AI normalization edge function using a raw fetch to bypass
+ * the hardcoded 60s timeout present in the supabase-js client.
+ */
+async function invokeNormalizeLeads(leads, provider) {
+    let enrichedBatch = null;
+    let invokeError = null;
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+        
+        const aiController = new AbortController();
+        const aiTimeout = setTimeout(() => aiController.abort(), 120000); // 120 seconds local timeout
+        
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/normalize-leads`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ leads, provider }),
+            signal: aiController.signal
+        });
+        
+        clearTimeout(aiTimeout);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API Error ${response.status}: ${errorText}`);
+        }
+        
+        enrichedBatch = await response.json();
+    } catch (err) {
+        invokeError = err.message || err;
+    }
+    return { data: enrichedBatch, error: invokeError };
+}
+
+/**
  * Synchronizes an array of leads with the Supabase database.
  * This function uses an idempotent "upsert" with ignoreDuplicates: true.
  * This maps to SQL's "INSERT ... ON CONFLICT (lead_id) DO NOTHING".
@@ -72,9 +110,7 @@ export async function syncLeads(leadsArray, provider = 0) {
             console.log(`[Supabase Sync] Sending batch ${batchNum} (${batch.length} leads) to AI Normalizer...`);
             console.log(`[Supabase Sync] Batch JSON Payload:`, JSON.stringify(batch, null, 2));
 
-            const { data: enrichedBatch, error: invokeError } = await supabase.functions.invoke('normalize-leads', {
-                body: { leads: batch, provider }
-            });
+            const { data: enrichedBatch, error: invokeError } = await invokeNormalizeLeads(batch, provider);
 
             // The edge function might return 200 OK but with an { error: "..." } inside the payload
             const actualError = invokeError || (enrichedBatch && enrichedBatch.error ? enrichedBatch.error : null);
@@ -134,9 +170,7 @@ export async function createLead(leadData) {
         }
 
         // Run it through the specific Edge Function
-        const { data: enrichedBatch, error: invokeError } = await supabase.functions.invoke('normalize-leads', {
-            body: { leads: [lead], provider: 1 } // Using OpenAI provider as default
-        });
+        const { data: enrichedBatch, error: invokeError } = await invokeNormalizeLeads([lead], 1); // Using OpenAI provider as default
 
         let finalLead = lead;
         if (!invokeError && enrichedBatch) {
