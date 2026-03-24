@@ -26,7 +26,7 @@ function StatusBadge({ value, field }) {
         }
     }
 
-    if (field === 'salon' && (value.toLowerCase().includes('no está seguro') || value.toLowerCase().includes('no esta seguro'))) {
+    if (field === 'salon' && (value.toLowerCase().includes('no esta seguro') || value.toLowerCase().includes('no est seguro'))) {
         return <Badge variant="outline" className="border-purple-700/50 bg-purple-950/30 text-purple-400 text-xs">Indeciso</Badge>
     }
 
@@ -92,8 +92,8 @@ export default function LeadsTable({ leads, loading }) {
                                     <TableHead className="text-zinc-400 text-xs">Canal</TableHead>
                                     <TableHead className="text-zinc-400 text-xs">Origen</TableHead>
                                     <TableHead className="text-zinc-400 text-xs">Fecha Evento</TableHead>
-                                    <TableHead className="text-zinc-400 text-xs">Teléfono</TableHead>
-                                    <TableHead className="text-zinc-400 text-xs">Salón</TableHead>
+                                    <TableHead className="text-zinc-400 text-xs">Telefono</TableHead>
+                                    <TableHead className="text-zinc-400 text-xs">Salon</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -129,3 +129,4 @@ export default function LeadsTable({ leads, loading }) {
         </>
     )
 }
+

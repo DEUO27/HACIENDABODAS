@@ -8,26 +8,24 @@ import { readExcelFile, processExcelToLeads, batchInsertLeadsDB } from '@/lib/im
 export default function ImportAdmin() {
     const navigate = useNavigate()
     const [file, setFile] = useState(null)
-    const [step, setStep] = useState('upload') // upload, preview, importing, done, error
+    const [step, setStep] = useState('upload')
     const [error, setError] = useState(null)
-
-    // Extracted Data
     const [leads, setLeads] = useState([])
     const [invalidRows, setInvalidRows] = useState([])
     const [results, setResults] = useState(null)
 
     const handleFileChange = async (e) => {
-        const file = e.target.files[0]
-        if (!file) return
+        const nextFile = e.target.files[0]
+        if (!nextFile) return
 
         try {
-            setFile(file)
-            setStep('preview') // Wait, we should probably read first
+            setFile(nextFile)
+            setStep('preview')
 
-            const buffer = await file.arrayBuffer()
+            const buffer = await nextFile.arrayBuffer()
             const excelRows = await readExcelFile(buffer)
-
             const processed = processExcelToLeads(excelRows)
+
             setLeads(processed.validLeads)
             setInvalidRows(processed.invalidRows)
         } catch (err) {
@@ -63,47 +61,45 @@ export default function ImportAdmin() {
     return (
         <div className="space-y-6 max-w-6xl mx-auto pb-12 mt-4 px-4 overflow-y-auto w-full">
             <div className="flex items-start gap-4 mb-2">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="mt-1 shrink-0 rounded-none text-muted-foreground hover:text-foreground hover:bg-secondary">
+                <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="mt-1 shrink-0 rounded-none text-muted-foreground hover:text-foreground hover:bg-secondary">
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <div>
                     <h1 className="font-heading text-2xl tracking-wider text-foreground mb-2">IMPORTAR LEADS (BODAS.COM)</h1>
-                    <p className="text-muted-foreground text-sm">Sube un archivo Excel (.xlsx) con los nuevos leads. El sistema normalizará canales/eventos y omitirá leads duplicados mediante 'dedupe_key'.</p>
+                    <p className="text-muted-foreground text-sm">Sube un archivo Excel (.xlsx) con los nuevos leads. El sistema normalizara canales/eventos y omitira leads duplicados mediante `dedupe_key`.</p>
                 </div>
             </div>
 
-            {/* ERROR STATE */}
             {step === 'error' && (
                 <div className="p-6 bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500 rounded-none mb-6">
                     <div className="flex items-center gap-3 text-red-600 dark:text-red-400 mb-2">
                         <AlertCircle className="w-5 h-5" />
-                        <h2 className="text-sm font-bold uppercase tracking-widest">Error durante la importación</h2>
+                        <h2 className="text-sm font-bold uppercase tracking-widest">Error durante la importacion</h2>
                     </div>
                     <p className="text-red-700 dark:text-red-300 text-sm mb-4">{error}</p>
                     <Button variant="outline" onClick={handleReset} className="rounded-none border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50">Intentar de nuevo</Button>
                 </div>
             )}
 
-            {/* DONE STATE */}
             {step === 'done' && results && (
                 <Card className="rounded-none border-border bg-card shadow-sm mt-6">
                     <CardContent className="flex flex-col items-center justify-center p-12 text-center">
                         <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-6" />
-                        <h2 className="font-heading text-2xl tracking-wider text-card-foreground mb-2">¡IMPORTACIÓN EXITOSA!</h2>
+                        <h2 className="font-heading text-2xl tracking-wider text-card-foreground mb-2">IMPORTACION EXITOSA</h2>
                         <p className="text-muted-foreground mb-8">El archivo ha sido procesado e integrado a Supabase.</p>
 
                         <div className="grid grid-cols-3 gap-6 w-full max-w-2xl mb-8">
                             <div className="bg-secondary/40 p-6 border border-transparent hover:border-border transition-colors">
                                 <div className="font-numbers text-4xl tabular-nums text-foreground mb-1">{results.totalAttemped}</div>
-                                <div className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Filas Procesadas</div>
+                                <div className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Filas procesadas</div>
                             </div>
                             <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border-l-4 border-emerald-500 p-6">
                                 <div className="font-numbers text-4xl tabular-nums text-emerald-600 dark:text-emerald-400 mb-1">{results.totalInserted}</div>
-                                <div className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mt-1">Insertados (Nuevos)</div>
+                                <div className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mt-1">Insertados (nuevos)</div>
                             </div>
                             <div className="bg-amber-50/50 dark:bg-amber-950/20 border-l-4 border-amber-500 p-6">
                                 <div className="font-numbers text-4xl tabular-nums text-amber-600 dark:text-amber-400 mb-1">{results.totalSkipped}</div>
-                                <div className="text-xs text-amber-600 dark:text-amber-400 uppercase tracking-widest mt-1">Optimizados (Duplicados)</div>
+                                <div className="text-xs text-amber-600 dark:text-amber-400 uppercase tracking-widest mt-1">Optimizados (duplicados)</div>
                             </div>
                         </div>
 
@@ -114,7 +110,6 @@ export default function ImportAdmin() {
                 </Card>
             )}
 
-            {/* UPLOAD STATE */}
             {(step === 'upload' || (step === 'preview' && !leads.length && !invalidRows.length)) && (
                 <Card className="rounded-none border-border bg-card shadow-sm mt-6">
                     <CardContent className="pt-6 pb-6">
@@ -126,14 +121,13 @@ export default function ImportAdmin() {
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             />
                             <UploadCloud className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4 group-hover:text-muted-foreground transition-colors" />
-                            <h3 className="font-heading text-lg tracking-wider text-card-foreground mb-1">ARRASTRA TU EXCEL AQUÍ</h3>
+                            <h3 className="font-heading text-lg tracking-wider text-card-foreground mb-1">ARRASTRA TU EXCEL AQUI</h3>
                             <p className="text-muted-foreground text-xs uppercase tracking-widest mt-2">o haz clic para buscarlo en tu equipo</p>
                         </div>
                     </CardContent>
                 </Card>
             )}
 
-            {/* PREVIEW STATE */}
             {step === 'preview' && (leads.length > 0 || invalidRows.length > 0) && (
                 <div className="space-y-6 mt-6">
                     <Card className="rounded-none border-border bg-card shadow-sm">
@@ -149,11 +143,11 @@ export default function ImportAdmin() {
                             <div className="flex gap-6 border-l border-border pl-6">
                                 <div className="text-center pr-6 border-r border-border">
                                     <div className="font-numbers text-3xl tabular-nums text-foreground">{leads.length}</div>
-                                    <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-1">Filas Válidas</div>
+                                    <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-1">Filas validas</div>
                                 </div>
                                 <div className="text-center">
                                     <div className="font-numbers text-3xl tabular-nums text-red-500 dark:text-red-400">{invalidRows.length}</div>
-                                    <div className="text-[10px] font-medium text-red-400 uppercase tracking-widest mt-1">Inválidas</div>
+                                    <div className="text-[10px] font-medium text-red-400 uppercase tracking-widest mt-1">Invalidas</div>
                                 </div>
                             </div>
 
@@ -166,7 +160,7 @@ export default function ImportAdmin() {
                                     disabled={leads.length === 0}
                                     className="w-full sm:w-auto rounded-none bg-emerald-600 text-white hover:bg-emerald-700 text-xs uppercase tracking-widest disabled:opacity-50 transition-colors"
                                 >
-                                    Importar Leads
+                                    Importar leads
                                 </Button>
                             </div>
                         </CardContent>
@@ -175,15 +169,15 @@ export default function ImportAdmin() {
                     {invalidRows.length > 0 && (
                         <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl overflow-hidden">
                             <div className="bg-red-100 dark:bg-red-900/30 px-6 py-3 border-b border-red-200 dark:border-red-800">
-                                <h3 className="font-bold text-red-800 dark:text-red-400 flex items-center gap-2"><XCircle className="w-4 h-4" /> Filas Inválidas (Serán omitidas)</h3>
+                                <h3 className="font-bold text-red-800 dark:text-red-400 flex items-center gap-2"><XCircle className="w-4 h-4" /> Filas invalidas (seran omitidas)</h3>
                             </div>
                             <div className="p-4 overflow-x-auto">
                                 <table className="w-full text-sm text-left text-red-900 dark:text-red-200">
                                     <thead>
                                         <tr className="border-b border-red-200/50 dark:border-red-800/50">
                                             <th className="py-2 opacity-70">Fila Excel</th>
-                                            <th className="py-2 opacity-70">Razón</th>
-                                            <th className="py-2 opacity-70">Datos Originales</th>
+                                            <th className="py-2 opacity-70">Razon</th>
+                                            <th className="py-2 opacity-70">Datos originales</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -209,47 +203,46 @@ export default function ImportAdmin() {
                             <table className="w-full text-left">
                                 <thead className="bg-secondary/50 sticky top-0 z-10 border-b border-border">
                                     <tr>
-                                        {['Nombre', 'Contactos', 'Evento IA', 'Canal IA', 'Dedupe Key'].map(h => (
-                                            <th key={h} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{h}</th>
+                                        {['Nombre', 'Contactos', 'Evento IA', 'Canal IA', 'Dedupe Key'].map((header) => (
+                                            <th key={header} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{header}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {leads.slice(0, 50).map((l, i) => (
-                                        <tr key={i} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                                            <td className="px-4 py-3 text-sm font-medium text-foreground">{l.nombre}</td>
+                                    {leads.slice(0, 50).map((lead, index) => (
+                                        <tr key={index} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                                            <td className="px-4 py-3 text-sm font-medium text-foreground">{lead.nombre}</td>
                                             <td className="px-4 py-3">
-                                                <div className="text-sm text-foreground">{l.telefono}</div>
-                                                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Reg: {l.fecha_primer_mensaje}</div>
+                                                <div className="text-sm text-foreground">{lead.telefono}</div>
+                                                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Reg: {lead.fecha_primer_mensaje}</div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="inline-flex py-1 px-2 text-[10px] rounded-full uppercase tracking-widest font-medium bg-indigo-100/50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50">
-                                                    {l.evento_normalizado}
+                                                    {lead.evento_normalizado}
                                                 </div>
-                                                <div className="text-[10px] text-muted-foreground mt-1">Orig: {l.evento || 'N/A'}</div>
+                                                <div className="text-[10px] text-muted-foreground mt-1">Orig: {lead.evento || 'N/A'}</div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="inline-flex py-1 px-2 text-[10px] rounded-full uppercase tracking-widest font-medium bg-blue-100/50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50">
-                                                    {l.canal_normalizado}
+                                                    {lead.canal_normalizado}
                                                 </div>
-                                                <div className="text-[10px] text-muted-foreground mt-1">Regla: {l.canal_razon}</div>
+                                                <div className="text-[10px] text-muted-foreground mt-1">Regla: {lead.canal_razon}</div>
                                             </td>
                                             <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground opacity-50">
-                                                {l.dedupe_key.slice(0, 8)}...
+                                                {lead.dedupe_key.slice(0, 8)}...
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                             {leads.length === 0 && (
-                                <div className="p-8 text-center text-muted-foreground uppercase tracking-widest text-xs">Ninguna fila válida para mostrar.</div>
+                                <div className="p-8 text-center text-muted-foreground uppercase tracking-widest text-xs">Ninguna fila valida para mostrar.</div>
                             )}
                         </CardContent>
                     </Card>
                 </div>
             )}
 
-            {/* IMPORTING STATE */}
             {step === 'importing' && (
                 <Card className="rounded-none border-border bg-card shadow-sm mt-6">
                     <CardContent className="flex flex-col items-center justify-center p-16 text-center">
@@ -259,7 +252,6 @@ export default function ImportAdmin() {
                     </CardContent>
                 </Card>
             )}
-
         </div>
     )
 }

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useMemo } from 'react'
 import { isWithinInterval, parseISO, startOfDay, subDays, startOfYear, endOfDay } from 'date-fns'
-import { parseLeadDate, isSinInfo, safeDisplay, normalizeCanal } from '@/lib/leadUtils'
+import { parseLeadDate, isSinInfo, normalizeCanal } from '@/lib/leadUtils'
 
 const FilterContext = createContext(null)
 
@@ -44,7 +44,7 @@ function getDateInterval(dateRange, customFrom, customTo) {
             }
         case 'all':
         default:
-            return null // null means no date filtering
+            return null
     }
 }
 
@@ -60,7 +60,7 @@ export function FilterProvider({ children }) {
         setFilters((prev) => {
             const arr = prev[key] || []
             if (arr.includes(value)) {
-                return { ...prev, [key]: arr.filter(v => v !== value) }
+                return { ...prev, [key]: arr.filter((item) => item !== value) }
             }
             return { ...prev, [key]: [...arr, value] }
         })
@@ -81,7 +81,7 @@ export function FilterProvider({ children }) {
             clearFilters,
             setFilters,
             isExportOpen,
-            setIsExportOpen
+            setIsExportOpen,
         }}>
             {children}
         </FilterContext.Provider>
@@ -101,52 +101,54 @@ export function useFilteredLeads(leads) {
         const interval = getDateInterval(filters.dateRange, filters.customFrom, filters.customTo)
 
         return leads.filter((lead) => {
-            // 1. Search filter
             if (filters.search) {
-                const q = filters.search.toLowerCase()
+                const query = filters.search.toLowerCase()
                 const name = (lead.nombre || '').toLowerCase()
                 const phone = (lead.telefono || '').toLowerCase()
                 const id = String(lead.lead_id || '').toLowerCase()
-                if (!name.includes(q) && !phone.includes(q) && !id.includes(q)) return false
+                if (!name.includes(query) && !phone.includes(query) && !id.includes(query)) return false
             }
 
-            // 2. Date Range Filter on fecha_primer_mensaje
             if (interval) {
-                const d = parseLeadDate(lead.fecha_primer_mensaje)
-                if (!d || !isWithinInterval(d, interval)) return false
+                const leadDate = parseLeadDate(lead.fecha_primer_mensaje)
+                if (!leadDate || !isWithinInterval(leadDate, interval)) return false
             }
 
-            // 3. Multi-select arrays (OR logic within arrays, AND logic between arrays)
             if (filters.fases.length > 0) {
-                const fase = isSinInfo(lead.fase_embudo) ? 'Sin Información' : lead.fase_embudo
+                const fase = isSinInfo(lead.fase_embudo) ? 'Sin Informacion' : lead.fase_embudo
                 if (!filters.fases.includes(fase)) return false
             }
+
             if (filters.vendedoras.length > 0) {
-                const vendedora = isSinInfo(lead.vendedora) ? 'Sin Información' : lead.vendedora
+                const vendedora = isSinInfo(lead.vendedora) ? 'Sin Informacion' : lead.vendedora
                 if (!filters.vendedoras.includes(vendedora)) return false
             }
+
             if (filters.eventos.length > 0) {
                 const evento = lead.evento_normalizado || lead.evento
-                const eVal = isSinInfo(evento) ? 'Sin Información' : evento
-                if (!filters.eventos.includes(eVal)) return false
+                const normalizedEvent = isSinInfo(evento) ? 'Sin Informacion' : evento
+                if (!filters.eventos.includes(normalizedEvent)) return false
             }
+
             if (filters.canales.length > 0) {
                 const canal = lead.canal_normalizado || normalizeCanal(lead.canal_de_contacto)
                 if (!filters.canales.includes(canal)) return false
             }
+
             if (filters.origenes.length > 0) {
-                const origen = isSinInfo(lead.como_nos_encontro) ? 'Sin Información' : lead.como_nos_encontro
+                const origen = isSinInfo(lead.como_nos_encontro) ? 'Sin Informacion' : lead.como_nos_encontro
                 if (!filters.origenes.includes(origen)) return false
             }
+
             if (filters.salones.length > 0) {
-                const salon = isSinInfo(lead.salon) ? 'Sin Información' : lead.salon
+                const salon = isSinInfo(lead.salon) ? 'Sin Informacion' : lead.salon
                 if (!filters.salones.includes(salon)) return false
             }
 
-            // 4. Quick Toggles / Chips
             if (filters.solo24h && !(lead.fase_embudo || '').toLowerCase().includes('+24hrs')) return false
             if (filters.soloPerdidos && !(lead.fase_embudo || '').toLowerCase().includes('perdido')) return false
             if (filters.soloActivos && (lead.fase_embudo || '').toLowerCase().includes('perdido')) return false
+
             if (filters.datosIncompletos) {
                 const isIncomplete = isSinInfo(lead.telefono) ||
                     isSinInfo(lead.fecha_evento) ||
@@ -155,6 +157,7 @@ export function useFilteredLeads(leads) {
                     isSinInfo(lead.salon) ||
                     isSinInfo(lead.evento_normalizado || lead.evento) ||
                     isSinInfo(lead.vendedora)
+
                 if (!isIncomplete) return false
             }
 

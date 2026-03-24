@@ -28,13 +28,16 @@ export default function Topbar({ onRefresh, refreshing }) {
     useEffect(() => {
         const handleKeyDown = (e) => { if (e.key === 'Alt') setIsAltPressed(true) }
         const handleKeyUp = (e) => { if (e.key === 'Alt') setIsAltPressed(false) }
+        const handleBlur = () => setIsAltPressed(false)
+
         window.addEventListener('keydown', handleKeyDown)
         window.addEventListener('keyup', handleKeyUp)
-        window.addEventListener('blur', () => setIsAltPressed(false))
+        window.addEventListener('blur', handleBlur)
+
         return () => {
             window.removeEventListener('keydown', handleKeyDown)
             window.removeEventListener('keyup', handleKeyUp)
-            window.removeEventListener('blur', () => setIsAltPressed(false))
+            window.removeEventListener('blur', handleBlur)
         }
     }, [])
 
@@ -53,14 +56,11 @@ export default function Topbar({ onRefresh, refreshing }) {
 
     return (
         <div className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-950">
-            {/* Top bar */}
             <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-6 py-3">
-                {/* Spacer for mobile hamburger */}
                 <div className="w-8 lg:hidden" />
                 <div className="flex-1" />
 
                 <div className="flex items-center gap-2 ml-auto">
-                    {/* Notifications & Theme */}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -76,7 +76,6 @@ export default function Topbar({ onRefresh, refreshing }) {
                         <Bell className="h-4.5 w-4.5" />
                     </Button>
 
-                    {/* User dropdown */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
@@ -111,14 +110,13 @@ export default function Topbar({ onRefresh, refreshing }) {
                                 className="cursor-pointer rounded-none text-muted-foreground focus:bg-secondary focus:text-foreground"
                             >
                                 <LogOut className="mr-2 h-4 w-4" />
-                                Cerrar sesión
+                                Cerrar sesion
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
             </div>
 
-            {/* Page header */}
             <div className="flex flex-col gap-3 px-8 py-8 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="font-heading text-4xl text-slate-900 dark:text-slate-100">Dashboard</h1>

@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import {
     LayoutDashboard,
     Users,
@@ -15,10 +14,8 @@ import {
     HelpCircle,
     LogOut,
     Menu,
-    Sparkles,
-    Download,
     Sun,
-    Moon
+    Moon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -57,12 +54,10 @@ function SidebarContent({ onClose }) {
 
     return (
         <div className="flex h-full flex-col bg-white dark:bg-slate-950">
-            {/* Logo */}
             <div className="flex items-center justify-center gap-0 px-5 py-8">
                 <img src="/logo.png" alt="Hacienda Bodas Logo" className="h-[75px] w-auto object-contain dark:brightness-0 dark:invert" />
             </div>
 
-            {/* Menu */}
             <div className="px-6 pt-2">
                 <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Menu</p>
                 <nav className="space-y-2">
@@ -88,7 +83,6 @@ function SidebarContent({ onClose }) {
                 </nav>
             </div>
 
-            {/* General */}
             <div className="px-6 pt-8">
                 <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">General</p>
                 <nav className="space-y-2">
@@ -120,7 +114,7 @@ function SidebarContent({ onClose }) {
                         <span className="font-medium tracking-wide">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
                     </button>
                     <button
-                        onClick={() => { handleLogout(); onClose?.(); }}
+                        onClick={() => { handleLogout(); onClose?.() }}
                         className="flex w-full items-center gap-4 rounded-none px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
                     >
                         <LogOut className="h-4 w-4 stroke-[1.5]" />
@@ -129,10 +123,7 @@ function SidebarContent({ onClose }) {
                 </nav>
             </div>
 
-            {/* Spacer */}
             <div className="flex-1" />
-
-
         </div>
     )
 }
@@ -142,14 +133,12 @@ export default function Sidebar() {
 
     return (
         <>
-            {/* Desktop sidebar */}
             <aside className="hidden lg:block lg:w-60 lg:flex-shrink-0">
                 <div className="fixed left-0 top-0 z-30 h-screen w-60 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
                     <SidebarContent />
                 </div>
             </aside>
 
-            {/* Mobile trigger + sheet */}
             <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger asChild>
                     <Button
@@ -161,7 +150,7 @@ export default function Sidebar() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-60 p-0 border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
-                    <SheetTitle className="sr-only">Navegación</SheetTitle>
+                    <SheetTitle className="sr-only">Navegacion</SheetTitle>
                     <SidebarContent onClose={() => setOpen(false)} />
                 </SheetContent>
             </Sheet>

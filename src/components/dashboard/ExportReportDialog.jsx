@@ -13,11 +13,11 @@ import { PdfDocument } from '@/lib/pdfReportGenerator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const STEPS = [
-    { key: 'preparing', label: 'Preparando datos', icon: Database },
-    { key: 'capturing', label: 'Renderizando gráficas', icon: BarChart3 },
+    { key: 'preparing', label: 'Preparando informacion', icon: Database },
+    { key: 'capturing', label: 'Capturando graficas', icon: BarChart3 },
     { key: 'ai-summary', label: 'Generando resumen IA', icon: Sparkles },
-    { key: 'building', label: 'Generando PDF', icon: FileText },
-    { key: 'downloading', label: 'Descargando', icon: FileDown },
+    { key: 'building', label: 'Armando PDF', icon: FileText },
+    { key: 'downloading', label: 'Descargando archivo', icon: FileDown },
 ]
 
 export default function ExportReportDialog({
@@ -52,7 +52,7 @@ export default function ExportReportDialog({
 
             // Stringify filters
             const filtersList = []
-            if (activeFiltersState.search) filtersList.push(`Búsqueda: "${activeFiltersState.search}"`)
+            if (activeFiltersState.search) filtersList.push(`Busqueda: "${activeFiltersState.search}"`)
             if (activeFiltersState.vendedoras.length) filtersList.push(`Vendedoras: ${activeFiltersState.vendedoras.join(', ')}`)
             if (activeFiltersState.fases.length) filtersList.push(`Fases: ${activeFiltersState.fases.join(', ')}`)
             if (activeFiltersState.canales.length) filtersList.push(`Canales: ${activeFiltersState.canales.join(', ')}`)
@@ -147,7 +147,7 @@ export default function ExportReportDialog({
                         Exportar Reporte Ejecutivo
                     </DialogTitle>
                     <DialogDescription className="text-slate-500 dark:text-slate-400">
-                        Generar un PDF con análisis IA, gráficas y datos ({filteredLeads.length} leads).
+                        Generar un PDF ejecutivo con analisis IA, graficas y datos ({filteredLeads.length} leads).
                     </DialogDescription>
                 </DialogHeader>
 
@@ -172,7 +172,7 @@ export default function ExportReportDialog({
                                 <Sparkles className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-heading tracking-widest text-foreground uppercase">Resumen con IA</p>
-                                    <p className="text-xs text-muted-foreground mt-1">El reporte incluirá un análisis ejecutivo con insights usando {aiProvider === 'openai' ? 'OpenAI GPT-4o-mini' : 'Google Gemini 3 Flash'}.</p>
+                                    <p className="text-xs text-muted-foreground mt-1">El reporte incluira insights ejecutivos usando {aiProvider === 'openai' ? 'OpenAI GPT-4o-mini' : 'Google Gemini 3 Flash'}.</p>
                                 </div>
                             </div>
 
@@ -180,7 +180,7 @@ export default function ExportReportDialog({
                                 <div className="rounded-lg bg-red-50 dark:bg-red-950/40 p-3 flex items-start gap-2 border border-red-200 dark:border-red-800/50">
                                     <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
                                     <div>
-                                        <p className="text-sm font-semibold text-red-800 dark:text-red-300">Error en la generación</p>
+                                        <p className="text-sm font-semibold text-red-800 dark:text-red-300">Error en la generacion</p>
                                         <p className="text-xs text-red-600 dark:text-red-400">{errorMsg}</p>
                                     </div>
                                 </div>
@@ -190,11 +190,11 @@ export default function ExportReportDialog({
                         <div className="flex flex-col items-center justify-center space-y-3 py-6">
                             <CheckCircle2 className="h-12 w-12 text-primary animate-in zoom-in" />
                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                ¡Reporte generado exitosamente!
+                                Reporte generado correctamente
                             </p>
                             {aiFallback && (
                                 <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-full">
-                                    ⚠ Resumen generado sin IA (fallback)
+                                    Resumen generado sin IA (modo fallback)
                                 </p>
                             )}
                         </div>
@@ -231,7 +231,7 @@ export default function ExportReportDialog({
 
                             {aiFallback && (
                                 <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-lg mt-2">
-                                    ⚠ IA no disponible — usando resumen automático
+                                    IA no disponible - usando resumen automatico
                                 </p>
                             )}
                         </div>
@@ -243,7 +243,7 @@ export default function ExportReportDialog({
                         <>
                             <Button variant="outline" className="rounded-none border-border text-muted-foreground hover:bg-secondary uppercase tracking-widest text-xs" onClick={() => onOpenChange(false)}>Cancelar</Button>
                             <Button className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-widest text-xs" onClick={handleExport}>
-                                <Sparkles className="mr-2 h-4 w-4" /> Generar Reporte IA
+                                <Sparkles className="mr-2 h-4 w-4" /> Generar Reporte PDF
                             </Button>
                         </>
                     ) : null}
@@ -252,3 +252,4 @@ export default function ExportReportDialog({
         </Dialog >
     )
 }
+

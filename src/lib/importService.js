@@ -79,9 +79,9 @@ export function processExcelToLeads(excelRows) {
         const telOriginal = telRaw ? String(telRaw).trim() : ''
         const telefono_normalizado = normalizeTelefono(telOriginal)
 
-        // Validación básica (debe tener nombre O teléfono)
+        // Validacion basica (debe tener nombre O telefono)
         if (!nombre && !telefono_normalizado) {
-            invalidRows.push({ ...row, _error: 'Fila sin Nombre ni Teléfono válido', _index: index })
+            invalidRows.push({ ...row, _error: 'Fila sin Nombre ni Telefono valido', _index: index })
             return
         }
 
@@ -90,7 +90,7 @@ export function processExcelToLeads(excelRows) {
         const fecha_evento = convertExcelDateToISO(fechaEventoRaw)
         const fecha_registro = convertExcelDateToISO(fechaAltaRaw) || new Date().toISOString().split('T')[0]
 
-        // Normalización
+        // Normalizacion
         const canalNorm = normalizeCanalExcel('', 'Bodas.com')
         const eventoNorm = normalizeEventoExcel(eventoRaw)
 
@@ -98,7 +98,7 @@ export function processExcelToLeads(excelRows) {
         const fuente = 'excel_bodascom'
         const dedupe_key = buildDedupeKey(nombre, telefono_normalizado, fecha_evento, fuente)
 
-        // Generar un ID simple de 8 dígitos al estilo de createLead, pero asegurando unicidad en el loop
+        // Generar un ID simple de 8 digitos al estilo de createLead, pero asegurando unicidad en el loop
         const uniqueSuffix = index.toString().padStart(3, '0')
         const fakeLeadId = String(Number(baseTimeStr.slice(-5) + uniqueSuffix))
 
@@ -174,3 +174,4 @@ export async function batchInsertLeadsDB(leadsArray, chunkSize = 200) {
         totalSkipped: leadsArray.length - inserts
     }
 }
+

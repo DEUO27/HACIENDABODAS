@@ -8,7 +8,7 @@ function isSinInfo(val) {
 
 function ValueBadge({ value }) {
     if (isSinInfo(value)) {
-        return <Badge variant="outline" className="border-amber-700/50 bg-amber-950/30 text-amber-400">Sin Información</Badge>
+        return <Badge variant="outline" className="border-amber-700/50 bg-amber-950/30 text-amber-400">Sin Informacion</Badge>
     }
     return <span className="text-zinc-200">{value}</span>
 }
@@ -44,3 +44,4 @@ export default function LeadDetailSheet({ lead, open, onClose }) {
         </Sheet>
     )
 }
+

@@ -9,7 +9,7 @@ import {
 import { format, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-/* ─ PALETTE ─ */
+/* PALETTE */
 const COLORS = [
     '#FFA6A6', // Pastel Red/Pink
     '#A6C8FF', // Pastel Blue
@@ -21,7 +21,7 @@ const COLORS = [
     '#BAB8E8', // Pastel Indigo
 ]
 
-/* ─ SHARED ─ */
+/* SHARED */
 const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null
     return (
@@ -59,7 +59,7 @@ function ChartCard({ title, subtitle, children, className = '', exportId }) {
     )
 }
 
-/* ─── 1. LEADS POR DÍA (Area/Line) ─── */
+/* 1. LEADS POR DIA (Area/Line) */
 export function LeadsByDayChart({ leads, loading }) {
     const data = useMemo(() => {
         const counts = {}
@@ -80,7 +80,7 @@ export function LeadsByDayChart({ leads, loading }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Leads por día" subtitle="Basado en fecha de primer mensaje" exportId="leads_by_day">
+        <ChartCard title="Leads por dia" subtitle="Basado en fecha de primer mensaje" exportId="leads_by_day">
             <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={data}>
                     <defs>
@@ -100,7 +100,7 @@ export function LeadsByDayChart({ leads, loading }) {
     )
 }
 
-/* ─── 2. LEADS POR FASE (Horizontal Bar) ─── */
+/* 2. LEADS POR FASE (Horizontal Bar) */
 export function LeadsByFaseChart({ leads, loading }) {
     const data = useMemo(() => {
         const counts = {}
@@ -133,7 +133,7 @@ export function LeadsByFaseChart({ leads, loading }) {
     )
 }
 
-/* ─── 3. TOP ORÍGENES (Bar) ─── */
+/* 3. TOP ORIGENES (Bar) */
 export function TopOrigenesChart({ leads, loading, topN = 8 }) {
     const data = useMemo(() => {
         const counts = {}
@@ -151,7 +151,7 @@ export function TopOrigenesChart({ leads, loading, topN = 8 }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Top orígenes" subtitle={`Cómo nos encontró — Top ${topN}`} exportId="top_origenes">
+        <ChartCard title="Top origenes" subtitle={`Como nos encontro - Top ${topN}`} exportId="top_origenes">
             <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -165,7 +165,7 @@ export function TopOrigenesChart({ leads, loading, topN = 8 }) {
     )
 }
 
-/* ─── 4. LEADS POR CANAL (Donut) ─── */
+/* 4. LEADS POR CANAL (Donut) */
 export function LeadsByCanalChart({ leads, loading }) {
     const data = useMemo(() => {
         const counts = {}
@@ -227,7 +227,7 @@ export function LeadsByCanalChart({ leads, loading }) {
     )
 }
 
-/* ─── 5. LEADS POR VENDEDORA (Bar, optional stacked by fase) ─── */
+/* 5. LEADS POR VENDEDORA (Bar, optional stacked by fase) */
 export function LeadsByVendedoraChart({ leads, loading, stacked = false }) {
     const data = useMemo(() => {
         if (!stacked) {
@@ -296,7 +296,7 @@ export function LeadsByVendedoraChart({ leads, loading, stacked = false }) {
     )
 }
 
-/* ─── 6. LEADS POR EVENTO (Bar) ─── */
+/* 6. LEADS POR EVENTO (Bar) */
 export function LeadsByEventoChart({ leads, loading }) {
     const data = useMemo(() => {
         const counts = {}
@@ -313,7 +313,7 @@ export function LeadsByEventoChart({ leads, loading }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Leads por tipo de evento" subtitle="Distribución por evento" exportId="leads_by_evento">
+        <ChartCard title="Leads por tipo de evento" subtitle="Distribucion por evento" exportId="leads_by_evento">
             <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -327,7 +327,7 @@ export function LeadsByEventoChart({ leads, loading }) {
     )
 }
 
-/* ─── 7. LEADS POR HORA (Bar) ─── */
+/* 7. LEADS POR HORA (Bar) */
 export function LeadsByHourChart({ leads, loading }) {
     const data = useMemo(() => {
         const hours = Array.from({ length: 24 }, (_, i) => ({
@@ -345,7 +345,7 @@ export function LeadsByHourChart({ leads, loading }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Leads por hora del día" subtitle="Basado en primer mensaje (Escala Raíz Cuadrada)" exportId="leads_by_hour">
+        <ChartCard title="Leads por hora del dia" subtitle="Basado en primer mensaje (Escala raiz cuadrada)" exportId="leads_by_hour">
             <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -359,17 +359,17 @@ export function LeadsByHourChart({ leads, loading }) {
     )
 }
 
-/* ─── 8. DATA QUALITY (Horizontal Bar — % missing per field) ─── */
+/* 8. DATA QUALITY (Horizontal Bar - % missing per field) */
 export function DataQualityChart({ leads, loading }) {
     const data = useMemo(() => {
         if (!leads.length) return []
         const fields = [
-            { key: 'telefono', label: 'Teléfono' },
+            { key: 'telefono', label: 'Telefono' },
             { key: 'fecha_evento', label: 'Fecha Evento' },
             { key: 'canal_de_contacto', label: 'Canal', val: l => l.canal_normalizado || l.canal_de_contacto },
             { key: 'como_nos_encontro', label: 'Origen' },
             { key: 'vendedora', label: 'Vendedora' },
-            { key: 'salon', label: 'Salón' },
+            { key: 'salon', label: 'Salon' },
             { key: 'evento', label: 'Evento', val: l => l.evento_normalizado || l.evento },
         ]
         const total = leads.length
@@ -383,7 +383,7 @@ export function DataQualityChart({ leads, loading }) {
     if (loading) return <ChartSkeleton />
 
     return (
-        <ChartCard title="Data Quality" subtitle="% de campos con información faltante" exportId="data_quality">
+        <ChartCard title="Calidad de Datos" subtitle="% de campos con informacion faltante" exportId="data_quality">
             <ResponsiveContainer width="100%" height={Math.max(220, data.length * 36)}>
                 <BarChart data={data} layout="vertical" margin={{ left: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
@@ -396,3 +396,4 @@ export function DataQualityChart({ leads, loading }) {
         </ChartCard>
     )
 }
+

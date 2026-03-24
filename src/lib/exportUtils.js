@@ -36,7 +36,7 @@ export async function captureCharts() {
         panel.style.display = 'block'
         panel.style.opacity = '0'
         panel.style.pointerEvents = 'none'
-        // Don't constrain height — charts need room to fully render
+        // Don't constrain height - charts need room to fully render
     })
 
     // Force explicit dimensions on chart containers so Recharts NEVER calculates 0
@@ -204,7 +204,7 @@ export function prepareExecutiveSummary(leads, kpis) {
     const total = leads.length
     if (!total) return { headline: 'No hay leads para analizar.', bullets: [], alerts: [] }
 
-    // ── Phase breakdown ──
+    // Phase breakdown
     const fases = {}
     const vendedoraCarga = {}
     const vendedora24h = {}
@@ -245,18 +245,18 @@ export function prepareExecutiveSummary(leads, kpis) {
     const topCanal = sortedCanales[0]
     const topCanalPct = Math.round((topCanal[1] / total) * 100)
 
-    // ── Headline ──
+    // Headline
     const pct24h = kpis.noContesta ? Math.round((kpis.noContesta / total) * 100) : 0
-    let headline = `El embudo está concentrado en "${topFaseName}" (${topFasePct}%).`
+    let headline = `El embudo esta concentrado en "${topFaseName}" (${topFasePct}%).`
     if (pct24h >= 10) {
         headline += ` Hay un ${pct24h}% de leads +24H sin respuesta.`
     }
 
-    // ── Bullets ──
+    // Bullets
     const bullets = []
 
     // Volumen
-    bullets.push(`Volumen: ${total} leads en el periodo. ${kpis.weekCount} nuevos en los últimos 7 días, ${kpis.todayCount} hoy.`)
+    bullets.push(`Volumen: ${total} leads en el periodo. ${kpis.weekCount} nuevos en los ultimos 7 dias, ${kpis.todayCount} hoy.`)
 
     // Pipeline
     const pctActivos = Math.round((kpis.activos / total) * 100)
@@ -270,19 +270,19 @@ export function prepareExecutiveSummary(leads, kpis) {
     }
     bullets.push(equipoBullet)
 
-    // Adquisición
-    bullets.push(`Adquisición: Origen #1 "${kpis.topOrigenName}" (${kpis.topOrigenPct}%), Canal #1 "${topCanal[0]}" (${topCanalPct}%).`)
+    // Adquisicion
+    bullets.push(`Adquisicion: Origen #1 "${kpis.topOrigenName}" (${kpis.topOrigenPct}%), Canal #1 "${topCanal[0]}" (${topCanalPct}%).`)
 
     // Calidad
     const worstField = kpis.pctSinTel >= kpis.pctSinFecha
-        ? { name: 'Teléfono', pct: kpis.pctSinTel }
+        ? { name: 'Telefono', pct: kpis.pctSinTel }
         : { name: 'Fecha de Evento', pct: kpis.pctSinFecha }
     bullets.push(`Calidad: Campo con mayor falta de info: ${worstField.name} (${worstField.pct}% faltante).`)
 
-    // ── Alerts ──
+    // Alerts
     const alerts = []
     if (pct24h >= 10) alerts.push(`Alto % en +24H: ${pct24h}% de los leads no han sido respondidos`)
-    if (kpis.pctSinTel >= 20) alerts.push(`${kpis.pctSinTel}% de leads sin teléfono registrado`)
+    if (kpis.pctSinTel >= 20) alerts.push(`${kpis.pctSinTel}% de leads sin telefono registrado`)
     if (kpis.pctSinFecha >= 25) alerts.push(`${kpis.pctSinFecha}% de leads sin fecha de evento`)
     const sinInfoOrigen = leads.filter(l => isSinInfo(l.como_nos_encontro)).length
     const pctSinOrigen = Math.round((sinInfoOrigen / total) * 100)
@@ -297,7 +297,7 @@ export function prepareExecutiveSummary(leads, kpis) {
  */
 export function prepareInsightsAndActions(leads, kpis) {
     const total = leads.length
-    if (!total) return { insights: ['Datos insuficientes para generar insights.'], actions: ['Recopilar más leads antes de analizar.'] }
+    if (!total) return { insights: ['Datos insuficientes para generar insights.'], actions: ['Recopilar mas leads antes de analizar.'] }
 
     const fases = {}
     const vendedoraCarga = {}
@@ -325,7 +325,7 @@ export function prepareInsightsAndActions(leads, kpis) {
         origenes[origen] = (origenes[origen] || 0) + 1
     })
 
-    // ── Top entities ──
+    // Top entities
     const topFase = Object.entries(fases).sort((a, b) => b[1] - a[1])[0]
     const topVendedora = Object.entries(vendedoraCarga).sort((a, b) => b[1] - a[1])[0]
     const topVend24h = Object.entries(vendedora24h).sort((a, b) => b[1] - a[1])[0]
@@ -333,12 +333,12 @@ export function prepareInsightsAndActions(leads, kpis) {
 
     // Data quality - worst field
     const fields = [
-        { key: 'telefono', label: 'Teléfono' },
+        { key: 'telefono', label: 'Telefono' },
         { key: 'fecha_evento', label: 'Fecha Evento' },
         { key: 'canal_de_contacto', label: 'Canal', val: l => l.canal_normalizado || l.canal_de_contacto },
         { key: 'como_nos_encontro', label: 'Origen' },
         { key: 'vendedora', label: 'Vendedora' },
-        { key: 'salon', label: 'Salón' },
+        { key: 'salon', label: 'Salon' },
         { key: 'evento', label: 'Evento', val: l => l.evento_normalizado || l.evento },
     ]
     let worstField = { label: 'N/A', pct: 0 }
@@ -366,28 +366,28 @@ export function prepareInsightsAndActions(leads, kpis) {
     })
     const topCanalPerdido = Object.entries(canalPerdidos).sort((a, b) => b[1] - a[1])[0]
 
-    // ── INSIGHTS ──
+    // INSIGHTS
     const insights = []
     insights.push(`Fase dominante: ${topFase[0]} con ${topFase[1]} leads (${Math.round((topFase[1] / total) * 100)}%)`)
     insights.push(`Origen principal: ${kpis.topOrigenName} con ${kpis.topOrigenPct}%`)
     insights.push(`% +24H sin respuesta: ${pct24h}% (${kpis.noContesta} leads)`)
-    insights.push(`Campo más incompleto: ${worstField.label} con ${worstField.pct}% faltante`)
+    insights.push(`Campo mas incompleto: ${worstField.label} con ${worstField.pct}% faltante`)
     if (topVendedora) insights.push(`Vendedora con mayor carga: ${topVendedora[0]} (${topVendedora[1]} leads activos)`)
 
-    // ── ACTIONS ──
+    // ACTIONS
     const actions = []
 
     if (pct24h >= 5) {
-        actions.push('Priorizar seguimiento: contactar primero leads +24H más recientes (últimas 48h).')
+        actions.push('Priorizar seguimiento: contactar primero leads +24H mas recientes (ultimas 48h).')
     }
     if (topVend24h && topVend24h[1] >= 3) {
         actions.push(`Revisar carga de ${topVend24h[0]}: tiene ${topVend24h[1]} leads +24H pendientes.`)
     }
     if (kpis.pctSinTel >= 15) {
-        actions.push('Hacer teléfono obligatorio o agregar mensaje automático pidiendo teléfono en el primer contacto.')
+        actions.push('Hacer telefono obligatorio o agregar mensaje automatico pidiendo telefono en el primer contacto.')
     }
     if (kpis.pctSinFecha >= 15) {
-        actions.push('Solicitar fecha de evento lo antes posible en la conversación para cualificar mejor.')
+        actions.push('Solicitar fecha de evento lo antes posible en la conversacion para cualificar mejor.')
     }
     const sinInfoOrigen = leads.filter(l => isSinInfo(l.como_nos_encontro)).length
     const pctSinOrigen = Math.round((sinInfoOrigen / total) * 100)
@@ -395,10 +395,10 @@ export function prepareInsightsAndActions(leads, kpis) {
         actions.push(`Estandarizar captura del origen (${pctSinOrigen}% desconocido): usar Select en formulario, evitar texto libre.`)
     }
     if (isUnbalanced) {
-        actions.push(`Reasignar leads para balancear carga: ${topVendedora[0]} tiene ${maxCarga} vs mínimo ${minCarga}.`)
+        actions.push(`Reasignar leads para balancear carga: ${topVendedora[0]} tiene ${maxCarga} vs minimo ${minCarga}.`)
     }
     if (topCanalPerdido && topCanalPerdido[1] >= 3) {
-        actions.push(`Revisar segmentación en canal "${topCanalPerdido[0]}": ${topCanalPerdido[1]} leads perdidos provienen de ahí.`)
+        actions.push(`Revisar segmentacion en canal "${topCanalPerdido[0]}": ${topCanalPerdido[1]} leads perdidos provienen de ahi.`)
     }
     if (kpis.perdidos > kpis.activos) {
         actions.push('Los perdidos superan a los activos. Revisar tiempos de respuesta y propuesta de valor.')
@@ -406,8 +406,9 @@ export function prepareInsightsAndActions(leads, kpis) {
 
     // Guarantee at least something if all is healthy
     if (actions.length === 0) {
-        actions.push('Los indicadores están en rangos saludables. Mantener las prácticas actuales de seguimiento.')
+        actions.push('Los indicadores estan en rangos saludables. Mantener las practicas actuales de seguimiento.')
     }
 
     return { insights, actions: actions.slice(0, 8) }
 }
+

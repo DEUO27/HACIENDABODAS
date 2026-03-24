@@ -28,7 +28,7 @@ export default function Unauthorized() {
                         className="w-full rounded-none bg-primary text-primary-foreground hover:bg-primary/90 font-heading text-base tracking-widest uppercase h-12"
                     >
                         <LogOut className="mr-3 h-4 w-4" />
-                        CERRAR SESIÓN
+                        CERRAR SESION
                     </Button>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -14,7 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { LogIn, UserPlus, AlertCircle, CheckCircle2, Sparkles, Sun, Moon } from 'lucide-react'
+import { LogIn, UserPlus, AlertCircle, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 
 export default function Login() {
@@ -43,7 +43,7 @@ export default function Login() {
             await signIn(loginEmail, loginPassword)
             navigate('/dashboard', { replace: true })
         } catch (err) {
-            setLoginError(err.message || 'Error al iniciar sesión')
+            setLoginError(err.message || 'Error al iniciar sesion')
         } finally {
             setLoginLoading(false)
         }
@@ -54,17 +54,17 @@ export default function Login() {
         setSignupError('')
         setSignupSuccess('')
         if (signupPassword !== signupConfirm) {
-            setSignupError('Las contraseñas no coinciden')
+            setSignupError('Las contrasenas no coinciden')
             return
         }
         if (signupPassword.length < 6) {
-            setSignupError('La contraseña debe tener al menos 6 caracteres')
+            setSignupError('La contrasena debe tener al menos 6 caracteres')
             return
         }
         setSignupLoading(true)
         try {
             await signUp(signupEmail, signupPassword, signupRole)
-            setSignupSuccess('¡Cuenta creada! Revisa tu correo para confirmar.')
+            setSignupSuccess('Cuenta creada. Revisa tu correo para confirmar.')
             setSignupEmail('')
             setSignupPassword('')
             setSignupConfirm('')
@@ -102,7 +102,7 @@ export default function Login() {
                                 value="login"
                                 className="rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-[10px] uppercase tracking-widest font-semibold text-muted-foreground transition-all"
                             >
-                                INICIAR SESIÓN
+                                INICIAR SESION
                             </TabsTrigger>
                             <TabsTrigger
                                 value="signup"
@@ -112,7 +112,6 @@ export default function Login() {
                             </TabsTrigger>
                         </TabsList>
 
-                        {/* LOGIN */}
                         <TabsContent value="login" className="mt-0">
                             <form onSubmit={handleLogin} className="space-y-6">
                                 {loginError && (
@@ -123,7 +122,7 @@ export default function Login() {
                                 )}
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="login-email" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Correo electrónico</Label>
+                                    <Label htmlFor="login-email" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Correo electronico</Label>
                                     <Input
                                         id="login-email"
                                         type="email"
@@ -136,11 +135,11 @@ export default function Login() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="login-password" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Contraseña</Label>
+                                    <Label htmlFor="login-password" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Contrasena</Label>
                                     <Input
                                         id="login-password"
                                         type="password"
-                                        placeholder="••••••••"
+                                        placeholder="********"
                                         value={loginPassword}
                                         onChange={(e) => setLoginPassword(e.target.value)}
                                         required
@@ -168,14 +167,13 @@ export default function Login() {
                                     </Button>
                                     <div className="text-center mt-3">
                                         <button type="button" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
-                                            ¿OLVIDASTE TU CONTRASEÑA?
+                                            OLVIDASTE TU CONTRASENA?
                                         </button>
                                     </div>
                                 </div>
                             </form>
                         </TabsContent>
 
-                        {/* SIGNUP */}
                         <TabsContent value="signup" className="mt-0">
                             <form onSubmit={handleSignup} className="space-y-6">
                                 {signupError && (
@@ -192,7 +190,7 @@ export default function Login() {
                                 )}
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="signup-email" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Correo electrónico</Label>
+                                    <Label htmlFor="signup-email" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Correo electronico</Label>
                                     <Input
                                         id="signup-email"
                                         type="email"
@@ -205,11 +203,11 @@ export default function Login() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="signup-password" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Contraseña</Label>
+                                    <Label htmlFor="signup-password" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Contrasena</Label>
                                     <Input
                                         id="signup-password"
                                         type="password"
-                                        placeholder="MÍN. 6 CARACTERES"
+                                        placeholder="MIN. 6 CARACTERES"
                                         value={signupPassword}
                                         onChange={(e) => setSignupPassword(e.target.value)}
                                         required
@@ -218,11 +216,11 @@ export default function Login() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="signup-confirm" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Confirmar contraseña</Label>
+                                    <Label htmlFor="signup-confirm" className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Confirmar contrasena</Label>
                                     <Input
                                         id="signup-confirm"
                                         type="password"
-                                        placeholder="REPITE TU CONTRASEÑA"
+                                        placeholder="REPITE TU CONTRASENA"
                                         value={signupConfirm}
                                         onChange={(e) => setSignupConfirm(e.target.value)}
                                         required
@@ -237,14 +235,14 @@ export default function Login() {
                                             <SelectValue placeholder="SELECCIONA TU ROL" />
                                         </SelectTrigger>
                                         <SelectContent className="rounded-none border-border bg-background">
-                                            <SelectItem value="admin" className="focus:bg-secondary focus:text-foreground rounded-none text-xs">🛡️ ADMINISTRADOR</SelectItem>
-                                            <SelectItem value="esposos" className="focus:bg-secondary focus:text-foreground rounded-none text-xs">💍 ESPOSOS</SelectItem>
+                                            <SelectItem value="admin" className="focus:bg-secondary focus:text-foreground rounded-none text-xs">ADMINISTRADOR</SelectItem>
+                                            <SelectItem value="esposos" className="focus:bg-secondary focus:text-foreground rounded-none text-xs">ESPOSOS</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1.5">
                                         {signupRole === 'admin'
-                                            ? 'Acceso completo al dashboard y gestión de leads'
-                                            : 'Acceso a tu información de evento'}
+                                            ? 'Acceso completo al dashboard y gestion de leads'
+                                            : 'Acceso a tu informacion de evento'}
                                     </p>
                                 </div>
 

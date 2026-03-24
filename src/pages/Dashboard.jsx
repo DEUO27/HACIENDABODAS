@@ -52,16 +52,14 @@ import {
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-/* ═══════════════════════════════════════
-   MINI WIDGETS (Overview tab only)
-   ═══════════════════════════════════════ */
+/* MINI WIDGETS (Overview tab only) */
 
 /* Reminders */
 function RemindersCard({ leads, onSelectLead }) {
     const reminders = useMemo(() => {
         const items = []
 
-        // 1. Leads that haven't responded in +24hrs — oldest first (longest waiting)
+        // 1. Leads that haven't responded in +24hrs - oldest first
         const noResponse = leads
             .filter(l => (l.fase_embudo || '').toLowerCase().includes('+24hrs'))
             .sort((a, b) => {
@@ -70,15 +68,15 @@ function RemindersCard({ leads, onSelectLead }) {
                 return (da ? da.getTime() : 0) - (db ? db.getTime() : 0)
             })
         noResponse.slice(0, 3).forEach(l => {
-            items.push({ lead: l, type: 'urgent', label: 'No contesta (+24h)', icon: '🔴' })
+            items.push({ lead: l, type: 'urgent', label: 'No contesta (+24h)', icon: '24H' })
         })
 
-        // 2. Leads without vendedora assigned (en fase "Atendiendo") — oldest first
+        // 2. Leads without vendedora assigned (en fase "Atendiendo") - oldest first
         const noVendedora = leads
             .filter(l => {
                 const fase = (l.fase_embudo || '').toLowerCase()
                 const vendedora = (l.vendedora || '').toLowerCase()
-                return fase.includes('atendiendo') && (!vendedora || vendedora === 'sin informacion' || vendedora === 'sin información')
+                return fase.includes('atendiendo') && (!vendedora || vendedora === 'sin informacion')
             })
             .sort((a, b) => {
                 const da = parseLeadDate(a.fecha_primer_mensaje)
@@ -86,10 +84,10 @@ function RemindersCard({ leads, onSelectLead }) {
                 return (da ? da.getTime() : 0) - (db ? db.getTime() : 0)
             })
         noVendedora.slice(0, 2).forEach(l => {
-            items.push({ lead: l, type: 'warning', label: 'Sin vendedora asignada', icon: '🟡' })
+            items.push({ lead: l, type: 'warning', label: 'Sin vendedora asignada', icon: 'VEN' })
         })
 
-        // 3. Leads with event date coming up in the next 30 days — nearest event first
+        // 3. Leads with event date coming up in the next 30 days - nearest first
         const now = new Date()
         const in30d = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
         const upcoming = []
@@ -101,7 +99,7 @@ function RemindersCard({ leads, onSelectLead }) {
             if (evDate >= now && evDate <= in30d) {
                 if (!items.find(i => i.lead.lead_id === l.lead_id)) {
                     const daysLeft = Math.ceil((evDate - now) / (1000 * 60 * 60 * 24))
-                    upcoming.push({ lead: l, type: 'info', label: `Evento en ${daysLeft} día${daysLeft !== 1 ? 's' : ''}`, icon: '📅', _sortKey: evDate.getTime() })
+                    upcoming.push({ lead: l, type: 'info', label: `Evento en ${daysLeft} dia${daysLeft !== 1 ? 's' : ''}`, icon: 'EVE', _sortKey: evDate.getTime() })
                 }
             }
         })
@@ -129,7 +127,7 @@ function RemindersCard({ leads, onSelectLead }) {
                 {reminders.length === 0 ? (
                     <div className="text-center py-6">
                         <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">Todo al día, sin pendientes</p>
+                        <p className="text-sm text-muted-foreground">Todo al dia, sin pendientes</p>
                     </div>
                 ) : (
                     reminders.map((r, i) => (
@@ -143,7 +141,7 @@ function RemindersCard({ leads, onSelectLead }) {
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">{r.label}</p>
                                     <p className="text-sm font-medium text-foreground truncate">{r.lead.nombre}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">#{r.lead.lead_id} · {r.lead.evento || 'Sin evento'}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">#{r.lead.lead_id} - {r.lead.evento || 'Sin evento'}</p>
                                 </div>
                                 <ArrowUpRight className="h-3 w-3 text-muted-foreground mt-1 shrink-0" />
                             </div>
@@ -186,7 +184,7 @@ function RecentLeadsList({ leads, allLeads, onSelectLead, onLeadAdded }) {
             <CardHeader className="flex flex-row items-center justify-between pb-4">
                 <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Leads Recientes</CardTitle>
                 <Button variant="outline" size="sm" onClick={() => setIsNewLeadOpen(true)} className="rounded-none border-foreground text-xs uppercase tracking-widest hover:bg-secondary">
-                    <Plus className="mr-2 h-3 w-3" /> New
+                    <Plus className="mr-2 h-3 w-3" /> Nuevo
                 </Button>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -241,9 +239,9 @@ function TeamCard({ leads }) {
     }, [leads])
 
     const getStatus = (v) => {
-        if (v.perdidos > v.activos) return { label: 'Needs follow-up', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }
-        if (v.activos > 3) return { label: 'On track', color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' }
-        return { label: 'Backlog', color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' }
+        if (v.perdidos > v.activos) return { label: 'Requiere seguimiento', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' }
+        if (v.activos > 3) return { label: 'En buen ritmo', color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' }
+        return { label: 'Con backlog', color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' }
     }
 
     const colors = ['bg-emerald-200 dark:bg-emerald-800', 'bg-blue-200 dark:bg-blue-800', 'bg-amber-200 dark:bg-amber-800', 'bg-rose-200 dark:bg-rose-800']
@@ -251,7 +249,7 @@ function TeamCard({ leads }) {
     return (
         <Card className="rounded-none border-border bg-card shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-4">
-                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Team Collaboration</CardTitle>
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Colaboracion de Equipo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
                 {team.map((v, i) => {
@@ -302,7 +300,7 @@ function PipelineDonut({ leads, loading }) {
     return (
         <Card className="rounded-none border-border bg-card shadow-sm">
             <CardHeader className="pb-4">
-                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Pipeline Progress</CardTitle>
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Avance de Pipeline</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center pt-2">
                 <div className="relative" style={{ width: 160, height: 160 }}>
@@ -345,11 +343,11 @@ function DataQualityCard({ leads }) {
             <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-secondary/50 blur-3xl opacity-50" />
             <div className="absolute -bottom-8 -left-8 h-40 w-40 rounded-full bg-primary/20 blur-3xl opacity-50" />
             <CardHeader className="relative pb-4">
-                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Data Quality</CardTitle>
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Calidad de Datos</CardTitle>
             </CardHeader>
             <CardContent className="relative grid grid-cols-2 gap-4">
                 {[
-                    { icon: Phone, val: stats.phone, label: 'Sin teléfono' },
+                    { icon: Phone, val: stats.phone, label: 'Sin telefono' },
                     { icon: Calendar, val: stats.event, label: 'Sin fecha' },
                     { icon: AlertTriangle, val: stats.origen, label: 'Origen desc.' },
                     { icon: MapPin, val: stats.salon, label: 'Indecisos' },
@@ -365,9 +363,7 @@ function DataQualityCard({ leads }) {
     )
 }
 
-/* ═══════════════════════════════════════
-   LEADS TABLE
-   ═══════════════════════════════════════ */
+/* LEADS TABLE */
 function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
     const [visibleCount, setVisibleCount] = useState(15)
     const [isNewLeadOpen, setIsNewLeadOpen] = useState(false)
@@ -413,7 +409,7 @@ function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
     return (
         <Card className="rounded-none border-border bg-card shadow-sm mt-8">
             <CardHeader className="flex flex-row items-center justify-between pb-6">
-                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">RECENT LEADS</CardTitle>
+                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">LEADS RECIENTES</CardTitle>
                 <div className="flex gap-2">
                     <Button size="sm" onClick={() => navigate('/admin/import-leads')} className="flex items-center gap-2 rounded-full px-4 border border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-600 dark:hover:bg-emerald-900/50">
                         <UploadCloud className="h-4 w-4" />
@@ -430,7 +426,7 @@ function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="border-b border-slate-100 dark:border-slate-800">
-                                {['ID', 'Nombre', 'Evento', 'Fase', 'Vendedora', 'Canal', 'Origen', 'Teléfono', 'Salón'].map(h => (
+                                {['ID', 'Nombre', 'Evento', 'Fase', 'Vendedora', 'Canal', 'Origen', 'Telefono', 'Salon'].map(h => (
                                     <th key={h} className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">{h}</th>
                                 ))}
                             </tr>
@@ -459,7 +455,7 @@ function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
                             onClick={() => setVisibleCount(prev => prev + 50)}
                             className="rounded-full border-slate-200 dark:border-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-900 dark:hover:text-slate-100"
                         >
-                            Cargar más leads ({visibleCount} de {leads.length})
+                            Cargar mas leads ({visibleCount} de {leads.length})
                         </Button>
                     </div>
                 )}
@@ -478,9 +474,7 @@ function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
     )
 }
 
-/* ═══════════════════════════════════════
-   LEAD DETAIL SHEET
-   ═══════════════════════════════════════ */
+/* LEAD DETAIL SHEET */
 function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelete }) {
     const [isEditing, setIsEditing] = useState(false)
     const [editData, setEditData] = useState({})
@@ -490,7 +484,7 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
 
     // Default system users plus any dynamically discovered from ALL leads (not filtered)
     const vendedoras = useMemo(() => {
-        const defaults = ['Sin Información']
+        const defaults = ['Sin Informacion']
         const source = allLeads || leads || []
         const dbVendedoras = source.map(l => l.vendedora).filter(v => v && !isSinInfo(v))
         return Array.from(new Set([...defaults, ...dbVendedoras]))
@@ -522,19 +516,19 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
     }
 
     const fields = [
-        { label: 'Lead ID', key: 'lead_id', icon: '🆔', readonly: true },
-        { label: 'Nombre', key: 'nombre', icon: '👤' },
-        { label: 'Teléfono', key: 'telefono', icon: '📱' },
-        { label: 'Canal Original', key: 'canal_de_contacto', icon: '📨' },
-        { label: 'Cómo nos encontró', key: 'como_nos_encontro', icon: '🔍' },
-        { label: 'Canal Normalizado (IA)', key: 'canal_normalizado', icon: '✨', readonly: true },
-        { label: 'Evento Original', key: 'evento', icon: '🎉' },
-        { label: 'Evento Normalizado (IA)', key: 'evento_normalizado', icon: '✨', readonly: true },
-        { label: 'Fecha Evento', key: 'fecha_evento', icon: '📅' },
-        { label: 'Fase', key: 'fase_embudo', icon: '📊' },
-        { label: 'Primer Mensaje', key: 'fecha_primer_mensaje', icon: '💬', readonly: true },
-        { label: 'Vendedora', key: 'vendedora', icon: '👩‍💼' },
-        { label: 'Salón', key: 'salon', icon: '🏛️' },
+        { label: 'Lead ID', key: 'lead_id', icon: '#', readonly: true },
+        { label: 'Nombre', key: 'nombre', icon: 'N' },
+        { label: 'Telefono', key: 'telefono', icon: 'T' },
+        { label: 'Canal Original', key: 'canal_de_contacto', icon: 'C' },
+        { label: 'Como nos encontro', key: 'como_nos_encontro', icon: 'O' },
+        { label: 'Canal Normalizado (IA)', key: 'canal_normalizado', icon: 'IA', readonly: true },
+        { label: 'Evento Original', key: 'evento', icon: 'E' },
+        { label: 'Evento Normalizado (IA)', key: 'evento_normalizado', icon: 'IA', readonly: true },
+        { label: 'Fecha Evento', key: 'fecha_evento', icon: 'F' },
+        { label: 'Fase', key: 'fase_embudo', icon: 'P' },
+        { label: 'Primer Mensaje', key: 'fecha_primer_mensaje', icon: 'M', readonly: true },
+        { label: 'Vendedora', key: 'vendedora', icon: 'V' },
+        { label: 'Salon', key: 'salon', icon: 'S' },
     ]
 
     const displayNombre = isEditing ? editData.nombre : lead.nombre
@@ -555,7 +549,7 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
                                     size="icon"
                                     disabled={isDeleting}
                                     onClick={async () => {
-                                        if (window.confirm('¿Estás seguro de que deseas eliminar este lead? Esta acción no se puede deshacer.')) {
+                                        if (window.confirm('Estas seguro de que deseas eliminar este lead? Esta accion no se puede deshacer.')) {
                                             setIsDeleting(true);
                                             if (onDelete) await onDelete(lead.lead_id);
                                             setIsDeleting(false);
@@ -608,7 +602,7 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
                                                     return (
                                                         <div className="flex flex-col gap-1 w-full mt-1">
                                                             <Select
-                                                                value={isCustomVendedora ? 'Otro' : (val || 'Sin Información')}
+                                                                value={isCustomVendedora ? 'Otro' : (val || 'Sin Informacion')}
                                                                 onValueChange={(v) => {
                                                                     if (v === 'Otro') {
                                                                         setIsCustomVendedora(true)
@@ -667,7 +661,7 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
                                             )
                                         ) : (
                                             missing
-                                                ? <Badge variant="outline" className="rounded-none text-[10px] uppercase tracking-widest border-border text-muted-foreground">Sin Información</Badge>
+                                                ? <Badge variant="outline" className="rounded-none text-[10px] uppercase tracking-widest border-border text-muted-foreground">Sin Informacion</Badge>
                                                 : <p className="text-sm font-medium text-foreground break-words">{val}</p>
                                         )}
                                     </div>
@@ -681,9 +675,7 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
     )
 }
 
-/* ═══════════════════════════════════════
-   NEW LEAD DIALOG
-   ═══════════════════════════════════════ */
+/* NEW LEAD DIALOG */
 function NewLeadDialog({ leads, open, onClose, onSuccess }) {
     const [formData, setFormData] = useState({
         nombre: '', telefono: '', canal_de_contacto: '', evento: '', fecha_evento: '', como_nos_encontro: '', fase_embudo: 'NUEVO', vendedora: '', salon: ''
@@ -694,7 +686,7 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
 
     // Default system users plus any dynamically discovered from existant leads
     const vendedoras = useMemo(() => {
-        const defaults = ['Sin Información']
+        const defaults = ['Sin Informacion']
         const dbVendedoras = (leads || []).map(l => l.vendedora).filter(v => v && !isSinInfo(v))
         return Array.from(new Set([...defaults, ...dbVendedoras]))
     }, [leads])
@@ -732,14 +724,14 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
 
     const fields = [
         { label: 'Nombre *', key: 'nombre' },
-        { label: 'Teléfono', key: 'telefono' },
+        { label: 'Telefono', key: 'telefono' },
         { label: 'Canal Original', key: 'canal_de_contacto' },
-        { label: 'Cómo nos encontró', key: 'como_nos_encontro' },
+        { label: 'Como nos encontro', key: 'como_nos_encontro' },
         { label: 'Evento Original', key: 'evento' },
         { label: 'Fecha Evento', key: 'fecha_evento', placeholder: 'ej. 15/10/2026' },
         { label: 'Fase', key: 'fase_embudo' },
         { label: 'Vendedora', key: 'vendedora' },
-        { label: 'Salón', key: 'salon' },
+        { label: 'Salon', key: 'salon' },
     ]
 
     return (
@@ -747,7 +739,7 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
             <SheetContent className="w-full border-border bg-card sm:max-w-md overflow-y-auto">
                 <SheetHeader className="mb-6 mt-4 border-b border-border pb-4">
                     <SheetTitle className="font-heading text-xl tracking-wider text-foreground">AGREGAR NUEVO LEAD</SheetTitle>
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Llena los datos manualmente. La IA normalizará canales.</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Llena los datos manualmente. La IA normalizara canales.</p>
                 </SheetHeader>
 
                 {errorMsg && (
@@ -764,7 +756,7 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
                                 <div key={key} className="flex flex-col gap-1.5">
                                     <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{label}</label>
                                     <Select
-                                        value={isCustomVendedora ? 'Otro' : (formData[key] || 'Sin Información')}
+                                        value={isCustomVendedora ? 'Otro' : (formData[key] || 'Sin Informacion')}
                                         onValueChange={(v) => {
                                             if (v === 'Otro') {
                                                 setIsCustomVendedora(true)
@@ -851,12 +843,10 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
     )
 }
 
-/* ═══════════════════════════════════════
-   DATA QUALITY DETAILS TABLE (for DQ tab)
-   ═══════════════════════════════════════ */
+/* DATA QUALITY DETAILS TABLE (for DQ tab) */
 function DataQualityDetails({ leads }) {
     const fields = ['telefono', 'fecha_evento', 'canal_de_contacto', 'como_nos_encontro', 'vendedora', 'salon', 'evento']
-    const labels = { telefono: 'Teléfono', fecha_evento: 'Fecha Evento', canal_de_contacto: 'Canal', como_nos_encontro: 'Origen', vendedora: 'Vendedora', salon: 'Salón', evento: 'Evento' }
+    const labels = { telefono: 'Telefono', fecha_evento: 'Fecha Evento', canal_de_contacto: 'Canal', como_nos_encontro: 'Origen', vendedora: 'Vendedora', salon: 'Salon', evento: 'Evento' }
 
     const missingByField = useMemo(() => {
         return fields.map(f => {
@@ -907,9 +897,7 @@ function DataQualityDetails({ leads }) {
     )
 }
 
-/* ═══════════════════════════════════════
-   MAIN DASHBOARD PAGE
-   ═══════════════════════════════════════ */
+/* MAIN DASHBOARD PAGE */
 export default function Dashboard() {
     const { leads: apiLeads, loading, error, refresh } = useLeads()
     const [selectedLead, setSelectedLead] = useState(null)
@@ -1001,20 +989,20 @@ export default function Dashboard() {
             <Tabs defaultValue="overview" className="w-full">
                 <TabsList className="grid w-full grid-cols-4 rounded-xl bg-slate-100 dark:bg-slate-900 p-1">
                     <TabsTrigger value="overview" className="rounded-none text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground">
-                        Overview
+                        Resumen
                     </TabsTrigger>
                     <TabsTrigger value="pipeline" className="rounded-none text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground">
                         Pipeline
                     </TabsTrigger>
                     <TabsTrigger value="acquisition" className="rounded-none text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground">
-                        Acquisition
+                        Adquisicion
                     </TabsTrigger>
                     <TabsTrigger value="dataquality" className="rounded-none text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-muted-foreground">
-                        Data Quality
+                        Calidad Datos
                     </TabsTrigger>
                 </TabsList>
 
-                {/* ─── OVERVIEW ─── */}
+                {/* OVERVIEW */}
                 <TabsContent value="overview" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
                     {/* Row 1: Leads/day + Recent leads */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -1034,7 +1022,7 @@ export default function Dashboard() {
                     </div>
                 </TabsContent>
 
-                {/* ─── PIPELINE ─── */}
+                {/* PIPELINE */}
                 <TabsContent value="pipeline" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                         <LeadsByFaseChart leads={filteredLeads} loading={loading} />
@@ -1062,7 +1050,7 @@ export default function Dashboard() {
                     </div>
                 </TabsContent>
 
-                {/* ─── ACQUISITION ─── */}
+                {/* ACQUISITION */}
                 <TabsContent value="acquisition" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                         <TopOrigenesChart leads={filteredLeads} loading={loading} />
@@ -1074,7 +1062,7 @@ export default function Dashboard() {
                     </div>
                 </TabsContent>
 
-                {/* ─── DATA QUALITY ─── */}
+                {/* DATA QUALITY */}
                 <TabsContent value="dataquality" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
                     <div className="grid grid-cols-1 gap-4">
                         <DataQualityChart leads={filteredLeads} loading={hasInitialLoading} />
@@ -1112,3 +1100,4 @@ export default function Dashboard() {
         </div>
     )
 }
+

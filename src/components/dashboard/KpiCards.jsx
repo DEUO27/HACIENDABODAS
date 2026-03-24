@@ -11,9 +11,9 @@ import {
 import { isToday, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns'
 
 const kpiDefs = [
-    { key: 'total', label: 'Total Leads (30 Días)', icon: Users, color: 'emerald', hero: true },
+    { key: 'total', label: 'Total Leads (30 dias)', icon: Users, color: 'emerald', hero: true },
     { key: 'today', label: 'Nuevos (hoy)', icon: TrendingUp, color: 'blue' },
-    { key: 'week', label: 'Nuevos (7 días)', icon: TrendingUp, color: 'cyan' },
+    { key: 'week', label: 'Nuevos (7 dias)', icon: TrendingUp, color: 'cyan' },
     { key: 'activos', label: 'Activos', icon: UserCheck, color: 'emerald' },
     { key: 'noContesta', label: 'Seguimientos (NO CONTESTA)', icon: Clock, color: 'amber' },
 ]
@@ -121,3 +121,4 @@ export default function KpiCards({ leads, loading }) {
         </GlowingCards>
     )
 }
+

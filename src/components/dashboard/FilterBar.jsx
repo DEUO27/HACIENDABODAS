@@ -26,7 +26,7 @@ function getUniqueVals(leads, keyOrFn, normalizer = (v) => v) {
     const extractor = typeof keyOrFn === 'function' ? keyOrFn : (l) => l[keyOrFn]
     leads.forEach((l) => {
         const raw = extractor(l)
-        const val = isSinInfo(raw) ? 'Sin Información' : normalizer(raw)
+        const val = isSinInfo(raw) ? 'Sin Informacion' : normalizer(raw)
         set.add(val)
     })
     return Array.from(set).sort()
@@ -103,7 +103,7 @@ export default function FilterBar({ leads }) {
                 >
                     <div className="flex items-center gap-3">
                         <Filter className="h-5 w-5 text-muted-foreground stroke-[1.5]" />
-                        <span className="font-heading text-lg tracking-wider text-card-foreground">Filtros Avanzados y Búsqueda</span>
+                        <span className="font-heading text-lg tracking-wider text-card-foreground">Filtros Avanzados y Busqueda</span>
                         {activeCount > 0 && (
                             <>
                                 <Badge className="ml-3 rounded-none bg-primary px-3 py-1 text-xs font-semibold tracking-wider uppercase text-primary-foreground">
@@ -134,7 +134,7 @@ export default function FilterBar({ leads }) {
                             <div className="relative flex-1 w-full max-w-md">
                                 <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground stroke-[1.5]" />
                                 <Input
-                                    placeholder="Buscar nombre, teléfono, ID..."
+                                    placeholder="Buscar nombre, telefono, ID..."
                                     value={filters.search}
                                     onChange={(e) => updateFilter('search', e.target.value)}
                                     className="h-11 rounded-none border-border bg-secondary/30 pl-11 text-sm text-foreground focus:border-foreground focus:ring-0"
@@ -147,11 +147,11 @@ export default function FilterBar({ leads }) {
                                 </SelectTrigger>
                                 <SelectContent className="rounded-none border-border bg-card text-foreground">
                                     <SelectItem value="today" className="focus:bg-secondary/50">Hoy</SelectItem>
-                                    <SelectItem value="7d" className="focus:bg-secondary/50">Últimos 7 días</SelectItem>
-                                    <SelectItem value="30d" className="focus:bg-secondary/50">Últimos 30 días</SelectItem>
-                                    <SelectItem value="90d" className="focus:bg-secondary/50">Últimos 90 días</SelectItem>
-                                    <SelectItem value="ytd" className="focus:bg-secondary/50">Este año (YTD)</SelectItem>
-                                    <SelectItem value="all" className="focus:bg-secondary/50">Todo Histórico</SelectItem>
+                                    <SelectItem value="7d" className="focus:bg-secondary/50">Ultimos 7 dias</SelectItem>
+                                    <SelectItem value="30d" className="focus:bg-secondary/50">Ultimos 30 dias</SelectItem>
+                                    <SelectItem value="90d" className="focus:bg-secondary/50">Ultimos 90 dias</SelectItem>
+                                    <SelectItem value="ytd" className="focus:bg-secondary/50">Este ano (YTD)</SelectItem>
+                                    <SelectItem value="all" className="focus:bg-secondary/50">Todo Historico</SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -163,14 +163,14 @@ export default function FilterBar({ leads }) {
                             <MultiSelectDropdown title="Fase Embudo" options={opts.fases} selected={filters.fases} onToggle={(v) => toggleArrayFilter('fases', v)} />
                             <MultiSelectDropdown title="Vendedoras" options={opts.vendedoras} selected={filters.vendedoras} onToggle={(v) => toggleArrayFilter('vendedoras', v)} />
                             <MultiSelectDropdown title="Canales" options={opts.canales} selected={filters.canales} onToggle={(v) => toggleArrayFilter('canales', v)} />
-                            <MultiSelectDropdown title="Orígenes" options={opts.origenes} selected={filters.origenes} onToggle={(v) => toggleArrayFilter('origenes', v)} />
+                            <MultiSelectDropdown title="Origenes" options={opts.origenes} selected={filters.origenes} onToggle={(v) => toggleArrayFilter('origenes', v)} />
                             <MultiSelectDropdown title="Eventos" options={opts.eventos} selected={filters.eventos} onToggle={(v) => toggleArrayFilter('eventos', v)} />
                             <MultiSelectDropdown title="Salones" options={opts.salones} selected={filters.salones} onToggle={(v) => toggleArrayFilter('salones', v)} />
                         </div>
 
                         {/* Row 3: Quick Toggles (Chips) */}
                         <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border mt-6">
-                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mr-2">Filtros Rápidos</span>
+                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mr-2">Filtros Rapidos</span>
 
                             <Badge
                                 variant="outline"
@@ -221,3 +221,4 @@ export default function FilterBar({ leads }) {
         </div>
     )
 }
+

@@ -4,9 +4,7 @@ import { logoBase64, bgBase64 } from './logoBase64';
 // Using standard PDF fonts (Times-Roman and Helvetica) for stability.
 // Custom TTF URLs are prone to 404s and format errors in @react-pdf/renderer.
 
-/* ═══════════════════════════════════════
-   COLOR PALETTE
-   ═══════════════════════════════════════ */
+/* COLOR PALETTE */
 const C = {
     primary: '#1A1A1A',
     primaryMid: '#333333',
@@ -27,11 +25,9 @@ const C = {
     olive: '#D5C7B8',
 };
 
-/* ═══════════════════════════════════════
-   STYLES
-   ═══════════════════════════════════════ */
+/* STYLES */
 const s = StyleSheet.create({
-    /* ─ Pages ─ */
+    /* Pages */
     page: {
         backgroundColor: C.bg,
         paddingTop: 50,
@@ -189,7 +185,7 @@ const s = StyleSheet.create({
         color: 'rgba(255,255,255,0.4)',
     },
 
-    /* ─ Header & Footer (repeated) ─ */
+    /* Header & Footer (repeated) */
     header: {
         position: 'absolute',
         top: 20,
@@ -230,7 +226,7 @@ const s = StyleSheet.create({
         color: C.textLight,
     },
 
-    /* ─ Section titles ─ */
+    /* Section titles */
     sectionTitle: {
         fontSize: 18,
         fontFamily: 'Times-Roman',
@@ -251,7 +247,7 @@ const s = StyleSheet.create({
         marginBottom: 12,
     },
 
-    /* ─ KPI Cards ─ */
+    /* KPI Cards */
     kpiGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -306,7 +302,7 @@ const s = StyleSheet.create({
         marginTop: 2,
     },
 
-    /* ─ Charts ─ */
+    /* Charts */
     chartBox: {
         backgroundColor: C.white,
         borderWidth: 1,
@@ -340,7 +336,7 @@ const s = StyleSheet.create({
         padding: 10,
     },
 
-    /* ─ Insights ─ */
+    /* Insights */
     insightBox: {
         backgroundColor: C.accentLight,
         borderLeftWidth: 3,
@@ -379,7 +375,7 @@ const s = StyleSheet.create({
         lineHeight: 1.6,
     },
 
-    /* ─ Table ─ */
+    /* Table */
     table: {
         width: '100%',
         marginTop: 10,
@@ -428,13 +424,11 @@ const s = StyleSheet.create({
     badgeDanger: { color: C.danger, fontFamily: 'Helvetica', fontWeight: 700 },
 });
 
-/* ═══════════════════════════════════════
-   SHARED COMPONENTS
-   ═══════════════════════════════════════ */
+/* SHARED COMPONENTS */
 function Header({ dateRange }) {
     return (
         <View style={s.header} fixed>
-            <Text style={s.headerLeft}>Hacienda Bodas — Reporte Ejecutivo</Text>
+            <Text style={s.headerLeft}>Hacienda Bodas - Reporte Ejecutivo</Text>
             <Text style={s.headerRight}>{dateRange}</Text>
         </View>
     );
@@ -464,9 +458,7 @@ function KpiCard({ label, value, extra, highlight = false, warn = false, danger 
     );
 }
 
-/* ═══════════════════════════════════════
-   NATIVE PDF DONUT CHART (no html-to-image)
-   ═══════════════════════════════════════ */
+/* NATIVE PDF DONUT CHART (no html-to-image) */
 const PDF_CHART_COLORS = [
     '#FFA6A6', '#A6C8FF', '#A6E3B8', '#FFD28A',
     '#D7A6FF', '#FFC2A6', '#A6EAE3', '#BAB8E8',
@@ -512,7 +504,7 @@ function PdfDonutChart({ data, width = 200, height = 200 }) {
 
     return (
         <View style={{ alignItems: 'center', width: '100%' }}>
-            {/* Donut — compact, centered */}
+            {/* Donut - compact, centered */}
             <Svg width={width} height={height * 0.65}>
                 {slices.map((s, i) => (
                     <Path key={i}
@@ -522,7 +514,7 @@ function PdfDonutChart({ data, width = 200, height = 200 }) {
                 ))}
             </Svg>
 
-            {/* Legend grid — 2 columns, all sectors shown, no clipping */}
+            {/* Legend grid - 2 columns, all sectors shown, no clipping */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', marginTop: 6, paddingHorizontal: 4 }}>
                 {slices.map((s, i) => (
                     <View key={i} style={{ width: '48%', flexDirection: 'row', alignItems: 'center', marginBottom: 4, marginRight: '2%' }}>
@@ -548,7 +540,7 @@ function ChartBlock({ title, imageData, height = 200, insight = null }) {
             <Image src={imageData} style={{ ...s.chartImage, height }} />
             {insight && (
                 <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>
-                    <Text style={{ fontSize: 9, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>✦ Interpretación IA</Text>
+                    <Text style={{ fontSize: 9, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>Interpretacion IA</Text>
                     <Text style={{ fontSize: 9, fontFamily: 'Helvetica', fontWeight: 400, color: C.textMid, lineHeight: 1.5 }}>
                         {insight}
                     </Text>
@@ -558,13 +550,11 @@ function ChartBlock({ title, imageData, height = 200, insight = null }) {
     );
 }
 
-/* ═══════════════════════════════════════
-   MAIN DOCUMENT
-   ═══════════════════════════════════════ */
+/* MAIN DOCUMENT */
 export function PdfDocument({ kpis, images, dateRangeString, generatedAt, activeFiltersText, summary }) {
     return (
         <Document>
-            {/* ═══ PAGE 1: COVER ═══ */}
+            {/* PAGE 1: COVER */}
             <Page size="A4" style={s.coverPage}>
                 <Image src={bgBase64} style={s.coverBackground} />
                 <View style={s.coverOverlay} />
@@ -576,7 +566,7 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
 
                 <View style={s.coverInner}>
                     <Image src={logoBase64} style={{ width: 180, marginBottom: 20 }} />
-                    <Text style={s.coverBrand}>San Jose Actipan Hacienda — CRM</Text>
+                    <Text style={s.coverBrand}>San Jose Actipan Hacienda - CRM</Text>
                     <Text style={s.coverTitle}>Reporte Ejecutivo</Text>
                     <Text style={s.coverTitle}>de Leads</Text>
                     <Text style={s.coverSubtitle}>{dateRangeString}</Text>
@@ -590,7 +580,7 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
 
                     <View style={s.coverFiltersBox}>
                         <Text style={s.coverFiltersLabel}>Filtros Aplicados</Text>
-                        <Text style={s.coverFiltersText}>{activeFiltersText || 'Ninguno — todos los leads incluidos'}</Text>
+                        <Text style={s.coverFiltersText}>{activeFiltersText || 'Ninguno - todos los leads incluidos'}</Text>
                     </View>
                 </View>
 
@@ -601,18 +591,18 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
 
 
 
-            {/* ═══ PAGE 3: RESUMEN EJECUTIVO (KPIs) ═══ */}
+            {/* PAGE 2: RESUMEN EJECUTIVO (KPIs) */}
             <Page size="A4" style={s.page}>
                 <Header dateRange={dateRangeString} />
 
                 <Text style={s.sectionTitle}>Resumen Ejecutivo</Text>
-                <Text style={s.sectionSubtitle}>Métricas clave del periodo analizado</Text>
+                <Text style={s.sectionSubtitle}>Metricas clave del periodo seleccionado</Text>
 
                 <View style={s.kpiGrid}>
                     <KpiCard label="Total Leads" value={kpis.total} highlight />
                     <KpiCard label="Activos" value={kpis.activos} extra={`${kpis.total ? Math.round((kpis.activos / kpis.total) * 100) : 0}% del total`} />
                     <KpiCard label="Nuevos Hoy" value={kpis.todayCount} />
-                    <KpiCard label="Nuevos (7 días)" value={kpis.weekCount} />
+                    <KpiCard label="Nuevos (7 dias)" value={kpis.weekCount} />
                     <KpiCard label="Seguimientos (NO CONTESTA)" value={kpis.noContesta} warn />
                     <KpiCard label="Top Origen" value={kpis.topOrigenName} extra={`${kpis.topOrigenPct}% de los leads`} />
                     <KpiCard label="Top Vendedora" value={kpis.topVendedoraName} extra={`${kpis.topVendedoraCount} leads`} />
@@ -621,15 +611,15 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
 
                 {/* Insight box */}
                 <View style={s.insightBox}>
-                    <Text style={s.insightTitle}>Resumen Rápido</Text>
+                    <Text style={s.insightTitle}>Resumen Ejecutivo</Text>
                     <Text style={s.insightText}>
-                        • De los {kpis.total} leads analizados, {kpis.activos} se mantienen activos.
+                        - De los {kpis.total} leads analizados, {kpis.activos} se mantienen activos.
                     </Text>
                     <Text style={s.insightText}>
-                        • La fuente principal de leads es "{kpis.topOrigenName}" representando el {kpis.topOrigenPct}% del total.
+                        - La fuente principal de leads es "{kpis.topOrigenName}" representando el {kpis.topOrigenPct}% del total.
                     </Text>
                     <Text style={s.insightText}>
-                        • {kpis.topVendedoraName} lidera con {kpis.topVendedoraCount} leads asignados.
+                        - {kpis.topVendedoraName} lidera con {kpis.topVendedoraCount} leads asignados.
                     </Text>
                 </View>
 
@@ -637,7 +627,7 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                     kpis.noContesta > 0 && (
                         <View style={s.alertBox}>
                             <Text style={s.alertText}>
-                                ⚠ Hay {kpis.noContesta} lead(s) que llevan más de 24 horas sin respuesta. Se recomienda dar seguimiento inmediato.
+                                Aviso: Hay {kpis.noContesta} lead(s) que llevan mas de 24 horas sin respuesta. Se recomienda dar seguimiento inmediato.
                             </Text>
                         </View>
                     )
@@ -646,15 +636,15 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 <Footer generatedAt={generatedAt} />
             </Page >
 
-             {/* ═══ PAGE 3: TENDENCIAS ═══ */}
+            {/* PAGE 3: TENDENCIAS */}
             <Page size="A4" style={s.page}>
                 <Header dateRange={dateRangeString} />
                 <Text style={s.sectionTitle}>Tendencias de Volumen</Text>
-                <ChartBlock title="Leads por Día" imageData={images.leads_by_day} height={220} insight={summary?.chart_insights?.leads_by_day} />
+                <ChartBlock title="Leads por Dia" imageData={images.leads_by_day} height={220} insight={summary?.chart_insights?.leads_by_day} />
                 <Footer generatedAt={generatedAt} />
             </Page>
 
-             {/* ═══ PAGE 4: PIPELINE ═══ */}
+            {/* PAGE 4: PIPELINE */}
             <Page size="A4" style={s.page}>
                 <Header dateRange={dateRangeString} />
                 <Text style={s.sectionTitle}>Pipeline y Equipo</Text>
@@ -662,17 +652,17 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 <Footer generatedAt={generatedAt} />
             </Page>
 
-            {/* ═══ PAGE 5: ADQUISICIÓN ═══ */}
+            {/* PAGE 5: ADQUISICION */}
             <Page size="A4" style={s.page}>
                 <Header dateRange={dateRangeString} />
-                <Text style={s.sectionTitle}>Canales de Adquisición</Text>
-                {/* Native PDF donut chart — bypass html-to-image SVG text issues */}
+                <Text style={s.sectionTitle}>Canales de Adquisicion</Text>
+                {/* Native PDF donut chart - bypass html-to-image SVG text issues */}
                 <View style={[s.chartBox, { marginTop: 8 }]}>
                     <Text style={s.chartTitle}>Leads por Canal de Contacto</Text>
                     <PdfDonutChart data={kpis.canalBreakdown || []} width={360} height={280} />
                     {summary?.chart_insights?.leads_by_canal && (
                         <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>
-                            <Text style={{ fontSize: 9, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>✦ Interpretación IA</Text>
+                            <Text style={{ fontSize: 9, fontFamily: 'Times-Roman', fontWeight: 600, color: C.primary, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>Interpretacion IA</Text>
                             <Text style={{ fontSize: 9, fontFamily: 'Helvetica', fontWeight: 400, color: C.textMid, lineHeight: 1.5 }}>{summary.chart_insights.leads_by_canal}</Text>
                         </View>
                     )}
@@ -680,12 +670,12 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 <Footer generatedAt={generatedAt} />
             </Page>
 
-            {/* ═══ PAGE 6: EVENTO + DATA QUALITY ═══ */}
+            {/* PAGE 6: EVENTO + DATA QUALITY */}
             <Page size="A4" style={s.page}>
                 <Header dateRange={dateRangeString} />
                 <Text style={s.sectionTitle}>Evento y Calidad de Datos</Text>
                 <ChartBlock title="Leads por Tipo de Evento" imageData={images.leads_by_evento} height={210} insight={summary?.chart_insights?.leads_by_evento} />
-
+                <Footer generatedAt={generatedAt} />
             </Page>
 
 
@@ -694,3 +684,4 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
         </Document >
     );
 }
+
