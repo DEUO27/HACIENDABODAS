@@ -150,7 +150,7 @@ export default function FilterBar({ leads }) {
                                     <SelectItem value="7d" className="focus:bg-secondary/50">Ultimos 7 dias</SelectItem>
                                     <SelectItem value="30d" className="focus:bg-secondary/50">Ultimos 30 dias</SelectItem>
                                     <SelectItem value="90d" className="focus:bg-secondary/50">Ultimos 90 dias</SelectItem>
-                                    <SelectItem value="ytd" className="focus:bg-secondary/50">Este ano (YTD)</SelectItem>
+                                    <SelectItem value="ytd" className="focus:bg-secondary/50">Este año (YTD)</SelectItem>
                                     <SelectItem value="all" className="focus:bg-secondary/50">Todo Historico</SelectItem>
                                 </SelectContent>
                             </Select>

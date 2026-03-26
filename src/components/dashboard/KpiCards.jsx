@@ -3,20 +3,52 @@ import { Card, CardContent } from '@/components/ui/card'
 import { GlowingCards, GlowingCard } from '@/components/ui/glowing-cards'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useFilters } from '@/contexts/FilterContext'
 import { isSinInfo, parseLeadDate } from '@/lib/leadUtils'
 import {
     Users, UserCheck, UserX, PhoneOff, CalendarOff,
     Clock, PhoneMissed, HelpCircle, MapPin, TrendingUp, TrendingDown,
 } from 'lucide-react'
-import { isToday, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns'
+import { isToday, subDays, startOfDay, endOfDay, isWithinInterval, startOfYear, parseISO, differenceInCalendarDays } from 'date-fns'
 
 const kpiDefs = [
-    { key: 'total', label: 'Total Leads (30 dias)', icon: Users, color: 'emerald', hero: true },
+    { key: 'total', label: 'Total Leads', icon: Users, color: 'emerald', hero: true },
     { key: 'today', label: 'Nuevos (hoy)', icon: TrendingUp, color: 'blue' },
     { key: 'week', label: 'Nuevos (7 dias)', icon: TrendingUp, color: 'cyan' },
     { key: 'activos', label: 'Activos', icon: UserCheck, color: 'emerald' },
     { key: 'noContesta', label: 'Seguimientos (NO CONTESTA)', icon: Clock, color: 'amber' },
 ]
+
+function getTotalLeadsLabel(filters) {
+    const now = new Date()
+
+    switch (filters.dateRange) {
+        case 'today':
+            return 'Total Leads (1 dia)'
+        case '7d':
+            return 'Total Leads (7 dias)'
+        case '30d':
+            return 'Total Leads (30 dias)'
+        case '90d':
+            return 'Total Leads (90 dias)'
+        case 'ytd': {
+            const days = differenceInCalendarDays(now, startOfYear(now)) + 1
+            return `Total Leads (${days} dias)`
+        }
+        case 'custom': {
+            const from = filters.customFrom ? parseISO(filters.customFrom) : null
+            const to = filters.customTo ? parseISO(filters.customTo) : now
+            if (!from) return 'Total Leads (rango personalizado)'
+            const days = differenceInCalendarDays(to, from) + 1
+            const safeDays = Number.isFinite(days) && days > 0 ? days : 1
+            return `Total Leads (${safeDays} dias)`
+        }
+        case 'all':
+            return 'Total Leads (historico)'
+        default:
+            return 'Total Leads'
+    }
+}
 
 function computeKpis(leads) {
     const total = leads.length
@@ -59,7 +91,13 @@ function computeKpis(leads) {
 }
 
 export default function KpiCards({ leads, loading }) {
+    const { filters } = useFilters()
     const kpis = useMemo(() => computeKpis(leads), [leads])
+    const totalLeadsLabel = useMemo(() => getTotalLeadsLabel(filters), [filters])
+    const displayKpiDefs = useMemo(
+        () => kpiDefs.map((def) => (def.key === 'total' ? { ...def, label: totalLeadsLabel } : def)),
+        [totalLeadsLabel]
+    )
 
     if (loading) {
         return (
@@ -89,7 +127,7 @@ export default function KpiCards({ leads, loading }) {
 
     return (
         <GlowingCards className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {kpiDefs.map((def) => {
+            {displayKpiDefs.map((def) => {
                 const val = kpis[def.key] ?? 0
                 const Icon = def.icon
                 const isHero = def.hero
