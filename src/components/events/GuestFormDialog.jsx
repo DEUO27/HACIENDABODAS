@@ -70,7 +70,13 @@ export default function GuestFormDialog({
           </label>
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-widest text-muted-foreground">Telefono</span>
-            <Input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
+            <Input
+              type="tel"
+              inputMode="tel"
+              placeholder="+52 81 2764 7007"
+              value={form.phone}
+              onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
+            />
           </label>
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-widest text-muted-foreground">Email</span>

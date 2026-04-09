@@ -104,13 +104,14 @@ export function normalizeGuestName(value) {
 }
 
 export function normalizeGuestPhone(value) {
-  const digits = String(value || '').replace(/\D/g, '')
+  const rawValue = String(value || '').trim()
+  const digits = rawValue.replace(/\D/g, '')
 
   if (!digits) return ''
   if (digits.length === 10) return `+52${digits}`
   if (digits.length === 12 && digits.startsWith('52')) return `+${digits}`
-  if (digits.length === 13 && digits.startsWith('521')) return `+${digits.slice(1)}`
-  if (String(value || '').trim().startsWith('+')) return String(value).trim()
+  if (digits.length === 13 && digits.startsWith('521')) return `+52${digits.slice(3)}`
+  if (rawValue.startsWith('+')) return rawValue
 
   return `+${digits}`
 }
