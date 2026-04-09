@@ -10,8 +10,8 @@ import {
     GitBranch,
     BarChart3,
     Users2,
+    CalendarDays,
     Settings,
-    HelpCircle,
     LogOut,
     Menu,
     Sun,
@@ -19,24 +19,34 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const menuItems = [
+const adminMenuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
+    { label: 'Eventos', icon: CalendarDays, to: '/eventos' },
     { label: 'Leads', icon: Users, to: '/dashboard/leads' },
     { label: 'Pipeline', icon: GitBranch, to: '/dashboard/pipeline' },
     { label: 'Analytics', icon: BarChart3, to: '/dashboard/analytics' },
     { label: 'Team', icon: Users2, to: '/dashboard/team' },
 ]
 
-const generalItems = [
-    { label: 'Settings', icon: Settings, to: '/dashboard/settings' },
-    { label: 'Help', icon: HelpCircle, to: '/dashboard/help' },
+const coupleMenuItems = [
+    { label: 'Eventos', icon: CalendarDays, to: '/eventos' },
 ]
+
+const adminGeneralItems = [
+    { label: 'Mensajes', icon: Settings, to: '/configuracion/mensajes' },
+]
+
+const sharedGeneralItems = []
 
 function SidebarContent({ onClose }) {
     const location = useLocation()
     const navigate = useNavigate()
-    const { signOut } = useAuth()
+    const { role, signOut } = useAuth()
     const { theme, setTheme } = useTheme()
+    const menuItems = role === 'admin' ? adminMenuItems : coupleMenuItems
+    const generalItems = role === 'admin'
+        ? [...adminGeneralItems, ...sharedGeneralItems]
+        : sharedGeneralItems
 
     const isActive = (to) => {
         if (to === '/dashboard') return location.pathname === '/dashboard'
@@ -84,24 +94,30 @@ function SidebarContent({ onClose }) {
             </div>
 
             <div className="px-6 pt-8">
-                <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">General</p>
+                {generalItems.length > 0 && (
+                    <>
+                        <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">General</p>
+                        <nav className="space-y-2">
+                            {generalItems.map((item) => (
+                                <NavLink
+                                    key={item.to}
+                                    to={item.to}
+                                    onClick={onClose}
+                                    className={cn(
+                                        'flex items-center gap-4 rounded-none px-3 py-3 text-sm font-medium transition-colors',
+                                        isActive(item.to)
+                                            ? 'bg-secondary text-foreground dark:bg-secondary dark:text-foreground'
+                                            : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                                    )}
+                                >
+                                    <item.icon className="h-4 w-4 stroke-[1.5] text-muted-foreground" />
+                                    <span className="font-medium tracking-wide">{item.label}</span>
+                                </NavLink>
+                            ))}
+                        </nav>
+                    </>
+                )}
                 <nav className="space-y-2">
-                    {generalItems.map((item) => (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            onClick={onClose}
-                            className={cn(
-                                'flex items-center gap-4 rounded-none px-3 py-3 text-sm font-medium transition-colors',
-                                isActive(item.to)
-                                    ? 'bg-secondary text-foreground dark:bg-secondary dark:text-foreground'
-                                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-                            )}
-                        >
-                            <item.icon className="h-4 w-4 stroke-[1.5] text-muted-foreground" />
-                            <span className="font-medium tracking-wide">{item.label}</span>
-                        </NavLink>
-                    ))}
                     <button
                         onClick={toggleTheme}
                         className="flex w-full items-center gap-4 rounded-none px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"

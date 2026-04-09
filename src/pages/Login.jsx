@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -16,11 +16,13 @@ import {
 } from '@/components/ui/select'
 import { LogIn, UserPlus, AlertCircle, CheckCircle2, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
+import { getSessionReasonMessage, SESSION_EXPIRED_REASON } from '@/lib/authSession'
 
 export default function Login() {
     const { signIn, signUp } = useAuth()
     const { theme, setTheme } = useTheme()
     const navigate = useNavigate()
+    const location = useLocation()
 
     const [loginEmail, setLoginEmail] = useState('')
     const [loginPassword, setLoginPassword] = useState('')
@@ -34,6 +36,13 @@ export default function Login() {
     const [signupError, setSignupError] = useState('')
     const [signupSuccess, setSignupSuccess] = useState('')
     const [signupLoading, setSignupLoading] = useState(false)
+    const sessionNotice = useMemo(() => {
+        const reason = new URLSearchParams(location.search).get('reason')
+        if (reason === SESSION_EXPIRED_REASON) {
+            return getSessionReasonMessage(reason)
+        }
+        return ''
+    }, [location.search])
 
     const handleLogin = async (e) => {
         e.preventDefault()
@@ -41,7 +50,7 @@ export default function Login() {
         setLoginLoading(true)
         try {
             await signIn(loginEmail, loginPassword)
-            navigate('/dashboard', { replace: true })
+            navigate('/', { replace: true })
         } catch (err) {
             setLoginError(err.message || 'Error al iniciar sesion')
         } finally {
@@ -114,6 +123,12 @@ export default function Login() {
 
                         <TabsContent value="login" className="mt-0">
                             <form onSubmit={handleLogin} className="space-y-6">
+                                {!loginError && sessionNotice && (
+                                    <Alert className="rounded-none border-l-4 border-l-amber-500 border-y-0 border-r-0 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertDescription className="text-xs">{sessionNotice}</AlertDescription>
+                                    </Alert>
+                                )}
                                 {loginError && (
                                     <Alert variant="destructive" className="rounded-none border-l-4 border-l-red-500 border-y-0 border-r-0 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400">
                                         <AlertCircle className="h-4 w-4" />

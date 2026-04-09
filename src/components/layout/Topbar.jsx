@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFilters } from '@/contexts/FilterContext'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -20,6 +20,7 @@ export default function Topbar({ onRefresh, refreshing }) {
     const { setIsExportOpen } = useFilters()
     const { theme, setTheme } = useTheme()
     const navigate = useNavigate()
+    const location = useLocation()
 
     const [aiProvider, setAiProvider] = useState(() => Number(localStorage.getItem('aiProvider')) || 0)
     const [isAltPressed, setIsAltPressed] = useState(false)
@@ -53,6 +54,24 @@ export default function Topbar({ onRefresh, refreshing }) {
     }
 
     const initials = user?.email?.slice(0, 2)?.toUpperCase() || 'HB'
+    const isEventsModule = location.pathname.startsWith('/eventos')
+    const isLeadsModule = location.pathname.startsWith('/dashboard')
+    const isMessageConfigModule = location.pathname.startsWith('/configuracion/mensajes')
+
+    const headerContent = isMessageConfigModule
+        ? {
+            title: 'Mensajes',
+            subtitle: 'Configura los mensajes de WhatsApp que usa el wizard para los esposos.',
+        }
+        : isEventsModule
+        ? {
+            title: 'Eventos',
+            subtitle: 'Opera invitados, RSVP y envios sin mezclar este flujo con el CRM comercial.',
+        }
+        : {
+            title: 'Dashboard',
+            subtitle: 'Gestiona y analiza todos tus leads en un solo lugar.',
+        }
 
     return (
         <div className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-950">
@@ -119,9 +138,10 @@ export default function Topbar({ onRefresh, refreshing }) {
 
             <div className="flex flex-col gap-3 px-8 py-8 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="font-heading text-4xl text-slate-900 dark:text-slate-100">Dashboard</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gestiona y analiza todos tus leads en un solo lugar.</p>
+                    <h1 className="font-heading text-4xl text-slate-900 dark:text-slate-100">{headerContent.title}</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{headerContent.subtitle}</p>
                 </div>
+                {isLeadsModule && (
                 <div className="flex items-center gap-3">
                     <div
                         className="relative flex items-center"
@@ -161,6 +181,7 @@ export default function Topbar({ onRefresh, refreshing }) {
                         Export
                     </Button>
                 </div>
+                )}
             </div>
         </div>
     )

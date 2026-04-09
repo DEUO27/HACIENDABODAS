@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { parseISO } from 'date-fns'
+import { getLeadTrackingDate } from '@/lib/leadUtils'
 import LeadDetailSheet from './LeadDetailSheet'
 
 function isSinInfo(val) {
@@ -40,11 +40,9 @@ export default function LeadsTable({ leads, loading }) {
     const recentLeads = useMemo(() => {
         return [...leads]
             .sort((a, b) => {
-                const da = a.fecha_primer_mensaje && a.fecha_primer_mensaje !== 'Sin Informacion'
-                    ? parseISO(a.fecha_primer_mensaje).getTime() : 0
-                const db = b.fecha_primer_mensaje && b.fecha_primer_mensaje !== 'Sin Informacion'
-                    ? parseISO(b.fecha_primer_mensaje).getTime() : 0
-                return db - da
+                const da = getLeadTrackingDate(a)
+                const db = getLeadTrackingDate(b)
+                return (db ? db.getTime() : 0) - (da ? da.getTime() : 0)
             })
             .slice(0, 50)
     }, [leads])

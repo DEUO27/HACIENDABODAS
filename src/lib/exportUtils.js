@@ -1,5 +1,5 @@
 import { toPng } from 'html-to-image'
-import { isSinInfo, parseLeadDate } from './leadUtils'
+import { getLeadTrackingDate, isSinInfo } from './leadUtils'
 import { isToday, subDays, isAfter } from 'date-fns'
 
 /**
@@ -131,7 +131,7 @@ export function prepareKpiData(leads) {
     const canales = {}
 
     leads.forEach((l) => {
-        const d = parseLeadDate(l.fecha_primer_mensaje)
+        const d = getLeadTrackingDate(l)
         if (d && isToday(d)) todayCount++
         if (d && isAfter(d, sevenAgo)) weekCount++
 
@@ -183,7 +183,11 @@ export function getCriticalLeads(leads) {
 
     const others = leads
         .filter(l => !(l.fase_embudo || '').toLowerCase().includes('+24hrs'))
-        .sort((a, b) => (b.fecha_primer_mensaje || '').localeCompare(a.fecha_primer_mensaje || ''))
+        .sort((a, b) => {
+            const da = getLeadTrackingDate(a)
+            const db = getLeadTrackingDate(b)
+            return (db ? db.getTime() : 0) - (da ? da.getTime() : 0)
+        })
 
     critical = [...critical, ...others]
     return critical.slice(0, 100)

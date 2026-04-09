@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "Hacienda BodasBODAS"
+project_id = "zlndbbvnnciimugsacfs"
 
 [api]
 enabled = true
@@ -408,3 +408,28 @@ entrypoint = "./functions/normalize-leads/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/normalize-leads/*.html" ]
+
+[functions.rsvp-resolve-token]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/rsvp-resolve-token/index.ts"
+
+[functions.rsvp-submit]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/rsvp-submit/index.ts"
+
+[functions.send-whatsapp-batch]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-whatsapp-batch/index.ts"
+
+[functions.whatsapp-status-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/whatsapp-status-webhook/index.ts"
+
+[functions.process-scheduled-whatsapp]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/process-scheduled-whatsapp/index.ts"

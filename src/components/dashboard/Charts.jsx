@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { isSinInfo, parseLeadDate, normalizeCanal } from '@/lib/leadUtils'
+import { getLeadTrackingDate, isSinInfo, normalizeCanal } from '@/lib/leadUtils'
 import {
     LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area,
 } from 'recharts'
-import { format, subDays } from 'date-fns'
+import { eachDayOfInterval, format, parse, startOfDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 /* PALETTE */
@@ -63,16 +63,28 @@ function ChartCard({ title, subtitle, children, className = '', exportId }) {
 export function LeadsByDayChart({ leads, loading }) {
     const data = useMemo(() => {
         const counts = {}
+        const dates = []
         leads.forEach((l) => {
-            const d = parseLeadDate(l.fecha_primer_mensaje)
+            const d = getLeadTrackingDate(l)
             if (!d) return
+            dates.push(d)
             const key = format(d, 'yyyy-MM-dd')
             counts[key] = (counts[key] || 0) + 1
         })
-        return Object.entries(counts)
-            .sort(([a], [b]) => a.localeCompare(b))
+
+        const today = startOfDay(new Date())
+        const earliestDate = dates.length
+            ? startOfDay(new Date(Math.min(...dates.map((date) => date.getTime()))))
+            : today
+        const earliest = earliestDate > today ? today : earliestDate
+
+        return eachDayOfInterval({ start: earliest, end: today })
+            .map((day) => {
+                const date = format(day, 'yyyy-MM-dd')
+                return [date, counts[date] || 0]
+            })
             .map(([date, count]) => ({
-                date: format(new Date(date), 'dd MMM', { locale: es }),
+                date: format(parse(date, 'yyyy-MM-dd', new Date()), 'dd MMM', { locale: es }),
                 leads: count,
             }))
     }, [leads])
@@ -193,7 +205,7 @@ export function LeadsByCanalChart({ leads, loading }) {
                         paddingAngle={3}
                         dataKey="value"
                         nameKey="name"
-                        label={({ cx, cy, midAngle, outerRadius, value, name, percent }) => {
+                        label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
                             const RADIAN = Math.PI / 180
                             const radius = outerRadius * 1.15
                             const x = cx + radius * Math.cos(-midAngle * RADIAN)
@@ -335,7 +347,7 @@ export function LeadsByHourChart({ leads, loading }) {
             value: 0,
         }))
         leads.forEach((l) => {
-            const d = parseLeadDate(l.fecha_primer_mensaje)
+            const d = getLeadTrackingDate(l)
             if (d) hours[d.getHours()].value += 1
         })
         

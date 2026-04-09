@@ -20,14 +20,31 @@ function buildDedupeKey(nombre, telefono, fechaEvento, fuente) {
     return sha256_sync(rawArgs)
 }
 
+function formatLocalYMD(date) {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+}
+
+function formatUtcYMD(date) {
+    const y = date.getUTCFullYear()
+    const m = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const d = String(date.getUTCDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+}
+
 function convertExcelDateToISO(excelDate) {
     if (!excelDate) return null
     if (typeof excelDate === 'number') {
-        const d = new Date(Math.round((excelDate - 25569) * 86400 * 1000))
-        return d.toISOString().split('T')[0]
+        // Excel serial dates are day-based values (no timezone semantics).
+        // Convert from Excel epoch using UTC to keep day stable across timezones.
+        const excelEpochUtcMs = Date.UTC(1899, 11, 30)
+        const d = new Date(excelEpochUtcMs + Math.round(excelDate * 86400 * 1000))
+        return formatUtcYMD(d)
     }
     if (excelDate instanceof Date) {
-        return excelDate.toISOString().split('T')[0]
+        return formatUtcYMD(excelDate)
     }
     // String formats
     const str = String(excelDate).trim()
@@ -88,7 +105,8 @@ export function processExcelToLeads(excelRows) {
         // Datos derivados
         const pax = parseInt(String(paxRaw).replace(/\D/g, '')) || null
         const fecha_evento = convertExcelDateToISO(fechaEventoRaw)
-        const fecha_registro = convertExcelDateToISO(fechaAltaRaw) || new Date().toISOString().split('T')[0]
+        // Use local calendar day as fallback to avoid UTC date rollover.
+        const fecha_registro = convertExcelDateToISO(fechaAltaRaw) || formatLocalYMD(new Date())
 
         // Normalizacion
         const canalNorm = normalizeCanalExcel('', 'Bodas.com')

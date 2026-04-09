@@ -5,7 +5,7 @@
  * the Supabase Edge Function to get a Gemini-powered analysis.
  */
 import { supabase } from './supabase'
-import { isSinInfo, parseLeadDate } from './leadUtils'
+import { getLeadTrackingDate, isSinInfo } from './leadUtils'
 import { format } from 'date-fns'
 
 /**
@@ -18,7 +18,7 @@ export function buildAIPayload(leads, kpis, dateRangeString) {
     // ── Trends: leads by day ──
     const byDay = {}
     leads.forEach(l => {
-        const d = parseLeadDate(l.fecha_primer_mensaje)
+        const d = getLeadTrackingDate(l)
         if (d) {
             const dayStr = format(d, 'yyyy-MM-dd')
             byDay[dayStr] = (byDay[dayStr] || 0) + 1

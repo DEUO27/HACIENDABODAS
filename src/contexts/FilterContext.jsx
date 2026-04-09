@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useMemo } from 'react'
-import { isWithinInterval, parseISO, startOfDay, subDays, startOfYear, endOfDay } from 'date-fns'
-import { parseLeadDate, isSinInfo, normalizeCanal } from '@/lib/leadUtils'
+import { isWithinInterval, parseISO, startOfDay, subDays, startOfYear, endOfDay, addDays } from 'date-fns'
+import { getLeadTrackingDate, isSinInfo, normalizeCanal } from '@/lib/leadUtils'
 
 const FilterContext = createContext(null)
 
@@ -21,9 +21,11 @@ const initialFilters = {
     datosIncompletos: false,
 }
 
+const FUTURE_TOLERANCE_DAYS = 1
+
 function getDateInterval(dateRange, customFrom, customTo) {
     const now = new Date()
-    const end = endOfDay(now)
+    const end = endOfDay(addDays(now, FUTURE_TOLERANCE_DAYS))
     const today = startOfDay(now)
 
     switch (dateRange) {
@@ -40,7 +42,7 @@ function getDateInterval(dateRange, customFrom, customTo) {
         case 'custom':
             return {
                 start: customFrom ? startOfDay(parseISO(customFrom)) : subDays(today, 365),
-                end: customTo ? endOfDay(parseISO(customTo)) : end,
+                end: customTo ? endOfDay(addDays(parseISO(customTo), FUTURE_TOLERANCE_DAYS)) : end,
             }
         case 'all':
         default:
@@ -110,7 +112,7 @@ export function useFilteredLeads(leads) {
             }
 
             if (interval) {
-                const leadDate = parseLeadDate(lead.fecha_primer_mensaje)
+                const leadDate = getLeadTrackingDate(lead)
                 if (!leadDate || !isWithinInterval(leadDate, interval)) return false
             }
 

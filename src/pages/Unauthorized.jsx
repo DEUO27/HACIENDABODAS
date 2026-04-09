@@ -20,7 +20,7 @@ export default function Unauthorized() {
                 </div>
                 <h1 className="mb-2 font-heading text-3xl tracking-widest text-foreground uppercase">ACCESO DENEGADO</h1>
                 <p className="mb-8 text-[10px] uppercase font-semibold tracking-widest text-muted-foreground leading-relaxed">
-                    LO SENTIMOS, TU ROL DE CUENTA NO TIENE PERMISOS PARA GESTIONAR LEADS.
+                    TU ROL DE CUENTA NO TIENE PERMISOS PARA ACCEDER A ESTA SECCION.
                 </p>
                 <div className="w-full">
                     <Button

@@ -4,7 +4,7 @@ import { GlowingCards, GlowingCard } from '@/components/ui/glowing-cards'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useFilters } from '@/contexts/FilterContext'
-import { isSinInfo, parseLeadDate } from '@/lib/leadUtils'
+import { getLeadTrackingDate } from '@/lib/leadUtils'
 import {
     Users, UserCheck, UserX, PhoneOff, CalendarOff,
     Clock, PhoneMissed, HelpCircle, MapPin, TrendingUp, TrendingDown,
@@ -69,7 +69,7 @@ function computeKpis(leads) {
     let noContesta = 0
 
     leads.forEach((l) => {
-        const d = parseLeadDate(l.fecha_primer_mensaje)
+        const d = getLeadTrackingDate(l)
         if (d && isToday(d)) todayCount++
         if (d && isWithinInterval(d, weekInterval)) weekCount++
 

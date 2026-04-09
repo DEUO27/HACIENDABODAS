@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeads } from '@/hooks/useLeads'
-import { isSinInfo, parseLeadDate, normalizeCanal } from '@/lib/leadUtils'
+import { getLeadTrackingDate, isSinInfo, normalizeCanal } from '@/lib/leadUtils'
 import { useFilteredLeads, useFilters } from '@/contexts/FilterContext'
 import { syncLeads, createLead, deleteLead } from '@/lib/leadService'
 import { supabase } from '@/lib/supabase'
@@ -63,8 +63,8 @@ function RemindersCard({ leads, onSelectLead }) {
         const noResponse = leads
             .filter(l => (l.fase_embudo || '').toLowerCase().includes('+24hrs'))
             .sort((a, b) => {
-                const da = parseLeadDate(a.fecha_primer_mensaje)
-                const db = parseLeadDate(b.fecha_primer_mensaje)
+                const da = getLeadTrackingDate(a)
+                const db = getLeadTrackingDate(b)
                 return (da ? da.getTime() : 0) - (db ? db.getTime() : 0)
             })
         noResponse.slice(0, 3).forEach(l => {
@@ -79,8 +79,8 @@ function RemindersCard({ leads, onSelectLead }) {
                 return fase.includes('atendiendo') && (!vendedora || vendedora === 'sin informacion')
             })
             .sort((a, b) => {
-                const da = parseLeadDate(a.fecha_primer_mensaje)
-                const db = parseLeadDate(b.fecha_primer_mensaje)
+                const da = getLeadTrackingDate(a)
+                const db = getLeadTrackingDate(b)
                 return (da ? da.getTime() : 0) - (db ? db.getTime() : 0)
             })
         noVendedora.slice(0, 2).forEach(l => {
@@ -160,8 +160,8 @@ function RecentLeadsList({ leads, allLeads, onSelectLead, onLeadAdded }) {
     const recent = useMemo(() => {
         return [...leads]
             .sort((a, b) => {
-                const da = parseLeadDate(a.fecha_primer_mensaje)
-                const db = parseLeadDate(b.fecha_primer_mensaje)
+                const da = getLeadTrackingDate(a)
+                const db = getLeadTrackingDate(b)
                 const ta = da ? da.getTime() : 0
                 const tb = db ? db.getTime() : 0
                 return tb - ta
@@ -189,7 +189,7 @@ function RecentLeadsList({ leads, allLeads, onSelectLead, onLeadAdded }) {
             </CardHeader>
             <CardContent className="space-y-2">
                 {recent.map(lead => {
-                    const d = parseLeadDate(lead.fecha_primer_mensaje)
+                    const d = getLeadTrackingDate(lead)
                     return (
                         <button
                             key={lead.lead_id}
@@ -372,8 +372,8 @@ function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
     const rows = useMemo(() => {
         return [...leads]
             .sort((a, b) => {
-                const da = parseLeadDate(a.fecha_primer_mensaje)
-                const db = parseLeadDate(b.fecha_primer_mensaje)
+                const da = getLeadTrackingDate(a)
+                const db = getLeadTrackingDate(b)
                 const ta = da ? da.getTime() : 0
                 const tb = db ? db.getTime() : 0
                 return tb - ta
