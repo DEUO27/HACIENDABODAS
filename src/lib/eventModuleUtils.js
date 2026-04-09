@@ -108,9 +108,10 @@ export function normalizeGuestPhone(value) {
   const digits = rawValue.replace(/\D/g, '')
 
   if (!digits) return ''
+  if (rawValue.startsWith('+') && digits.startsWith('521') && digits.length === 13) return `+${digits}`
   if (digits.length === 10) return `+52${digits}`
   if (digits.length === 12 && digits.startsWith('52')) return `+${digits}`
-  if (digits.length === 13 && digits.startsWith('521')) return `+52${digits.slice(3)}`
+  if (digits.length === 13 && digits.startsWith('521')) return `+${digits}`
   if (rawValue.startsWith('+')) return rawValue
 
   return `+${digits}`
