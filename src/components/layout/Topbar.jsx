@@ -57,8 +57,14 @@ export default function Topbar({ onRefresh, refreshing }) {
     const isEventsModule = location.pathname.startsWith('/eventos')
     const isLeadsModule = location.pathname.startsWith('/dashboard')
     const isMessageConfigModule = location.pathname.startsWith('/configuracion/mensajes')
+    const isUserConfigModule = location.pathname.startsWith('/configuracion/usuarios')
 
-    const headerContent = isMessageConfigModule
+    const headerContent = isUserConfigModule
+        ? {
+            title: 'Usuarios',
+            subtitle: 'Crea planners, gestiona accesos y asigna eventos a cada cuenta.',
+        }
+        : isMessageConfigModule
         ? {
             title: 'Mensajes',
             subtitle: 'Configura los mensajes de WhatsApp que usa el wizard para los esposos.',
@@ -116,7 +122,11 @@ export default function Topbar({ onRefresh, refreshing }) {
                             <DropdownMenuLabel>
                                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.email}</p>
                                 <p className="text-xs text-slate-400 dark:text-slate-500">
-                                    {role === 'admin' ? 'Administrador' : 'Esposos'}
+                                    {role === 'admin'
+                                        ? 'Administrador'
+                                        : role === 'planner'
+                                            ? 'Planner'
+                                            : 'Esposos'}
                                 </p>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />

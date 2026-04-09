@@ -48,8 +48,7 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
 
-    // Derive role from user metadata
-    const role = user?.user_metadata?.role || 'esposos'
+    const role = user?.app_metadata?.role || 'esposos'
 
     useEffect(() => {
         let isMounted = true
@@ -117,15 +116,8 @@ export function AuthProvider({ children }) {
         return validatedUser
     }
 
-    const signUp = async (email, password, role = 'esposos') => {
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: { role },
-            },
-        })
-        if (error) throw error
+    const signUp = async () => {
+        throw new Error('El registro publico esta desactivado. Solicita acceso al administrador o planner de tu evento.')
     }
 
     const signOut = async () => {

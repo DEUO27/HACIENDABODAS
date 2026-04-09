@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
-import { assertEventOperator } from '../_shared/auth.ts'
+import { assertEventAccess } from '../_shared/auth.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 import { buildTemplatePayload, issueTokenForGuest, sendViaMetaTemplate } from '../_shared/whatsapp.ts'
 
@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { adminClient } = await assertEventOperator(req)
     const body = await req.json()
 
     const eventId = body.eventId
@@ -37,6 +36,11 @@ Deno.serve(async (req) => {
     if (!eventId || !messageKey || !baseUrl || !guestIds.length) {
       return jsonResponse({ error: 'eventId, messageKey, guestIds y baseUrl son obligatorios.' }, 400)
     }
+
+    const { adminClient } = await assertEventAccess(req, String(eventId), {
+      allowedGlobalRoles: ['admin', 'planner', 'esposos'],
+      allowedMembershipRoles: ['planner', 'esposos'],
+    })
 
     const { data: blueprint, error: blueprintError } = await adminClient
       .from('message_blueprints')

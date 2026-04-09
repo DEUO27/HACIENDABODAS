@@ -28,11 +28,16 @@ const adminMenuItems = [
     { label: 'Team', icon: Users2, to: '/dashboard/team' },
 ]
 
-const coupleMenuItems = [
+const plannerMenuItems = [
     { label: 'Eventos', icon: CalendarDays, to: '/eventos' },
 ]
 
+const coupleMenuItems = [
+    { label: 'Mi evento', icon: CalendarDays, to: '/eventos' },
+]
+
 const adminGeneralItems = [
+    { label: 'Usuarios', icon: Users2, to: '/configuracion/usuarios' },
     { label: 'Mensajes', icon: Settings, to: '/configuracion/mensajes' },
 ]
 
@@ -43,7 +48,11 @@ function SidebarContent({ onClose }) {
     const navigate = useNavigate()
     const { role, signOut } = useAuth()
     const { theme, setTheme } = useTheme()
-    const menuItems = role === 'admin' ? adminMenuItems : coupleMenuItems
+    const menuItems = role === 'admin'
+        ? adminMenuItems
+        : role === 'planner'
+            ? plannerMenuItems
+            : coupleMenuItems
     const generalItems = role === 'admin'
         ? [...adminGeneralItems, ...sharedGeneralItems]
         : sharedGeneralItems

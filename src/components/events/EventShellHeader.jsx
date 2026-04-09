@@ -2,10 +2,11 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import { formatEventDate } from '@/lib/eventModuleUtils'
 
-const tabs = [
+const baseTabs = [
   { key: 'dashboard', label: 'Dashboard', suffix: 'dashboard' },
   { key: 'invitados', label: 'Invitados', suffix: 'invitados' },
   { key: 'envios', label: 'Envios', suffix: 'envios' },
@@ -19,6 +20,10 @@ export default function EventShellHeader({
   actions = null,
 }) {
   const navigate = useNavigate()
+  const { role } = useAuth()
+  const tabs = role === 'admin' || role === 'planner'
+    ? [...baseTabs, { key: 'cuentas', label: 'Cuentas', suffix: 'cuentas' }]
+    : baseTabs
 
   return (
     <div className="space-y-4 border-b border-border pb-6">

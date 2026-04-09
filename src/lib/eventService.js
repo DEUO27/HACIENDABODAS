@@ -80,9 +80,15 @@ async function invokeProtectedFunction(name, payload, hasRetried = false) {
   })
 
   if (!response.ok) {
+    const errorDetails = typeof data?.details === 'string' && data.details.trim()
+      ? data.details.trim()
+      : ''
+
     const normalizedError = {
       status: response.status,
-      message: data?.error || data?.message || `No fue posible ejecutar ${name}.`,
+      message: errorDetails
+        ? `${data?.error || data?.message || `No fue posible ejecutar ${name}.`}\n${errorDetails}`
+        : (data?.error || data?.message || `No fue posible ejecutar ${name}.`),
     }
 
     if (!hasRetried && isSessionAuthError(normalizedError.message, normalizedError.status)) {
@@ -318,6 +324,34 @@ export async function listMessageBlueprints() {
   return data || []
 }
 
+export async function listEventAccounts(eventId) {
+  const { data, error } = await supabase.rpc('list_event_accounts', {
+    p_event_id: eventId,
+  })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function assignEventPlanner(eventId, plannerUserId) {
+  const { error } = await supabase.rpc('assign_event_planner', {
+    p_event_id: eventId,
+    p_planner_user_id: plannerUserId,
+  })
+
+  if (error) throw error
+}
+
+export async function removeEventMembership(eventId, userId) {
+  const { data, error } = await supabase.rpc('remove_event_membership', {
+    p_event_id: eventId,
+    p_user_id: userId,
+  })
+
+  if (error) throw error
+  return Boolean(data)
+}
+
 async function getEventRsvpPageRow(eventId) {
   const { data, error } = await supabase
     .from('event_rsvp_pages')
@@ -477,6 +511,23 @@ export async function saveMessageBlueprint(payload) {
 
   if (error) throw error
   return data
+}
+
+export async function listAccounts() {
+  const result = await invokeFunction('admin-list-accounts', {})
+  return result.accounts || []
+}
+
+export async function upsertPlannerAccount(payload) {
+  return invokeFunction('admin-upsert-account', payload)
+}
+
+export async function deleteAccount(userId) {
+  return invokeFunction('admin-delete-account', { userId })
+}
+
+export async function upsertEventCoupleAccount(payload) {
+  return invokeFunction('upsert-event-couple-account', payload)
 }
 
 export async function issueRsvpToken({ guestId, eventId, baseUrl, expiresAt = null }) {

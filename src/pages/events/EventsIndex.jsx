@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { CalendarDays, MapPin, Plus, Pencil } from 'lucide-react'
 
 import EventFormDialog from '@/components/events/EventFormDialog'
+import { useAuth } from '@/contexts/AuthContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +12,7 @@ import { createEvent, listEvents, updateEvent } from '@/lib/eventService'
 
 export default function EventsIndex() {
   const navigate = useNavigate()
+  const { role } = useAuth()
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -29,6 +31,11 @@ export default function EventsIndex() {
   useEffect(() => {
     loadEvents()
   }, [loadEvents])
+
+  if (role === 'esposos' && !loading) {
+    const homeEvent = events[0]
+    return <Navigate to={homeEvent ? `/eventos/${homeEvent.id}/dashboard` : '/unauthorized'} replace />
+  }
 
   async function handleSubmit(payload) {
     setSaving(true)
