@@ -432,20 +432,29 @@ entrypoint = "./functions/whatsapp-status-webhook/index.ts"
 [functions.process-scheduled-whatsapp]
 enabled = true
 verify_jwt = false
+entrypoint = "./functions/process-scheduled-whatsapp/index.ts"
 
 [functions.admin-list-accounts]
 enabled = true
 verify_jwt = false
+entrypoint = "./functions/admin-list-accounts/index.ts"
 
 [functions.admin-upsert-account]
 enabled = true
 verify_jwt = false
+entrypoint = "./functions/admin-upsert-account/index.ts"
 
 [functions.admin-delete-account]
 enabled = true
 verify_jwt = false
+entrypoint = "./functions/admin-delete-account/index.ts"
 
 [functions.upsert-event-couple-account]
 enabled = true
 verify_jwt = false
-entrypoint = "./functions/process-scheduled-whatsapp/index.ts"
+entrypoint = "./functions/upsert-event-couple-account/index.ts"
+
+[functions.upsert-couple-account]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/upsert-couple-account/index.ts"

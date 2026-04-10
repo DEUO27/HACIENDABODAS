@@ -527,7 +527,7 @@ export async function deleteAccount(userId) {
 }
 
 export async function upsertEventCoupleAccount(payload) {
-  return invokeFunction('upsert-event-couple-account', payload)
+  return invokeFunction('upsert-couple-account', payload)
 }
 
 export async function issueRsvpToken({ guestId, eventId, baseUrl, expiresAt = null }) {
