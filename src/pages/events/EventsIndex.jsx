@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { CalendarDays, MapPin, Plus, Pencil } from 'lucide-react'
+import { CalendarDays, MapPin, Plus, Pencil, Trash2 } from 'lucide-react'
 
 import EventFormDialog from '@/components/events/EventFormDialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { formatEventDate } from '@/lib/eventModuleUtils'
-import { createEvent, listEvents, updateEvent } from '@/lib/eventService'
+import { createEvent, deleteEvent, listEvents, updateEvent } from '@/lib/eventService'
 
 export default function EventsIndex() {
   const navigate = useNavigate()
@@ -18,9 +26,13 @@ export default function EventsIndex() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteSaving, setDeleteSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const loadEvents = useCallback(async () => {
     setLoading(true)
+    setErrorMessage('')
     try {
       setEvents(await listEvents())
     } finally {
@@ -39,6 +51,7 @@ export default function EventsIndex() {
 
   async function handleSubmit(payload) {
     setSaving(true)
+    setErrorMessage('')
     try {
       if (editingEvent) {
         await updateEvent(editingEvent.id, payload)
@@ -53,6 +66,23 @@ export default function EventsIndex() {
       setEditingEvent(null)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDeleteEvent() {
+    if (!deleteTarget) return
+
+    setDeleteSaving(true)
+    setErrorMessage('')
+
+    try {
+      await deleteEvent(deleteTarget.id)
+      setDeleteTarget(null)
+      await loadEvents()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'No fue posible eliminar el evento.')
+    } finally {
+      setDeleteSaving(false)
     }
   }
 
@@ -81,6 +111,12 @@ export default function EventsIndex() {
           Nuevo evento
         </Button>
       </div>
+
+      {errorMessage && (
+        <div className="rounded-none border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/20 dark:text-rose-300">
+          {errorMessage}
+        </div>
+      )}
 
       {loading ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -147,6 +183,16 @@ export default function EventsIndex() {
                     <Pencil className="mr-2 h-4 w-4" />
                     Editar
                   </Button>
+                  {role === 'admin' && (
+                    <Button
+                      variant="outline"
+                      className="rounded-none border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-300 dark:hover:bg-rose-950/20"
+                      onClick={() => setDeleteTarget(event)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Eliminar
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -180,6 +226,49 @@ export default function EventsIndex() {
         onSubmit={handleSubmit}
         saving={saving}
       />
+
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => {
+        if (!open && !deleteSaving) setDeleteTarget(null)
+      }}>
+        <DialogContent className="max-w-lg rounded-none">
+          <DialogHeader>
+            <DialogTitle>Eliminar evento</DialogTitle>
+            <DialogDescription>
+              Esta accion eliminara el evento y sus datos relacionados, incluyendo invitados, respuestas RSVP y configuraciones del evento. No se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteTarget && (
+            <div className="space-y-2 border border-border p-4 text-sm">
+              <p className="font-medium text-foreground">{deleteTarget.name}</p>
+              <p className="text-muted-foreground">{formatEventDate(deleteTarget.event_date)}</p>
+              <p className="text-muted-foreground">{deleteTarget.venue || 'Sin sede definida'}</p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-none"
+              disabled={deleteSaving}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="rounded-none"
+              disabled={deleteSaving}
+              onClick={handleDeleteEvent}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {deleteSaving ? 'Eliminando...' : 'Eliminar evento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

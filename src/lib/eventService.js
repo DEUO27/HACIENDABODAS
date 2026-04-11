@@ -212,6 +212,15 @@ export async function updateEvent(eventId, payload) {
   return data
 }
 
+export async function deleteEvent(eventId) {
+  const { error } = await supabase
+    .from('events')
+    .delete()
+    .eq('id', eventId)
+
+  if (error) throw error
+}
+
 export async function listGuests(eventId) {
   const { data, error } = await supabase
     .from('guests')

@@ -6,9 +6,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { Button } from '@/components/ui/button'
 import {
     LayoutDashboard,
-    Users,
-    GitBranch,
-    BarChart3,
     Users2,
     CalendarDays,
     Settings,
@@ -22,10 +19,6 @@ import { cn } from '@/lib/utils'
 const adminMenuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
     { label: 'Eventos', icon: CalendarDays, to: '/eventos' },
-    { label: 'Leads', icon: Users, to: '/dashboard/leads' },
-    { label: 'Pipeline', icon: GitBranch, to: '/dashboard/pipeline' },
-    { label: 'Analytics', icon: BarChart3, to: '/dashboard/analytics' },
-    { label: 'Team', icon: Users2, to: '/dashboard/team' },
 ]
 
 const plannerMenuItems = [
