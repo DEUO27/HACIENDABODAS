@@ -13,6 +13,14 @@ export default function ImportAdmin() {
     const [leads, setLeads] = useState([])
     const [invalidRows, setInvalidRows] = useState([])
     const [results, setResults] = useState(null)
+    const [importProgress, setImportProgress] = useState({
+        processed: 0,
+        total: 0,
+        inserted: 0,
+        skipped: 0,
+        currentBatch: 0,
+        totalBatches: 0,
+    })
 
     const handleFileChange = async (e) => {
         const nextFile = e.target.files[0]
@@ -39,8 +47,16 @@ export default function ImportAdmin() {
         if (!leads.length) return
 
         setStep('importing')
+        setImportProgress({
+            processed: 0,
+            total: leads.length,
+            inserted: 0,
+            skipped: 0,
+            currentBatch: 0,
+            totalBatches: Math.ceil(leads.length / 200),
+        })
         try {
-            const result = await batchInsertLeadsDB(leads)
+            const result = await batchInsertLeadsDB(leads, 200, setImportProgress)
             setResults(result)
             setStep('done')
         } catch (err) {
@@ -54,9 +70,22 @@ export default function ImportAdmin() {
         setLeads([])
         setInvalidRows([])
         setResults(null)
+        setImportProgress({
+            processed: 0,
+            total: 0,
+            inserted: 0,
+            skipped: 0,
+            currentBatch: 0,
+            totalBatches: 0,
+        })
         setError(null)
         setStep('upload')
     }
+
+    const progressPercent = importProgress.total
+        ? Math.round((importProgress.processed / importProgress.total) * 100)
+        : 0
+    const remainingLeads = Math.max(importProgress.total - importProgress.processed, 0)
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto pb-12 mt-4 px-4 overflow-y-auto w-full">
@@ -246,9 +275,54 @@ export default function ImportAdmin() {
             {step === 'importing' && (
                 <Card className="rounded-none border-border bg-card shadow-sm mt-6">
                     <CardContent className="flex flex-col items-center justify-center p-16 text-center">
-                        <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-6" />
+                        <div className="relative mb-6">
+                            <div className="absolute inset-0 animate-ping rounded-full bg-blue-500/20" />
+                            <RefreshCw className="relative w-12 h-12 text-blue-500 animate-spin mx-auto" />
+                        </div>
                         <h3 className="font-heading text-xl tracking-wider text-card-foreground mb-2">IMPORTANDO LEADS A SUPABASE...</h3>
-                        <p className="text-muted-foreground text-sm max-w-sm mx-auto">Insertando de manera segmentada e ignorando duplicados por hash seguro. Esto puede demorar si el archivo es grande.</p>
+                        <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-8">Insertando de manera segmentada e ignorando duplicados por hash seguro. Esto puede demorar si el archivo es grande.</p>
+
+                        <div className="w-full max-w-xl space-y-5">
+                            <div className="flex items-end justify-between gap-4 text-left">
+                                <div>
+                                    <p className="font-numbers text-4xl tabular-nums text-foreground">
+                                        {importProgress.processed}
+                                        <span className="text-muted-foreground"> / {importProgress.total}</span>
+                                    </p>
+                                    <p className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">
+                                        leads procesados
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-numbers text-3xl tabular-nums text-blue-600 dark:text-blue-400">{progressPercent}%</p>
+                                    <p className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">
+                                        {remainingLeads} pendientes
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="h-3 overflow-hidden rounded-none bg-secondary">
+                                <div
+                                    className="h-full bg-blue-500 transition-all duration-500 ease-out"
+                                    style={{ width: `${progressPercent}%` }}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3 text-xs uppercase tracking-widest">
+                                <div className="border border-border bg-secondary/30 px-4 py-3">
+                                    <p className="font-numbers text-lg tabular-nums text-foreground">{importProgress.currentBatch}</p>
+                                    <p className="text-muted-foreground">lote actual</p>
+                                </div>
+                                <div className="border border-border bg-secondary/30 px-4 py-3">
+                                    <p className="font-numbers text-lg tabular-nums text-foreground">{importProgress.totalBatches}</p>
+                                    <p className="text-muted-foreground">lotes totales</p>
+                                </div>
+                                <div className="border border-border bg-secondary/30 px-4 py-3">
+                                    <p className="font-numbers text-lg tabular-nums text-emerald-600 dark:text-emerald-400">{importProgress.inserted}</p>
+                                    <p className="text-muted-foreground">nuevos</p>
+                                </div>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             )}

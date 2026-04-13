@@ -160,11 +160,23 @@ export function processExcelToLeads(excelRows) {
 /**
  * Inserta el array de leads de forma masiva en Supabase usando onConflict para evitar duplicados.
  */
-export async function batchInsertLeadsDB(leadsArray, chunkSize = 200) {
+export async function batchInsertLeadsDB(leadsArray, chunkSize = 200, onProgress = null) {
     let inserts = 0
+    const total = leadsArray.length
+    const totalBatches = Math.ceil(total / chunkSize)
+
+    onProgress?.({
+        processed: 0,
+        total,
+        inserted: 0,
+        skipped: 0,
+        currentBatch: 0,
+        totalBatches,
+    })
 
     for (let i = 0; i < leadsArray.length; i += chunkSize) {
         const chunk = leadsArray.slice(i, i + chunkSize)
+        const currentBatch = Math.floor(i / chunkSize) + 1
 
         // Using upsert with dedupe_key to skip existing
         const { data, error } = await supabase
@@ -184,12 +196,23 @@ export async function batchInsertLeadsDB(leadsArray, chunkSize = 200) {
         if (data && data.length) {
             inserts += data.length
         }
+
+        const processed = Math.min(i + chunk.length, total)
+
+        onProgress?.({
+            processed,
+            total,
+            inserted: inserts,
+            skipped: processed - inserts,
+            currentBatch,
+            totalBatches,
+        })
     }
 
     return {
-        totalAttemped: leadsArray.length,
+        totalAttemped: total,
         totalInserted: inserts,
-        totalSkipped: leadsArray.length - inserts
+        totalSkipped: total - inserts
     }
 }
 
