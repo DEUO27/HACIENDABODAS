@@ -120,7 +120,10 @@ export default function GuestFormDialog({
               <option value="draft">Borrador</option>
               <option value="queued">En cola</option>
               <option value="scheduled">Programado</option>
+              <option value="accepted">Aceptado por WhatsApp</option>
               <option value="sent">Enviado</option>
+              <option value="delivered">Entregado</option>
+              <option value="read">Leido</option>
               <option value="failed">Fallido</option>
               <option value="canceled">Cancelado</option>
             </select>

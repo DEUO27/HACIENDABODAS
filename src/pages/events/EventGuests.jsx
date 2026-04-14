@@ -349,7 +349,10 @@ export default function EventGuests() {
               <option value="all">Envio: todos</option>
               <option value="draft">Borrador</option>
               <option value="scheduled">Programado</option>
+              <option value="accepted">Aceptado por WhatsApp</option>
               <option value="sent">Enviado</option>
+              <option value="delivered">Entregado</option>
+              <option value="read">Leido</option>
               <option value="failed">Fallido</option>
             </select>
             <select

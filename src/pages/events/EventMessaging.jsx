@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useAuth } from '@/contexts/AuthContext'
 import { useEvent } from '@/contexts/EventContext'
 import {
   buildRsvpPublicUrl,
@@ -52,7 +53,66 @@ const WIZARD_STEPS = [
   { id: 4, label: 'Revision' },
 ]
 
+function getDeliveryErrorMessage(delivery) {
+  if (delivery?.error_code) return delivery.error_code
+
+  const webhookError = delivery?.provider_payload?.webhook_status?.errors?.[0]
+  if (webhookError?.message) return webhookError.message
+  if (webhookError?.title) return webhookError.title
+
+  const metaError = delivery?.provider_payload?.meta_response?.error
+  if (metaError?.message) return metaError.message
+
+  return ''
+}
+
+function humanizeMetaError(message) {
+  const normalized = String(message || '').toLowerCase()
+
+  if (!normalized) return ''
+
+  if (normalized.includes('healthy ecosystem engagement')) {
+    return 'WhatsApp no entrego este mensaje por politicas de calidad/engagement. Revisa la categoria de la plantilla o prueba con un contacto con opt-in claro.'
+  }
+
+  if (normalized.includes('number of parameters') || normalized.includes('localizable_params')) {
+    return 'La plantilla de WhatsApp no coincide con las variables configuradas. Pide a soporte revisar la plantilla.'
+  }
+
+  if (normalized.includes('template') && normalized.includes('not')) {
+    return 'La plantilla de WhatsApp no esta disponible o no coincide con la configuracion.'
+  }
+
+  if (normalized.includes('recipient') || normalized.includes('phone')) {
+    return 'WhatsApp no pudo validar el telefono del invitado.'
+  }
+
+  return 'WhatsApp no pudo completar la entrega. Revisa la configuracion del numero o la plantilla.'
+}
+
+function getDeliveryDisplayDetail(delivery, canViewTechnicalDetails) {
+  const technicalMessage = getDeliveryErrorMessage(delivery)
+
+  if (!technicalMessage) return 'Sin observaciones'
+  if (canViewTechnicalDetails) return technicalMessage
+
+  return humanizeMetaError(technicalMessage)
+}
+
+function getCampaignFailureMessage(result, canViewTechnicalDetails) {
+  const failed = Number(result?.failed || 0)
+  if (!failed) return ''
+
+  const firstFailure = Array.isArray(result?.failures) ? result.failures[0] : null
+  const failureTarget = firstFailure?.guestName || firstFailure?.phone || 'Invitado'
+  const technicalReason = firstFailure?.error || 'No se recibio detalle del proveedor.'
+  const failureReason = canViewTechnicalDetails ? technicalReason : humanizeMetaError(technicalReason)
+
+  return `Se enviaron ${result.sent || 0} mensajes. Fallidos: ${failed}. Motivo: ${failureTarget} - ${failureReason}`
+}
+
 export default function EventMessaging() {
+  const { role } = useAuth()
   const { events, event, eventId } = useEvent()
   const [guests, setGuests] = useState([])
   const [deliveries, setDeliveries] = useState([])
@@ -116,6 +176,7 @@ export default function EventMessaging() {
   const selectedBlueprint = blueprintMap[selectedMessageKey] || null
   const resolvedAudienceGuests = useMemo(() => resolveAudienceGuests(guests, audience), [audience, guests])
   const publicAppUrl = useMemo(() => getPublicAppUrl(window.location.origin), [])
+  const canViewTechnicalDetails = ['admin', 'planner'].includes(role)
 
   const previewGuest = resolvedAudienceGuests[0] || guests[0] || null
   const previewMessage = useMemo(() => {
@@ -208,7 +269,13 @@ export default function EventMessaging() {
       if (deliveryTiming === 'later') {
         setNotice(`Se programo el envio para ${result.scheduled || 0} invitados.`)
       } else {
-        setNotice(`Se enviaron ${result.sent || 0} mensajes. Fallidos: ${result.failed || 0}.`)
+        const failureMessage = getCampaignFailureMessage(result, canViewTechnicalDetails)
+
+        if (failureMessage) {
+          setErrorMessage(failureMessage)
+        } else {
+          setNotice(`WhatsApp acepto ${result.accepted ?? result.sent ?? 0} mensajes. Fallidos: ${result.failed || 0}.`)
+        }
       }
 
       setAudience({
@@ -576,6 +643,7 @@ export default function EventMessaging() {
                 <TableHead>Invitado</TableHead>
                 <TableHead>Mensaje</TableHead>
                 <TableHead>Estado</TableHead>
+                <TableHead>Detalle</TableHead>
                 <TableHead>Fecha</TableHead>
               </TableRow>
             </TableHeader>
@@ -590,6 +658,9 @@ export default function EventMessaging() {
                   </TableCell>
                   <TableCell>{delivery.preset.label}</TableCell>
                   <TableCell><DeliveryDisplayPill status={delivery.displayStatus} /></TableCell>
+                  <TableCell className="max-w-sm text-sm text-muted-foreground">
+                    {getDeliveryDisplayDetail(delivery, canViewTechnicalDetails)}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {delivery.sent_at
                       ? formatDateTime(delivery.sent_at)
@@ -601,7 +672,7 @@ export default function EventMessaging() {
               ))}
               {!historyRows.length && (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
                     Aun no hay envios registrados para este evento.
                   </TableCell>
                 </TableRow>

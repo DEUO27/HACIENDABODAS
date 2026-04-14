@@ -3,7 +3,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 import { adminClient } from '../_shared/supabase.ts'
 
-const META_VERIFY_TOKEN = Deno.env.get('META_VERIFY_TOKEN') || ''
+const META_VERIFY_TOKEN = Deno.env.get('META_VERIFY_TOKEN') || Deno.env.get('META_WEBHOOK_VERIFY_TOKEN') || ''
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || ''
 
 function jsonResponse(body: unknown, status = 200) {
@@ -47,8 +47,21 @@ async function validateWebhookSignature(rawBody: string, signatureHeader: string
 }
 
 function mapMetaStatus(status: string) {
-  if (status === 'failed') return 'failed'
+  const normalizedStatus = String(status || '').toLowerCase()
+
+  if (['sent', 'delivered', 'read', 'failed'].includes(normalizedStatus)) {
+    return normalizedStatus
+  }
+
   return 'sent'
+}
+
+function getMetaError(statusEvent: any) {
+  const error = Array.isArray(statusEvent?.errors) ? statusEvent.errors[0] : null
+
+  if (!error) return null
+
+  return error.message || error.title || error.code || 'meta_failed'
 }
 
 Deno.serve(async (req) => {
@@ -65,9 +78,11 @@ Deno.serve(async (req) => {
       const challenge = url.searchParams.get('hub.challenge')
 
       if (mode === 'subscribe' && verifyToken === META_VERIFY_TOKEN) {
+        console.info('[whatsapp-status-webhook] verification_success')
         return new Response(challenge || '', { status: 200, headers: corsHeaders })
       }
 
+      console.warn('[whatsapp-status-webhook] verification_failed')
       return new Response('Forbidden', { status: 403, headers: corsHeaders })
     }
 
@@ -84,37 +99,84 @@ Deno.serve(async (req) => {
     const statuses = (body.entry || [])
       .flatMap((entry: any) => entry.changes || [])
       .flatMap((change: any) => change.value?.statuses || [])
+    const inboundMessages = (body.entry || [])
+      .flatMap((entry: any) => entry.changes || [])
+      .flatMap((change: any) => change.value?.messages || [])
+
+    console.info('[whatsapp-status-webhook] received', JSON.stringify({
+      statuses: statuses.length,
+      inboundMessages: inboundMessages.length,
+    }))
+
+    let updated = 0
+    let unmatched = 0
 
     for (const statusEvent of statuses) {
       const deliveryStatus = mapMetaStatus(statusEvent.status)
-      const sentAt = statusEvent.timestamp
+      const statusAt = statusEvent.timestamp
         ? new Date(Number(statusEvent.timestamp) * 1000).toISOString()
         : new Date().toISOString()
+      const metaError = getMetaError(statusEvent)
 
-      const { data: delivery } = await adminClient
+      const { data: delivery, error: deliveryLookupError } = await adminClient
+        .from('message_deliveries')
+        .select('id, guest_id, sent_at, provider_payload')
+        .eq('provider_message_id', statusEvent.id)
+        .maybeSingle()
+
+      if (deliveryLookupError) throw deliveryLookupError
+
+      if (!delivery) {
+        unmatched += 1
+        console.warn('[whatsapp-status-webhook] unmatched_status', JSON.stringify({
+          messageId: statusEvent.id,
+          status: statusEvent.status,
+        }))
+        continue
+      }
+
+      const currentProviderPayload = delivery.provider_payload && typeof delivery.provider_payload === 'object'
+        ? delivery.provider_payload
+        : {}
+      const webhookHistory = Array.isArray(currentProviderPayload.webhook_history)
+        ? currentProviderPayload.webhook_history
+        : []
+
+      const { error: deliveryUpdateError } = await adminClient
         .from('message_deliveries')
         .update({
           status: deliveryStatus,
-          sent_at: deliveryStatus === 'sent' ? sentAt : null,
-          error_code: deliveryStatus === 'failed' ? statusEvent.errors?.[0]?.title || 'meta_failed' : null,
-          provider_payload: statusEvent,
+          sent_at: deliveryStatus === 'failed' ? delivery.sent_at : statusAt,
+          error_code: deliveryStatus === 'failed' ? metaError : null,
+          provider_payload: {
+            ...currentProviderPayload,
+            webhook_status: statusEvent,
+            webhook_history: [...webhookHistory, statusEvent].slice(-20),
+          },
         })
-        .eq('provider_message_id', statusEvent.id)
-        .select('guest_id')
-        .maybeSingle()
+        .eq('id', delivery.id)
 
-      if (delivery?.guest_id) {
+      if (deliveryUpdateError) throw deliveryUpdateError
+
+      updated += 1
+
+      if (delivery.guest_id) {
         await adminClient
           .from('guests')
           .update({
             delivery_status: deliveryStatus,
-            last_delivery_at: deliveryStatus === 'sent' ? sentAt : null,
+            last_delivery_at: deliveryStatus === 'failed' ? delivery.sent_at : statusAt,
           })
           .eq('id', delivery.guest_id)
       }
     }
 
-    return jsonResponse({ received: statuses.length })
+    return jsonResponse({
+      received: statuses.length,
+      updated,
+      unmatched,
+      inboundMessages: inboundMessages.length,
+    })
   } catch (error) {
     console.error('[whatsapp-status-webhook]', error)
     return jsonResponse({ error: error instanceof Error ? error.message : 'Unexpected error.' }, 500)

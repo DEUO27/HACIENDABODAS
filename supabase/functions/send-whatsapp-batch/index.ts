@@ -76,6 +76,14 @@ Deno.serve(async (req) => {
     let scheduled = 0
     let sent = 0
     let failed = 0
+    const failures: Array<{
+      guestId: string
+      guestName: string
+      phone: string
+      error: string
+      errorCode?: string | number | null
+      errorSubcode?: string | number | null
+    }> = []
 
     for (const guest of guests || []) {
       const rsvpLink = await issueTokenForGuest(adminClient, guest, baseUrl)
@@ -139,7 +147,21 @@ Deno.serve(async (req) => {
         providerPayload.parameter_values,
       )
 
-      const deliveryStatus = sendResult.ok ? 'sent' : 'failed'
+      const deliveryStatus = sendResult.ok ? 'accepted' : 'failed'
+      const metaTrace = {
+        guestId: guest.id,
+        guestName: guest.full_name,
+        phone: guest.phone,
+        deliveryId: queuedDelivery.id,
+        ok: sendResult.ok,
+        providerMessageId: sendResult.providerMessageId || null,
+        error: sendResult.ok ? null : sendResult.error,
+        errorCode: sendResult.ok ? null : sendResult.errorCode || null,
+        errorSubcode: sendResult.ok ? null : sendResult.errorSubcode || null,
+        payload: sendResult.payload || {},
+      }
+
+      console.info('[meta_whatsapp_response]', JSON.stringify(metaTrace))
 
       await adminClient
         .from('message_deliveries')
@@ -165,7 +187,17 @@ Deno.serve(async (req) => {
         .eq('id', guest.id)
 
       if (sendResult.ok) sent += 1
-      else failed += 1
+      else {
+        failed += 1
+        failures.push({
+          guestId: guest.id,
+          guestName: guest.full_name,
+          phone: guest.phone,
+          error: sendResult.error || 'Error desconocido de Meta.',
+          errorCode: sendResult.errorCode || null,
+          errorSubcode: sendResult.errorSubcode || null,
+        })
+      }
 
       await sleep(throttleMs)
     }
@@ -173,8 +205,10 @@ Deno.serve(async (req) => {
     return jsonResponse({
       total: guests?.length || 0,
       scheduled,
+      accepted: sent,
       sent,
       failed,
+      failures,
     })
   } catch (error) {
     if (error instanceof Response) {

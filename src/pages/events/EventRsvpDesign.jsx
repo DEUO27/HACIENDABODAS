@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
+  Eye,
   ImagePlus,
   Monitor,
   RotateCcw,
@@ -13,6 +15,13 @@ import RsvpThemeRenderer from '@/components/events/rsvp/RsvpThemeRenderer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useEvent } from '@/contexts/EventContext'
@@ -37,8 +46,14 @@ const EDITOR_TABS = [
   { key: 'template', label: 'Plantilla' },
   { key: 'branding', label: 'Branding' },
   { key: 'content', label: 'Contenido' },
-  { key: 'preview', label: 'Vista previa' },
 ]
+
+const RSVP_PREVIEW_FORM = {
+  responseStatus: 'confirmed',
+  plusOnes: 1,
+  comment: 'Felicidades por este gran dia.',
+  dietaryRestrictions: 'Sin gluten',
+}
 
 function TextArea({ value, onChange, rows = 4, placeholder = '' }) {
   return (
@@ -114,6 +129,144 @@ function AssetPanel({
   )
 }
 
+function syncIframeStyles(iframeDocument) {
+  iframeDocument.head.innerHTML = ''
+
+  const meta = iframeDocument.createElement('meta')
+  meta.name = 'viewport'
+  meta.content = 'width=device-width, initial-scale=1'
+  iframeDocument.head.appendChild(meta)
+
+  const base = iframeDocument.createElement('base')
+  base.href = window.location.origin
+  iframeDocument.head.appendChild(base)
+
+  document.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => {
+    iframeDocument.head.appendChild(node.cloneNode(true))
+  })
+}
+
+function RsvpPreviewViewport({
+  event,
+  guest,
+  pageConfig,
+  previewDevice,
+}) {
+  const iframeRef = useRef(null)
+  const [mountNode, setMountNode] = useState(null)
+  const isMobilePreview = previewDevice === 'mobile'
+
+  useEffect(() => {
+    const iframe = iframeRef.current
+    if (!iframe) return undefined
+
+    const iframeDocument = iframe.contentDocument
+    if (!iframeDocument) return undefined
+
+    iframeDocument.open()
+    iframeDocument.write('<!doctype html><html><head></head><body><div id="rsvp-preview-root"></div></body></html>')
+    iframeDocument.close()
+
+    syncIframeStyles(iframeDocument)
+    iframeDocument.documentElement.className = document.documentElement.className
+    iframeDocument.body.className = 'bg-background text-foreground antialiased'
+    iframeDocument.body.style.margin = '0'
+    iframeDocument.body.style.minHeight = '100%'
+    iframeDocument.body.style.overflow = 'auto'
+
+    setMountNode(iframeDocument.getElementById('rsvp-preview-root'))
+
+    return () => setMountNode(null)
+  }, [previewDevice])
+
+  return (
+    <div
+      className={cn(
+        'mx-auto overflow-hidden bg-background shadow-sm',
+        isMobilePreview
+          ? 'w-full max-w-[390px] rounded-[2rem] border-[10px] border-slate-950 p-1'
+          : 'w-[1180px] max-w-none rounded-none border border-border',
+      )}
+    >
+      <iframe
+        ref={iframeRef}
+        title={isMobilePreview ? 'Vista previa movil RSVP' : 'Vista previa escritorio RSVP'}
+        className={cn(
+          'block w-full border-0 bg-background',
+          isMobilePreview ? 'h-[760px] rounded-[1.35rem]' : 'h-[820px] rounded-none',
+        )}
+      />
+      {mountNode && createPortal(
+        <RsvpThemeRenderer
+          event={event}
+          guest={guest}
+          pageConfig={pageConfig}
+          form={RSVP_PREVIEW_FORM}
+          onFormChange={() => {}}
+          onSubmit={() => {}}
+          preview
+        />,
+        mountNode,
+      )}
+    </div>
+  )
+}
+
+function RsvpLivePreviewFrame({
+  event,
+  guest,
+  pageConfig,
+  previewDevice,
+  onPreviewDeviceChange,
+  className = '',
+  bodyClassName = '',
+}) {
+  return (
+    <Card className={cn('rounded-none border-border bg-card shadow-sm', className)}>
+      <CardHeader className="gap-4 border-b border-border">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">
+              Vista previa en vivo
+            </CardTitle>
+            <CardDescription className="mt-2">
+              Muestra el borrador actual. La pagina publica cambia solo al publicar.
+            </CardDescription>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              type="button"
+              variant={previewDevice === 'mobile' ? 'default' : 'outline'}
+              className="rounded-none"
+              onClick={() => onPreviewDeviceChange('mobile')}
+            >
+              <Smartphone className="mr-2 h-4 w-4" />
+              Movil
+            </Button>
+            <Button
+              type="button"
+              variant={previewDevice === 'desktop' ? 'default' : 'outline'}
+              className="rounded-none"
+              onClick={() => onPreviewDeviceChange('desktop')}
+            >
+              <Monitor className="mr-2 h-4 w-4" />
+              Escritorio
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className={cn('bg-secondary/20 p-4', bodyClassName)}>
+        <RsvpPreviewViewport
+          event={event}
+          guest={guest}
+          pageConfig={pageConfig}
+          previewDevice={previewDevice}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function EventRsvpDesign() {
   const { events, event, eventId } = useEvent()
   const [activeTab, setActiveTab] = useState('template')
@@ -125,6 +278,7 @@ export default function EventRsvpDesign() {
   const [restoring, setRestoring] = useState(false)
   const [uploadingKind, setUploadingKind] = useState('')
   const [previewDevice, setPreviewDevice] = useState('desktop')
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false)
   const [notice, setNotice] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -161,6 +315,10 @@ export default function EventRsvpDesign() {
 
   const themeMeta = useMemo(() => getRsvpThemeMeta(draftConfig.layout.template_key), [draftConfig.layout.template_key])
   const previewGuest = useMemo(() => buildRsvpPreviewGuest(), [])
+  const isDirty = useMemo(() => {
+    if (!pageData) return false
+    return JSON.stringify(draftConfig) !== JSON.stringify(pageData.draft_config)
+  }, [draftConfig, pageData])
 
   function patchSection(sectionKey, patch) {
     setDraftConfig((current) => ({
@@ -320,25 +478,43 @@ export default function EventRsvpDesign() {
         </div>
       )}
 
-      <Card className="rounded-none border-border bg-card shadow-sm">
-        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Diseno RSVP</CardTitle>
-            <CardDescription className="mt-2">
-              Personaliza la portada, colores, fotos y contenido del enlace publico. El invitado solo vera la version publicada.
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="rounded-full px-3 py-1 uppercase tracking-[0.2em]">
-              Tema {themeMeta.label}
-            </Badge>
-            <Badge variant="outline" className="rounded-full px-3 py-1 uppercase tracking-[0.2em]">
-              {pageData?.has_published ? 'Publicado' : 'Solo borrador'}
-            </Badge>
-          </div>
-        </CardHeader>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
+        <Card className="rounded-none border-border bg-card shadow-sm">
+          <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Diseno RSVP</CardTitle>
+              <CardDescription className="mt-2">
+                Personaliza la portada, colores, fotos y contenido del enlace publico. El invitado solo vera la version publicada.
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {isDirty && (
+                <Badge className="rounded-full px-3 py-1 uppercase tracking-[0.2em]">
+                  Cambios sin guardar
+                </Badge>
+              )}
+              <Badge variant="outline" className="rounded-full px-3 py-1 uppercase tracking-[0.2em]">
+                Tema {themeMeta.label}
+              </Badge>
+              <Badge variant="outline" className="rounded-full px-3 py-1 uppercase tracking-[0.2em]">
+                {pageData?.has_published ? 'Publicado' : 'Solo borrador'}
+              </Badge>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-none xl:hidden"
+                onClick={() => {
+                  setPreviewDevice('mobile')
+                  setMobilePreviewOpen(true)
+                }}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Ver vista previa
+              </Button>
+            </div>
+          </CardHeader>
 
-        <CardContent>
+          <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-6">
             <TabsList variant="line" className="w-full justify-start rounded-none border-b border-border p-0">
               {EDITOR_TABS.map((tab) => (
@@ -585,54 +761,44 @@ export default function EventRsvpDesign() {
               </div>
             </TabsContent>
 
-            <TabsContent value="preview" className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Vista previa</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Simula como se vera el RSVP antes de publicar cambios.</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={previewDevice === 'mobile' ? 'default' : 'outline'}
-                    className="rounded-none"
-                    onClick={() => setPreviewDevice('mobile')}
-                  >
-                    <Smartphone className="mr-2 h-4 w-4" />
-                    Movil
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={previewDevice === 'desktop' ? 'default' : 'outline'}
-                    className="rounded-none"
-                    onClick={() => setPreviewDevice('desktop')}
-                  >
-                    <Monitor className="mr-2 h-4 w-4" />
-                    Escritorio
-                  </Button>
-                </div>
-              </div>
-
-              <div className={cn('overflow-hidden rounded-none border border-border bg-background', previewDevice === 'mobile' ? 'mx-auto max-w-[420px]' : 'w-full')}>
-                <RsvpThemeRenderer
-                  event={event}
-                  guest={previewGuest}
-                  pageConfig={draftConfig}
-                  form={{
-                    responseStatus: 'confirmed',
-                    plusOnes: 1,
-                    comment: 'Felicidades por este gran dia.',
-                    dietaryRestrictions: 'Sin gluten',
-                  }}
-                  onFormChange={() => {}}
-                  onSubmit={() => {}}
-                  preview
-                />
-              </div>
-            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+
+        <aside className="hidden xl:block">
+          <div className="sticky top-6">
+            <RsvpLivePreviewFrame
+              event={event}
+              guest={previewGuest}
+              pageConfig={draftConfig}
+              previewDevice={previewDevice}
+              onPreviewDeviceChange={setPreviewDevice}
+              bodyClassName="max-h-[calc(100vh-12rem)] overflow-auto"
+            />
+          </div>
+        </aside>
+      </div>
+
+      <Dialog open={mobilePreviewOpen} onOpenChange={setMobilePreviewOpen}>
+        <DialogContent className="h-[92vh] max-w-5xl gap-0 overflow-hidden rounded-none p-0" showCloseButton>
+          <DialogHeader className="border-b border-border px-4 py-3 text-left">
+            <DialogTitle className="font-heading text-2xl tracking-wide">Vista previa RSVP</DialogTitle>
+            <DialogDescription>
+              Preview del borrador actual. No modifica la version publicada.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="h-[calc(92vh-5.75rem)] overflow-auto p-4">
+            <RsvpLivePreviewFrame
+              event={event}
+              guest={previewGuest}
+              pageConfig={draftConfig}
+              previewDevice={previewDevice}
+              onPreviewDeviceChange={setPreviewDevice}
+              bodyClassName="max-h-none overflow-visible"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <input
         ref={heroInputRef}

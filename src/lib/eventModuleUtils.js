@@ -10,7 +10,10 @@ const DELIVERY_STATUS_LABELS = {
   draft: 'Borrador',
   queued: 'En cola',
   scheduled: 'Programado',
+  accepted: 'Aceptado por WhatsApp',
   sent: 'Enviado',
+  delivered: 'Entregado',
+  read: 'Leido',
   failed: 'Fallido',
   canceled: 'Cancelado',
 }
@@ -24,9 +27,21 @@ const DELIVERY_DISPLAY_META = {
     label: 'Programado',
     className: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-900',
   },
+  accepted: {
+    label: 'Aceptado por WhatsApp',
+    className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900',
+  },
   sent: {
     label: 'Enviado',
     className: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900',
+  },
+  delivered: {
+    label: 'Entregado',
+    className: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-300 dark:border-teal-900',
+  },
+  read: {
+    label: 'Leido',
+    className: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-300 dark:border-sky-900',
   },
   failed: {
     label: 'Error',
@@ -48,7 +63,10 @@ const DELIVERY_STATUS_CLASSES = {
   draft: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800',
   queued: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900',
   scheduled: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-900',
+  accepted: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900',
   sent: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900',
+  delivered: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-300 dark:border-teal-900',
+  read: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-300 dark:border-sky-900',
   failed: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-900',
   canceled: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800',
 }
@@ -224,6 +242,9 @@ export function getDeliveryDisplayStatus(delivery) {
   if (delivery?.guests?.responded_at) return 'responded'
   if (delivery?.status === 'failed') return 'failed'
   if (delivery?.status === 'scheduled') return 'scheduled'
+  if (delivery?.status === 'accepted') return 'accepted'
+  if (delivery?.status === 'delivered') return 'delivered'
+  if (delivery?.status === 'read') return 'read'
   if (delivery?.status === 'sent') return 'sent'
   return 'pending'
 }
@@ -302,7 +323,7 @@ export function computeGuestMetrics(guests) {
   }
 
   guests.forEach((guest) => {
-    if (guest.delivery_status === 'sent') metrics.sent += 1
+    if (['accepted', 'sent', 'delivered', 'read'].includes(guest.delivery_status)) metrics.sent += 1
     if (guest.attendance_status === 'confirmed') metrics.confirmed += 1
     else if (guest.attendance_status === 'declined') metrics.declined += 1
     else metrics.pending += 1

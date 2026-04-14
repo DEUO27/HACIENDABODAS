@@ -157,9 +157,12 @@ export async function sendViaMetaTemplate(
   const payload = await response.json().catch(() => ({}))
 
   if (!response.ok) {
+    const metaError = payload?.error || {}
     return {
       ok: false,
-      error: payload?.error?.message || `Meta API error ${response.status}`,
+      error: metaError?.message || `Meta API error ${response.status}`,
+      errorCode: metaError?.code || response.status,
+      errorSubcode: metaError?.error_subcode || null,
       payload,
     }
   }

@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
         Array.isArray(templatePayload.parameter_values) ? templatePayload.parameter_values : [],
       )
 
-      const deliveryStatus = sendResult.ok ? 'sent' : 'failed'
+      const deliveryStatus = sendResult.ok ? 'accepted' : 'failed'
       const sentAt = sendResult.ok ? new Date().toISOString() : null
 
       await adminClient
