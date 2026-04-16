@@ -146,13 +146,16 @@ function SidebarContent({ onClose }) {
     )
 }
 
-export default function Sidebar() {
+export default function Sidebar({ hidden = false }) {
     const [open, setOpen] = useState(false)
 
     return (
         <>
-            <aside className="hidden lg:block lg:w-60 lg:flex-shrink-0">
-                <div className="fixed left-0 top-0 z-30 h-screen w-60 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+            <aside className={cn('hidden transition-all duration-200 lg:block lg:flex-shrink-0', hidden ? 'lg:w-0' : 'lg:w-60')}>
+                <div className={cn(
+                    'fixed left-0 top-0 z-30 h-screen w-60 border-r border-slate-200 bg-white transition-transform duration-200 dark:border-slate-800 dark:bg-slate-950',
+                    hidden ? '-translate-x-full' : 'translate-x-0'
+                )}>
                     <SidebarContent />
                 </div>
             </aside>

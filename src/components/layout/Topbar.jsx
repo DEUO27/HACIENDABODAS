@@ -12,10 +12,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Mail, Bell, LogOut, Settings, ChevronDown, RefreshCw, Download, Sun, Moon } from 'lucide-react'
+import { Mail, Bell, LogOut, Settings, ChevronDown, RefreshCw, Download, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 
-export default function Topbar({ onRefresh, refreshing }) {
+export default function Topbar({ onRefresh, refreshing, isSidebarHidden = false, onToggleSidebar }) {
     const { user, role, signOut } = useAuth()
     const { setIsExportOpen } = useFilters()
     const { theme, setTheme } = useTheme()
@@ -83,6 +83,21 @@ export default function Topbar({ onRefresh, refreshing }) {
         <div className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-950">
             <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-6 py-3">
                 <div className="w-8 lg:hidden" />
+                <div className="hidden lg:block">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleSidebar}
+                        className="rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                        title={isSidebarHidden ? 'Mostrar menu lateral' : 'Ocultar menu lateral'}
+                    >
+                        {isSidebarHidden ? (
+                            <PanelLeftOpen className="h-4.5 w-4.5" />
+                        ) : (
+                            <PanelLeftClose className="h-4.5 w-4.5" />
+                        )}
+                    </Button>
+                </div>
                 <div className="flex-1" />
 
                 <div className="flex items-center gap-2 ml-auto">
