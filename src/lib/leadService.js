@@ -57,6 +57,13 @@ function sanitizeLeadForInsert(lead = {}) {
     return safeLead
 }
 
+function getPreferredAiProvider(provider = null) {
+    if (provider === 0 || provider === 1) return provider
+
+    const storedProvider = Number(globalThis?.localStorage?.getItem('aiProvider'))
+    return storedProvider === 1 ? 1 : 0
+}
+
 /**
  * Synchronizes an array of leads with the Supabase database.
  * This function uses an idempotent "upsert" with ignoreDuplicates: true.
@@ -192,12 +199,13 @@ export async function syncLeads(leadsArray, provider = 0, tracking = null) {
 /**
  * Creates a single lead manually, processes it through AI normalization, and saves it.
  */
-export async function createLead(leadData, tracking = null) {
+export async function createLead(leadData, tracking = null, provider = null) {
     try {
         const manualTracking = createLeadImportTracking(
             tracking?.fuente || LEAD_IMPORT_SOURCES.MANUAL_DASHBOARD,
             tracking || {}
         )
+        const selectedProvider = getPreferredAiProvider(provider)
 
         // Enforce a unique lead_id if not provided
         const lead = applyLeadImportTracking({
@@ -206,7 +214,7 @@ export async function createLead(leadData, tracking = null) {
         }, manualTracking)
 
         // Run it through the specific Edge Function
-        const { data: enrichedBatch, error: invokeError } = await invokeNormalizeLeads([lead], 1); // Using OpenAI provider as default
+        const { data: enrichedBatch, error: invokeError } = await invokeNormalizeLeads([lead], selectedProvider);
 
         let finalLead = lead;
         const actualError = invokeError || (enrichedBatch && enrichedBatch.error ? enrichedBatch.error : null)
