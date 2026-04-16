@@ -1,4 +1,10 @@
 import { supabase } from './supabase'
+import {
+    applyLeadImportTracking,
+    createLeadImportTracking,
+    LEAD_IMPORT_SOURCES,
+    mergeLeadWithTracking,
+} from './leadImportTracking'
 
 /**
  * Invokes the AI normalization edge function using a raw fetch to bypass
@@ -38,6 +44,19 @@ async function invokeNormalizeLeads(leads, provider) {
     return { data: enrichedBatch, error: invokeError };
 }
 
+function sanitizeLeadForInsert(lead = {}) {
+    if (!lead || typeof lead !== 'object') return lead
+
+    const {
+        error: _error,
+        errors: _errors,
+        leads: _leads,
+        ...safeLead
+    } = lead
+
+    return safeLead
+}
+
 /**
  * Synchronizes an array of leads with the Supabase database.
  * This function uses an idempotent "upsert" with ignoreDuplicates: true.
@@ -49,13 +68,20 @@ async function invokeNormalizeLeads(leads, provider) {
  * @param {Array} leadsArray - Array of lead objects to sync.
  * @returns {Promise<{ success: boolean, count: number, error: any }>}
  */
-export async function syncLeads(leadsArray, provider = 0) {
+export async function syncLeads(leadsArray, provider = 0, tracking = null) {
     if (!leadsArray || leadsArray.length === 0) {
         return { success: true, count: 0, error: null }
     }
 
+    const syncTracking = createLeadImportTracking(
+        tracking?.fuente || LEAD_IMPORT_SOURCES.N8N_WEBHOOK_SISTEMAHACIENDA,
+        tracking || {}
+    )
+
     // 1. Validate incoming leads structure
-    const validLeads = leadsArray.filter(l => l && l.lead_id)
+    const validLeads = leadsArray
+        .filter(l => l && l.lead_id)
+        .map(lead => applyLeadImportTracking(lead, syncTracking))
 
     if (validLeads.length === 0) {
         console.warn('SyncLeads: No valid leads with a lead_id found to sync.')
@@ -107,6 +133,7 @@ export async function syncLeads(leadsArray, provider = 0) {
         for (let i = 0; i < newLeads.length; i += AI_BATCH_SIZE) {
             const batch = newLeads.slice(i, i + AI_BATCH_SIZE);
             const batchNum = Math.floor(i / AI_BATCH_SIZE) + 1;
+            const batchLeadLookup = new Map(batch.map((lead, index) => [String(lead.lead_id || index), lead]));
             console.log(`[Supabase Sync] Sending batch ${batchNum} (${batch.length} leads) to AI Normalizer...`);
             console.log(`[Supabase Sync] Batch JSON Payload:`, JSON.stringify(batch, null, 2));
 
@@ -127,7 +154,11 @@ export async function syncLeads(leadsArray, provider = 0) {
 
             // The AI may return an array or an object with a leads property
             const enrichedArray = Array.isArray(enrichedBatch) ? enrichedBatch : (enrichedBatch.leads || [enrichedBatch]);
-            allEnrichedLeads = [...allEnrichedLeads, ...enrichedArray];
+            const trackedBatch = enrichedArray.map((enrichedLead, index) => {
+                const originalLead = batchLeadLookup.get(String(enrichedLead?.lead_id ?? index)) || batch[index] || {};
+                return mergeLeadWithTracking(enrichedLead, originalLead, syncTracking);
+            });
+            allEnrichedLeads = [...allEnrichedLeads, ...trackedBatch];
 
             // Short delay between batches to avoid rate limits
             if (i + AI_BATCH_SIZE < newLeads.length) {
@@ -161,26 +192,37 @@ export async function syncLeads(leadsArray, provider = 0) {
 /**
  * Creates a single lead manually, processes it through AI normalization, and saves it.
  */
-export async function createLead(leadData) {
+export async function createLead(leadData, tracking = null) {
     try {
+        const manualTracking = createLeadImportTracking(
+            tracking?.fuente || LEAD_IMPORT_SOURCES.MANUAL_DASHBOARD,
+            tracking || {}
+        )
+
         // Enforce a unique lead_id if not provided
-        const lead = {
+        const lead = applyLeadImportTracking({
             ...leadData,
             lead_id: leadData.lead_id || Number(new Date().getTime().toString().slice(-8)),
-        }
+        }, manualTracking)
 
         // Run it through the specific Edge Function
         const { data: enrichedBatch, error: invokeError } = await invokeNormalizeLeads([lead], 1); // Using OpenAI provider as default
 
         let finalLead = lead;
-        if (!invokeError && enrichedBatch) {
+        const actualError = invokeError || (enrichedBatch && enrichedBatch.error ? enrichedBatch.error : null)
+
+        if (!actualError && enrichedBatch) {
             const enrichedArray = Array.isArray(enrichedBatch) ? enrichedBatch : (enrichedBatch.leads || [enrichedBatch]);
             if (enrichedArray.length > 0) {
-                finalLead = enrichedArray[0];
+                finalLead = sanitizeLeadForInsert(
+                    mergeLeadWithTracking(enrichedArray[0], lead, manualTracking)
+                );
             }
         } else {
-            console.error('[Create Lead] AI Normalization skipped or failed:', invokeError || enrichedBatch?.error);
+            console.error('[Create Lead] AI Normalization skipped or failed:', actualError);
         }
+
+        finalLead = sanitizeLeadForInsert(finalLead)
 
         const { error: insertError } = await supabase
             .from('leads')

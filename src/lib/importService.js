@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx'
 import { normalizeTelefono, normalizeCanalExcel, normalizeEventoExcel, cleanText } from './normalizers'
 import { supabase } from '@/lib/supabase'
+import { applyLeadImportTracking, createLeadImportTracking, LEAD_IMPORT_SOURCES } from './leadImportTracking'
 
 // Funciones Auxiliares
 function sha256_sync(string) {
@@ -70,9 +71,13 @@ export async function readExcelFile(fileBuffer) {
 /**
  * Convierte filas parseadas de excel a formato validado y normalizado para Supabase Leads
  */
-export function processExcelToLeads(excelRows) {
+export function processExcelToLeads(excelRows, tracking = null) {
     const validLeads = []
     const invalidRows = []
+    const importTracking = createLeadImportTracking(
+        tracking?.fuente || LEAD_IMPORT_SOURCES.EXCEL_BODASCOM,
+        tracking || {}
+    )
 
     // Base timestamp for generating simple 8-digit IDs without uuid dependency
     const baseTimeStr = new Date().getTime().toString()
@@ -113,14 +118,14 @@ export function processExcelToLeads(excelRows) {
         const eventoNorm = normalizeEventoExcel(eventoRaw)
 
         // Dedupe
-        const fuente = 'excel_bodascom'
+        const fuente = importTracking.fuente
         const dedupe_key = buildDedupeKey(nombre, telefono_normalizado, fecha_evento, fuente)
 
         // Generar un ID simple de 8 digitos al estilo de createLead, pero asegurando unicidad en el loop
         const uniqueSuffix = index.toString().padStart(3, '0')
         const fakeLeadId = String(Number(baseTimeStr.slice(-5) + uniqueSuffix))
 
-        const finalLead = {
+        const finalLead = applyLeadImportTracking({
             lead_id: fakeLeadId,
             nombre: nombre || 'Sin Nombre',
             telefono: telOriginal || 'Sin Info',
@@ -147,9 +152,8 @@ export function processExcelToLeads(excelRows) {
 
             // Tracking
             fuente: fuente,
-            created_at_import: new Date().toISOString(),
             dedupe_key: dedupe_key
-        }
+        }, importTracking)
 
         validLeads.push(finalLead)
     })
@@ -160,10 +164,14 @@ export function processExcelToLeads(excelRows) {
 /**
  * Inserta el array de leads de forma masiva en Supabase usando onConflict para evitar duplicados.
  */
-export async function batchInsertLeadsDB(leadsArray, chunkSize = 200, onProgress = null) {
+export async function batchInsertLeadsDB(leadsArray, chunkSize = 200, onProgress = null, tracking = null) {
     let inserts = 0
     const total = leadsArray.length
     const totalBatches = Math.ceil(total / chunkSize)
+    const importTracking = createLeadImportTracking(
+        tracking?.fuente || LEAD_IMPORT_SOURCES.EXCEL_BODASCOM,
+        tracking || {}
+    )
 
     onProgress?.({
         processed: 0,
@@ -175,7 +183,9 @@ export async function batchInsertLeadsDB(leadsArray, chunkSize = 200, onProgress
     })
 
     for (let i = 0; i < leadsArray.length; i += chunkSize) {
-        const chunk = leadsArray.slice(i, i + chunkSize)
+        const chunk = leadsArray
+            .slice(i, i + chunkSize)
+            .map(lead => applyLeadImportTracking(lead, importTracking))
         const currentBatch = Math.floor(i / chunkSize) + 1
 
         // Using upsert with dedupe_key to skip existing

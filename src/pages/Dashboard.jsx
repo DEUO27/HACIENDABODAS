@@ -364,10 +364,12 @@ function DataQualityCard({ leads }) {
 }
 
 /* LEADS TABLE */
-function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
+function LeadsTable({ leads, allLeads, totalCount, loading, onSelectLead, onLeadAdded }) {
     const [visibleCount, setVisibleCount] = useState(15)
     const [isNewLeadOpen, setIsNewLeadOpen] = useState(false)
     const navigate = useNavigate()
+    const filteredCount = leads.length
+    const totalLeadsCount = Math.max(totalCount || 0, allLeads?.length || 0)
 
     const rows = useMemo(() => {
         return [...leads]
@@ -409,7 +411,12 @@ function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
     return (
         <Card className="rounded-none border-border bg-card shadow-sm mt-8">
             <CardHeader className="flex flex-row items-center justify-between pb-6">
-                <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">LEADS RECIENTES</CardTitle>
+                <div>
+                    <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">LEADS RECIENTES</CardTitle>
+                    <p className="mt-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Mostrando {rows.length.toLocaleString()} en tabla, {filteredCount.toLocaleString()} filtrados de {totalLeadsCount.toLocaleString()} leads
+                    </p>
+                </div>
                 <div className="flex gap-2">
                     <Button size="sm" onClick={() => navigate('/admin/import-leads')} className="flex items-center gap-2 rounded-full px-4 border border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-600 dark:hover:bg-emerald-900/50">
                         <UploadCloud className="h-4 w-4" />
@@ -455,7 +462,7 @@ function LeadsTable({ leads, allLeads, loading, onSelectLead, onLeadAdded }) {
                             onClick={() => setVisibleCount(prev => prev + 50)}
                             className="rounded-full border-slate-200 dark:border-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-900 dark:hover:text-slate-100"
                         >
-                            Cargar mas leads ({visibleCount} de {leads.length})
+                            Cargar mas leads ({rows.length} de {filteredCount} filtrados)
                         </Button>
                     </div>
                 )}
@@ -899,7 +906,7 @@ function DataQualityDetails({ leads }) {
 
 /* MAIN DASHBOARD PAGE */
 export default function Dashboard() {
-    const { leads: apiLeads, loading, error, refresh } = useLeads()
+    const { leads: apiLeads, totalCount, loading, error, refresh } = useLeads()
     const [selectedLead, setSelectedLead] = useState(null)
     const [vendedoraView, setVendedoraView] = useState('stacked')
 
@@ -1074,6 +1081,7 @@ export default function Dashboard() {
             <LeadsTable
                 leads={filteredLeads}
                 allLeads={apiLeads}
+                totalCount={totalCount}
                 loading={hasInitialLoading}
                 onSelectLead={setSelectedLead}
                 onLeadAdded={() => refresh(true)}
@@ -1094,7 +1102,7 @@ export default function Dashboard() {
                 open={isExportOpen}
                 onOpenChange={setIsExportOpen}
                 filteredLeads={filteredLeads}
-                allLeadsCount={apiLeads?.length || 0}
+                allLeadsCount={totalCount || apiLeads?.length || 0}
                 activeFiltersState={filters}
             />
         </div>
