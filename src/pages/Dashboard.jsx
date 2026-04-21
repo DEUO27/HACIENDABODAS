@@ -683,10 +683,33 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
 }
 
 /* NEW LEAD DIALOG */
+function getCurrentDateTimeLocalValue() {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+function buildDefaultLeadForm() {
+    return {
+        nombre: '',
+        telefono: '',
+        fecha_primer_mensaje: getCurrentDateTimeLocalValue(),
+        canal_de_contacto: '',
+        evento: '',
+        fecha_evento: '',
+        como_nos_encontro: '',
+        fase_embudo: 'NUEVO',
+        vendedora: '',
+        salon: '',
+    }
+}
+
 function NewLeadDialog({ leads, open, onClose, onSuccess }) {
-    const [formData, setFormData] = useState({
-        nombre: '', telefono: '', canal_de_contacto: '', evento: '', fecha_evento: '', como_nos_encontro: '', fase_embudo: 'NUEVO', vendedora: '', salon: ''
-    })
+    const [formData, setFormData] = useState(() => buildDefaultLeadForm())
     const [isSaving, setIsSaving] = useState(false)
     const [errorMsg, setErrorMsg] = useState(null)
     const [isCustomVendedora, setIsCustomVendedora] = useState(false)
@@ -703,14 +726,26 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
             setErrorMsg("El nombre es requerido");
             return;
         }
+
+        if (!formData.fecha_primer_mensaje) {
+            setErrorMsg("La fecha de contacto es requerida");
+            return;
+        }
+
         setIsSaving(true)
         setErrorMsg(null)
+        const contactDate = new Date(formData.fecha_primer_mensaje)
 
-        // Use current local timestamp formatted simply as fallback for fecha_primer_mensaje
-        const now = new Date();
-        const fallbackDate = now.toISOString()
+        if (Number.isNaN(contactDate.getTime())) {
+            setIsSaving(false)
+            setErrorMsg("La fecha de contacto no es valida")
+            return
+        }
 
-        const newLead = { ...formData, fecha_primer_mensaje: fallbackDate }
+        const newLead = {
+            ...formData,
+            fecha_primer_mensaje: contactDate.toISOString(),
+        }
 
         // Convert internal YYYY-MM-DD back to DD/MM/YYYY for consistency
         if (newLead.fecha_evento && newLead.fecha_evento.includes('-')) {
@@ -721,7 +756,7 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
         const { success, error } = await createLead(newLead)
         setIsSaving(false)
         if (success) {
-            setFormData({ nombre: '', telefono: '', canal_de_contacto: '', evento: '', fecha_evento: '', como_nos_encontro: '', fase_embudo: 'NUEVO', vendedora: '', salon: '' })
+            setFormData(buildDefaultLeadForm())
             setIsCustomVendedora(false)
             if (onSuccess) onSuccess()
         } else {
@@ -732,6 +767,7 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
     const fields = [
         { label: 'Nombre *', key: 'nombre' },
         { label: 'Telefono', key: 'telefono' },
+        { label: 'Fecha de contacto *', key: 'fecha_primer_mensaje' },
         { label: 'Canal Original', key: 'canal_de_contacto' },
         { label: 'Como nos encontro', key: 'como_nos_encontro' },
         { label: 'Evento Original', key: 'evento' },
@@ -741,8 +777,19 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
         { label: 'Salon', key: 'salon' },
     ]
 
+    const handleOpenChange = (nextOpen) => {
+        if (nextOpen) {
+            setFormData(buildDefaultLeadForm())
+            setErrorMsg(null)
+            setIsCustomVendedora(false)
+            return
+        }
+
+        onClose?.()
+    }
+
     return (
-        <Sheet open={open} onOpenChange={onClose}>
+        <Sheet open={open} onOpenChange={handleOpenChange}>
             <SheetContent className="w-full border-border bg-card sm:max-w-md overflow-y-auto">
                 <SheetHeader className="mb-6 mt-4 border-b border-border pb-4">
                     <SheetTitle className="font-heading text-xl tracking-wider text-foreground">AGREGAR NUEVO LEAD</SheetTitle>
@@ -820,7 +867,7 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
                             <div key={key} className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{label}</label>
                                 <Input
-                                    type={key === 'fecha_evento' ? 'date' : 'text'}
+                                    type={key === 'fecha_evento' ? 'date' : key === 'fecha_primer_mensaje' ? 'datetime-local' : 'text'}
                                     value={
                                         // HTML type="date" requires YYYY-MM-DD
                                         key === 'fecha_evento' && formData[key] && formData[key].includes('/')
