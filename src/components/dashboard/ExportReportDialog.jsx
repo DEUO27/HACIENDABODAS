@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2, Download, CheckCircle2, AlertTriangle, FileText, Sparkles, BarChart3, FileDown, Database } from 'lucide-react'
 import { captureCharts, prepareKpiData } from '@/lib/exportUtils'
 import { buildAIPayload, fetchAISummary } from '@/lib/aiSummaryService'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { pdf } from '@react-pdf/renderer'
 import { PdfDocument } from '@/lib/pdfReportGenerator'
@@ -20,11 +20,24 @@ const STEPS = [
     { key: 'downloading', label: 'Descargando archivo', icon: FileDown },
 ]
 
+function formatActiveDateRange(activeFiltersState) {
+    if (activeFiltersState.dateRange === 'all') {
+        return 'Rango: Todo el historial'
+    }
+
+    if (activeFiltersState.dateRange === 'custom' && activeFiltersState.customFrom && activeFiltersState.customTo) {
+        const fromDate = parseISO(activeFiltersState.customFrom)
+        const toDate = parseISO(activeFiltersState.customTo)
+        return `Rango: ${format(fromDate, 'dd/MM/yyyy', { locale: es })} - ${format(toDate, 'dd/MM/yyyy', { locale: es })}`
+    }
+
+    return `Rango: ${activeFiltersState.dateRange}`
+}
+
 export default function ExportReportDialog({
     open,
     onOpenChange,
     filteredLeads,
-    allLeadsCount,
     activeFiltersState
 }) {
     const [isGenerating, setIsGenerating] = useState(false)
@@ -46,12 +59,13 @@ export default function ExportReportDialog({
             // Format dates
             const now = new Date()
             const generatedAt = format(now, "dd/MM/yyyy HH:mm:ss")
-            const dateRangeString = activeFiltersState.dateRange === 'all'
-                ? 'Rango: Todo el historial'
-                : `Rango: ${activeFiltersState.dateRange}`
+            const dateRangeString = formatActiveDateRange(activeFiltersState)
 
             // Stringify filters
             const filtersList = []
+            if (activeFiltersState.dateRange === 'custom' && activeFiltersState.customFrom && activeFiltersState.customTo) {
+                filtersList.push(dateRangeString)
+            }
             if (activeFiltersState.search) filtersList.push(`Busqueda: "${activeFiltersState.search}"`)
             if (activeFiltersState.vendedoras.length) filtersList.push(`Vendedoras: ${activeFiltersState.vendedoras.join(', ')}`)
             if (activeFiltersState.fases.length) filtersList.push(`Fases: ${activeFiltersState.fases.join(', ')}`)
@@ -204,7 +218,6 @@ export default function ExportReportDialog({
                             {STEPS.map((s, i) => {
                                 const isActive = s.key === step
                                 const isDone = currentStepIndex > i
-                                const isPending = currentStepIndex < i
                                 const Icon = s.icon
 
                                 return (

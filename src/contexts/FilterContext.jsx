@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useMemo } from 'react'
 import { isWithinInterval, parseISO, startOfDay, subDays, startOfYear, endOfDay, addDays } from 'date-fns'
 import { getLeadTrackingDate, isSinInfo, normalizeCanal } from '@/lib/leadUtils'
@@ -40,9 +41,10 @@ function getDateInterval(dateRange, customFrom, customTo) {
         case 'ytd':
             return { start: startOfYear(today), end }
         case 'custom':
+            if (!customFrom || !customTo) return null
             return {
-                start: customFrom ? startOfDay(parseISO(customFrom)) : subDays(today, 365),
-                end: customTo ? endOfDay(addDays(parseISO(customTo), FUTURE_TOLERANCE_DAYS)) : end,
+                start: startOfDay(parseISO(customFrom)),
+                end: endOfDay(addDays(parseISO(customTo), FUTURE_TOLERANCE_DAYS)),
             }
         case 'all':
         default:
