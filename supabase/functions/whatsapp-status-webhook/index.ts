@@ -16,18 +16,43 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
-async function validateWebhookSignature(rawBody: string, signatureHeader: string | null): Promise<boolean> {
-  if (!META_APP_SECRET) {
-    console.warn('[whatsapp-status-webhook] META_APP_SECRET not set, skipping signature validation.')
-    return true
+type SignatureValidationResult = 'valid' | 'missing_secret' | 'missing_signature' | 'invalid_signature'
+
+function hexToBytes(hex: string): Uint8Array | null {
+  if (!hex || hex.length % 2 !== 0 || !/^[a-f0-9]+$/i.test(hex)) return null
+
+  const bytes = new Uint8Array(hex.length / 2)
+  for (let index = 0; index < hex.length; index += 2) {
+    bytes[index / 2] = parseInt(hex.slice(index, index + 2), 16)
   }
 
-  if (!signatureHeader) return false
+  return bytes
+}
+
+function timingSafeEqual(left: Uint8Array, right: Uint8Array) {
+  if (left.length !== right.length) return false
+
+  let difference = 0
+  for (let index = 0; index < left.length; index += 1) {
+    difference |= left[index] ^ right[index]
+  }
+
+  return difference === 0
+}
+
+async function validateWebhookSignature(rawBody: string, signatureHeader: string | null): Promise<SignatureValidationResult> {
+  if (!META_APP_SECRET) {
+    return 'missing_secret'
+  }
+
+  if (!signatureHeader) return 'missing_signature'
 
   const expectedPrefix = 'sha256='
-  if (!signatureHeader.startsWith(expectedPrefix)) return false
+  if (!signatureHeader.startsWith(expectedPrefix)) return 'invalid_signature'
 
   const receivedHex = signatureHeader.slice(expectedPrefix.length)
+  const receivedBytes = hexToBytes(receivedHex)
+  if (!receivedBytes) return 'invalid_signature'
 
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
@@ -39,11 +64,9 @@ async function validateWebhookSignature(rawBody: string, signatureHeader: string
   )
 
   const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody))
-  const computedHex = Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
+  const computedBytes = new Uint8Array(signature)
 
-  return computedHex === receivedHex
+  return timingSafeEqual(computedBytes, receivedBytes) ? 'valid' : 'invalid_signature'
 }
 
 function mapMetaStatus(status: string) {
@@ -89,10 +112,16 @@ Deno.serve(async (req) => {
     const rawBody = await req.text()
     const signatureHeader = req.headers.get('X-Hub-Signature-256')
 
-    const isValid = await validateWebhookSignature(rawBody, signatureHeader)
-    if (!isValid) {
-      console.warn('[whatsapp-status-webhook] Invalid signature.')
-      return jsonResponse({ error: 'Invalid signature.' }, 403)
+    const signatureResult = await validateWebhookSignature(rawBody, signatureHeader)
+
+    if (signatureResult === 'missing_secret') {
+      console.error('[whatsapp-status-webhook] webhook_config_missing: META_APP_SECRET is required.')
+      return jsonResponse({ error: 'webhook_not_configured' }, 500)
+    }
+
+    if (signatureResult !== 'valid') {
+      console.warn('[whatsapp-status-webhook] invalid_signature', JSON.stringify({ reason: signatureResult }))
+      return jsonResponse({ error: 'invalid_signature' }, 403)
     }
 
     const body = JSON.parse(rawBody)

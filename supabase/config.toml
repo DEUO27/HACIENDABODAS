@@ -419,6 +419,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/rsvp-submit/index.ts"
 
+[functions.issue-rsvp-token]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/issue-rsvp-token/index.ts"
+
 [functions.send-whatsapp-batch]
 enabled = true
 verify_jwt = false

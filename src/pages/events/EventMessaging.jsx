@@ -111,6 +111,15 @@ function getCampaignFailureMessage(result, canViewTechnicalDetails) {
   return `Se enviaron ${result.sent || 0} mensajes. Fallidos: ${failed}. Motivo: ${failureTarget} - ${failureReason}`
 }
 
+function getValidScheduleIso(value) {
+  if (!value) return ''
+
+  const parsedDate = new Date(value)
+  if (Number.isNaN(parsedDate.getTime())) return ''
+
+  return parsedDate.toISOString()
+}
+
 export default function EventMessaging() {
   const { role } = useAuth()
   const { events, event, eventId } = useEvent()
@@ -177,6 +186,8 @@ export default function EventMessaging() {
   const resolvedAudienceGuests = useMemo(() => resolveAudienceGuests(guests, audience), [audience, guests])
   const publicAppUrl = useMemo(() => getPublicAppUrl(window.location.origin), [])
   const canViewTechnicalDetails = ['admin', 'planner'].includes(role)
+  const scheduledAtIso = useMemo(() => getValidScheduleIso(scheduleAt), [scheduleAt])
+  const scheduledAtLabel = scheduledAtIso ? formatDateTime(scheduledAtIso) : 'fecha y hora pendiente'
 
   const previewGuest = resolvedAudienceGuests[0] || guests[0] || null
   const previewMessage = useMemo(() => {
@@ -205,13 +216,13 @@ export default function EventMessaging() {
 
     if (currentStep === 3) {
       if (deliveryTiming === 'later') {
-        return Boolean(scheduleAt)
+        return Boolean(scheduledAtIso)
       }
       return true
     }
 
     return true
-  }, [currentStep, deliveryTiming, resolvedAudienceGuests.length, scheduleAt, selectedBlueprint])
+  }, [currentStep, deliveryTiming, resolvedAudienceGuests.length, scheduledAtIso, selectedBlueprint])
 
   const historyRows = useMemo(() => {
     return deliveries.slice(0, 10).map((delivery) => ({
@@ -253,6 +264,11 @@ export default function EventMessaging() {
       return
     }
 
+    if (deliveryTiming === 'later' && !scheduledAtIso) {
+      setErrorMessage('Define una fecha y hora valida para programar el envio.')
+      return
+    }
+
     setSending(true)
     setErrorMessage('')
 
@@ -262,7 +278,7 @@ export default function EventMessaging() {
         messageKey: selectedMessageKey,
         audience,
         guestIds: resolvedAudienceGuests.map((guest) => guest.id),
-        scheduledAt: deliveryTiming === 'later' ? new Date(scheduleAt).toISOString() : null,
+        scheduledAt: deliveryTiming === 'later' ? scheduledAtIso : null,
         baseUrl: publicAppUrl,
       })
 
@@ -573,7 +589,7 @@ export default function EventMessaging() {
                     <div className="rounded-none border border-border p-4">
                       <p className="text-xs uppercase tracking-widest text-muted-foreground">Momento</p>
                       <p className="mt-2 font-medium text-foreground">
-                        {deliveryTiming === 'later' ? formatDateTime(new Date(scheduleAt).toISOString()) : 'Enviar ahora'}
+                        {deliveryTiming === 'later' ? scheduledAtLabel : 'Enviar ahora'}
                       </p>
                     </div>
                   </div>
@@ -689,7 +705,7 @@ export default function EventMessaging() {
             <DialogDescription>
               Estas a punto de enviar un mensaje de WhatsApp a {resolvedAudienceGuests.length} invitados.
               {deliveryTiming === 'later'
-                ? ` El envio se programara para ${formatDateTime(new Date(scheduleAt).toISOString())}.`
+                ? ` El envio se programara para ${scheduledAtLabel}.`
                 : ' El envio se realizara de inmediato.'}
             </DialogDescription>
           </DialogHeader>

@@ -138,7 +138,7 @@ export default function RsvpThemeRenderer({
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {preview && (
           <div className="mb-4 rounded-none border border-dashed border-foreground/25 bg-white/65 px-4 py-3 text-xs uppercase tracking-[0.24em]">
-            Vista previa del RSVP publicado
+            Vista previa del borrador RSVP
           </div>
         )}
 

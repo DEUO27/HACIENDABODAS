@@ -36,6 +36,7 @@ import {
   buildDefaultRsvpPageConfig,
   buildRsvpPreviewGuest,
   getRsvpThemeMeta,
+  normalizeRsvpMapEmbedUrl,
   RSVP_BODY_FONT_OPTIONS,
   RSVP_HEADING_FONT_OPTIONS,
   RSVP_THEME_CATALOG,
@@ -319,6 +320,14 @@ export default function EventRsvpDesign() {
     if (!pageData) return false
     return JSON.stringify(draftConfig) !== JSON.stringify(pageData.draft_config)
   }, [draftConfig, pageData])
+  const mapUrlValue = draftConfig.content.map_embed_url.trim()
+  const mapEmbedPreviewUrl = useMemo(() => normalizeRsvpMapEmbedUrl(mapUrlValue), [mapUrlValue])
+  const mapUrlIsShort = /^https?:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(mapUrlValue)
+  const mapUrlWarning = mapUrlValue && !mapEmbedPreviewUrl
+    ? mapUrlIsShort
+      ? 'Los links cortos de Google Maps no se pueden incrustar. Abre ese link y pega aqui la URL completa de Google Maps.'
+      : 'Esta URL no se puede incrustar como mapa. La pagina RSVP mostrara un boton para abrir el mapa en otra pestana.'
+    : ''
 
   function patchSection(sectionKey, patch) {
     setDraftConfig((current) => ({
@@ -724,7 +733,14 @@ export default function EventRsvpDesign() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <Field label="Titulo mapa"><Input value={draftConfig.content.map_title} onChange={(event) => patchSection('content', { map_title: event.target.value })} className="rounded-none" /></Field>
-                    <Field label="URL de Google Maps" description="Pega una URL normal de Google Maps o una URL de embed. Evita links cortos; abre el link y pega la URL completa."><Input value={draftConfig.content.map_embed_url} onChange={(event) => patchSection('content', { map_embed_url: event.target.value })} className="rounded-none" /></Field>
+                    <Field label="URL de Google Maps" description="Pega una URL completa de Google Maps o una URL de embed. Los links cortos tipo maps.app.goo.gl no se pueden incrustar.">
+                      <Input value={draftConfig.content.map_embed_url} onChange={(event) => patchSection('content', { map_embed_url: event.target.value })} className="rounded-none" />
+                      {mapUrlWarning && (
+                        <p className="rounded-none border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+                          {mapUrlWarning}
+                        </p>
+                      )}
+                    </Field>
                     <Field label="Titulo FAQ"><Input value={draftConfig.content.faq_title} onChange={(event) => patchSection('content', { faq_title: event.target.value })} className="rounded-none" /></Field>
                     <div className="space-y-3 rounded-none border border-border p-4">
                       <div className="flex items-center justify-between">
