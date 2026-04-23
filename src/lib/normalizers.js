@@ -22,6 +22,10 @@ export const cleanText = (str) => {
         .trim()
 }
 
+function hasBodasComDomain(cleanedText) {
+    return cleanedText.includes('bodas.com') || cleanedText.includes('bodas.co')
+}
+
 /**
  * 1. Normalizador de Teléfono
  * Mantiene solo dígitos. Trata de mantener formato E.164 si es posible o 10 dígitos.
@@ -45,6 +49,7 @@ export function normalizeTelefono(telRaw) {
 const CANALES_PERMITIDOS = [
     'Sin Informacion',
     'WhatsApp',
+    'Bodas.com',
     'Google',
     'TikTok',
     'Recomendación',
@@ -84,7 +89,11 @@ export function normalizeCanalExcel(canal_de_contacto, como_nos_encontro) {
     let canal_razon = 'Fallback'
 
     // Reglas de prioridad
-    if (testStr.includes('whatsapp') || testStr.includes('wa')) {
+    if (hasBodasComDomain(testStr)) {
+        canal_normalizado = 'Bodas.com'
+        canal_razon = 'Keyword_BodasCom'
+    }
+    else if (testStr.includes('whatsapp') || testStr.includes('wa')) {
         canal_normalizado = 'WhatsApp'
         canal_razon = 'Keyword_WhatsApp'
     }

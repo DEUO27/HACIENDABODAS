@@ -82,6 +82,7 @@ export function normalizeCanal(val) {
     const value = String(val).trim()
     const normalized = value.toLowerCase()
 
+    if (normalized.includes('bodas.com') || normalized.includes('bodas.co')) return 'Bodas.com'
     if (value.includes('amocrmwa') || normalized.includes('whatsapp')) return 'WhatsApp'
     if (normalized.includes('instagram')) return 'Instagram'
     if (normalized.includes('facebook')) return 'Facebook'

@@ -232,6 +232,7 @@ REGLA A2: NORMALIZAR canal_base A UNA CATEGORÍA (canal_normalizado)
 Categorías permitidas (solo estas):
 - Sin Informacion
 - WhatsApp
+- Bodas.com
 - Google
 - TikTok
 - Recomendación
@@ -246,6 +247,11 @@ PREPROCESAMIENTO A
 - considera equivalentes de Sin Informacion: "sin informacion", "sin información", "", null, undefined, campo ausente
 
 PRIORIDAD A (aplica la primera que haga match)
+0) Si t_clean contiene "bodas.com", "bodas.com.mx" o "bodas.co"
+   → canal_normalizado = "Bodas.com"
+   → canal_razon = "Keyword_BodasCom"
+   Esta regla gana sobre "Recomendación", "Google", "Redes sociales (otro)" y "Otro".
+
 1) Si t_clean contiene "whatsapp"
    → canal_normalizado = "WhatsApp"
    → canal_razon = "match: whatsapp"
@@ -291,6 +297,7 @@ Ejemplos:
 - "Google y Facebook" → Facebook
 - "Tiktok / Recomendación" → TikTok
 - "Redes sociales y recomendación" → Recomendación
+- "Recomendaciones y Bodas.com" → Bodas.com
 
 ================================================================================
 PARTE B) NORMALIZACIÓN DE EVENTO
@@ -387,7 +394,7 @@ evento="Cena de fin de año (corporativo) - 550 asistentes"
 Ejemplo 4:
 canal_de_contacto="Sin Informacion", como_nos_encontro="Bodas.com"
 evento=""
-→ canal_base="Bodas.com" → canal_normalizado="Otro"
+→ canal_base="Bodas.com" → canal_normalizado="Bodas.com"
 → evento_base="Sin Informacion" → evento_normalizado="Sin Informacion"
 `;
 
