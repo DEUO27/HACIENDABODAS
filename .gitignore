@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+docs/debug/legacy-artifacts/
+*.tmp
+*.bak
 
 # Editor directories and files
 .vscode/*

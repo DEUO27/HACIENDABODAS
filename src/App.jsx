@@ -1,28 +1,29 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { FilterProvider } from '@/contexts/FilterContext'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import Login from '@/pages/Login'
-import SetPassword from '@/pages/SetPassword'
-import Dashboard from '@/pages/Dashboard'
-import ImportAdmin from '@/pages/ImportAdmin'
-import Unauthorized from '@/pages/Unauthorized'
-import EventsIndex from '@/pages/events/EventsIndex'
-import EventGuests from '@/pages/events/EventGuests'
-import EventDashboard from '@/pages/events/EventDashboard'
-import EventMessaging from '@/pages/events/EventMessaging'
-import EventRsvpDesign from '@/pages/events/EventRsvpDesign'
-import EventAccounts from '@/pages/events/EventAccounts'
-import RsvpPage from '@/pages/events/RsvpPage'
-import MessageBlueprintSettings from '@/pages/settings/MessageBlueprintSettings'
-import UserManagement from '@/pages/settings/UserManagement'
 import { useLeads } from '@/hooks/useLeads'
 import { EventProvider, useEvent } from '@/contexts/EventContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { listEvents } from '@/lib/eventService'
+
+const Login = lazy(() => import('@/pages/Login'))
+const SetPassword = lazy(() => import('@/pages/SetPassword'))
+const Dashboard = lazy(() => import('@/pages/Dashboard'))
+const ImportAdmin = lazy(() => import('@/pages/ImportAdmin'))
+const Unauthorized = lazy(() => import('@/pages/Unauthorized'))
+const EventsIndex = lazy(() => import('@/pages/events/EventsIndex'))
+const EventGuests = lazy(() => import('@/pages/events/EventGuests'))
+const EventDashboard = lazy(() => import('@/pages/events/EventDashboard'))
+const EventMessaging = lazy(() => import('@/pages/events/EventMessaging'))
+const EventRsvpDesign = lazy(() => import('@/pages/events/EventRsvpDesign'))
+const EventAccounts = lazy(() => import('@/pages/events/EventAccounts'))
+const RsvpPage = lazy(() => import('@/pages/events/RsvpPage'))
+const MessageBlueprintSettings = lazy(() => import('@/pages/settings/MessageBlueprintSettings'))
+const UserManagement = lazy(() => import('@/pages/settings/UserManagement'))
 
 function FullScreenSpinner() {
   return (
@@ -110,7 +111,8 @@ function AppRoutes() {
   }, [refresh, role])
 
   return (
-    <Routes>
+    <Suspense fallback={<FullScreenSpinner />}>
+      <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/set-password" element={<SetPassword />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
@@ -146,7 +148,8 @@ function AppRoutes() {
         </Route>
       </Route>
       <Route path="*" element={<RoleHome />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   )
 }
 

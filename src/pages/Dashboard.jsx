@@ -1,11 +1,11 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import * as XLSX from 'xlsx'
 import { useLeads } from '@/hooks/useLeads'
 import { getLeadTrackingDate, isSinInfo, normalizeCanal } from '@/lib/leadUtils'
 import { useFilteredLeads, useFilters } from '@/contexts/FilterContext'
-import { syncLeads, createLead, deleteLead } from '@/lib/leadService'
+import { createLead, deleteLead } from '@/lib/leadService'
 import { supabase } from '@/lib/supabase'
+import { downloadSpreadsheet } from '@/lib/excelUtils'
 
 import FilterBar from '@/components/dashboard/FilterBar'
 import KpiCards from '@/components/dashboard/KpiCards'
@@ -72,7 +72,7 @@ function getSortedLeadsForExport(leads) {
     })
 }
 
-function exportLeadsSpreadsheet(leads, formatType = 'xlsx') {
+async function exportLeadsSpreadsheet(leads, formatType = 'xlsx') {
     const rows = getSortedLeadsForExport(leads).map((lead) => ({
         ID: lead.lead_id || '',
         Nombre: lead.nombre || '',
@@ -89,17 +89,13 @@ function exportLeadsSpreadsheet(leads, formatType = 'xlsx') {
         Salon: lead.salon || '',
     }))
 
-    const workbook = XLSX.utils.book_new()
-    const worksheet = XLSX.utils.json_to_sheet(rows)
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Leads')
-
     const stamp = format(new Date(), 'yyyy-MM-dd-HHmm')
-    if (formatType === 'csv') {
-        XLSX.writeFile(workbook, `leads-${stamp}.csv`, { bookType: 'csv' })
-        return
-    }
-
-    XLSX.writeFile(workbook, `leads-${stamp}.xlsx`)
+    await downloadSpreadsheet({
+        rows,
+        sheetName: 'Leads',
+        filename: `leads-${stamp}.${formatType === 'csv' ? 'csv' : 'xlsx'}`,
+        format: formatType,
+    })
 }
 
 /* MINI WIDGETS (Overview tab only) */
@@ -206,7 +202,6 @@ function RemindersCard({ leads, onSelectLead }) {
 /* Recent Leads list */
 function RecentLeadsList({ leads, allLeads, onSelectLead, onLeadAdded }) {
     const [isNewLeadOpen, setIsNewLeadOpen] = useState(false)
-    const navigate = useNavigate()
     const recent = useMemo(() => {
         return [...leads]
             .sort((a, b) => {
@@ -294,15 +289,13 @@ function TeamCard({ leads }) {
         return { label: 'Con backlog', color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' }
     }
 
-    const colors = ['bg-emerald-200 dark:bg-emerald-800', 'bg-blue-200 dark:bg-blue-800', 'bg-amber-200 dark:bg-amber-800', 'bg-rose-200 dark:bg-rose-800']
-
     return (
         <Card className="rounded-none border-border bg-card shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-4">
                 <CardTitle className="font-heading text-lg tracking-wider text-card-foreground">Colaboracion de Equipo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-                {team.map((v, i) => {
+                {team.map((v) => {
                     const status = getStatus(v)
                     return (
                         <div key={v.name} className="flex items-center gap-4 p-3 hover:bg-secondary/30 transition-colors">
@@ -397,13 +390,13 @@ function DataQualityCard({ leads }) {
             </CardHeader>
             <CardContent className="relative grid grid-cols-2 gap-4">
                 {[
-                    { icon: Phone, val: stats.phone, label: 'Sin telefono' },
-                    { icon: Calendar, val: stats.event, label: 'Sin fecha' },
-                    { icon: AlertTriangle, val: stats.origen, label: 'Origen desc.' },
-                    { icon: MapPin, val: stats.salon, label: 'Indecisos' },
-                ].map(({ icon: Icon, val, label }) => (
+                    { icon: <Phone className="mb-3 h-5 w-5 text-muted-foreground stroke-[1.5]" />, val: stats.phone, label: 'Sin telefono' },
+                    { icon: <Calendar className="mb-3 h-5 w-5 text-muted-foreground stroke-[1.5]" />, val: stats.event, label: 'Sin fecha' },
+                    { icon: <AlertTriangle className="mb-3 h-5 w-5 text-muted-foreground stroke-[1.5]" />, val: stats.origen, label: 'Origen desc.' },
+                    { icon: <MapPin className="mb-3 h-5 w-5 text-muted-foreground stroke-[1.5]" />, val: stats.salon, label: 'Indecisos' },
+                ].map(({ icon, val, label }) => (
                     <div key={label} className="bg-secondary/40 p-5 border border-transparent hover:border-border transition-colors">
-                        <Icon className="mb-3 h-5 w-5 text-muted-foreground stroke-[1.5]" />
+                        {icon}
                         <p className="font-numbers text-3xl tabular-nums">{val}%</p>
                         <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">{label}</p>
                     </div>
@@ -567,6 +560,7 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
         return Array.from(new Set([...defaults, ...dbVendedoras]))
     }, [allLeads, leads])
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (open && lead) {
             setIsEditing(false)
@@ -574,6 +568,7 @@ function LeadDetailSheet({ leads, allLeads, lead, open, onClose, onSave, onDelet
             setIsCustomVendedora(false)
         }
     }, [open, lead])
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     if (!lead) return null
 
@@ -873,7 +868,7 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
                 )}
 
                 <div className="space-y-5 pb-8 px-2">
-                    {fields.map(({ label, key, placeholder, type }) => {
+                    {fields.map(({ label, key, placeholder }) => {
                         if (key === 'vendedora') {
                             const isOther = isCustomVendedora || (formData[key] !== '' && !vendedoras.includes(formData[key]))
                             return (
@@ -967,18 +962,26 @@ function NewLeadDialog({ leads, open, onClose, onSuccess }) {
     )
 }
 
+const DATA_QUALITY_FIELDS = ['telefono', 'fecha_evento', 'canal_de_contacto', 'como_nos_encontro', 'vendedora', 'salon', 'evento']
+const DATA_QUALITY_LABELS = {
+    telefono: 'Telefono',
+    fecha_evento: 'Fecha Evento',
+    canal_de_contacto: 'Canal',
+    como_nos_encontro: 'Origen',
+    vendedora: 'Vendedora',
+    salon: 'Salon',
+    evento: 'Evento',
+}
+
 /* DATA QUALITY DETAILS TABLE (for DQ tab) */
 function DataQualityDetails({ leads }) {
-    const fields = ['telefono', 'fecha_evento', 'canal_de_contacto', 'como_nos_encontro', 'vendedora', 'salon', 'evento']
-    const labels = { telefono: 'Telefono', fecha_evento: 'Fecha Evento', canal_de_contacto: 'Canal', como_nos_encontro: 'Origen', vendedora: 'Vendedora', salon: 'Salon', evento: 'Evento' }
-
     const missingByField = useMemo(() => {
-        return fields.map(f => {
+        return DATA_QUALITY_FIELDS.map(f => {
             const val = l => f === 'canal_de_contacto' ? (l.canal_normalizado || l.canal_de_contacto) :
                 f === 'evento' ? (l.evento_normalizado || l.evento) : l[f]
             const missingCount = leads.filter(l => isSinInfo(val(l))).length
             return {
-                field: labels[f],
+                field: DATA_QUALITY_LABELS[f],
                 missing: missingCount,
                 total: leads.length,
                 pct: leads.length ? Math.round((missingCount / leads.length) * 100) : 0,
@@ -1038,8 +1041,6 @@ export default function Dashboard() {
         }
     }
 
-    const [aiProvider, setAiProvider] = useState(0) // 0 = Gemini, 1 = OpenAI
-
     // Optional: Refresh periodically
     useEffect(() => {
         const interval = setInterval(() => refresh(false), 5 * 60 * 1000)
@@ -1057,7 +1058,7 @@ export default function Dashboard() {
     const handleSaveLead = async (leadId, modifications) => {
         try {
             // Remove system fields to prevent DB conflict
-            const { lead_id, fecha_primer_mensaje, ...updates } = modifications
+            const { lead_id: _leadId, fecha_primer_mensaje: _firstMessageAt, ...updates } = modifications
 
             const { error: updateError } = await supabase
                 .from('leads')

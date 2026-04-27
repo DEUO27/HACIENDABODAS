@@ -18,7 +18,7 @@ El proyecto esta orientado a operacion comercial y analitica del pipeline de ven
 - Data/Auth: Supabase (`@supabase/supabase-js`)
 - Graficas: Recharts
 - PDF: `@react-pdf/renderer` + `html-to-image`
-- Importacion: `xlsx`
+- Importacion: `exceljs` bajo demanda
 - Fechas: `date-fns`
 
 ## Arquitectura funcional (resumen)
@@ -36,14 +36,15 @@ El proyecto esta orientado a operacion comercial y analitica del pipeline de ven
 
 ### 3) Flujo de leads (online)
 - `refresh(true)` en frontend.
-- Llamada a `VITE_WEBHOOK_URL` para obtener leads crudos.
+- Invocacion autenticada a Edge Function `sync-leads-from-webhook`.
+- La funcion lee `LEADS_WEBHOOK_URL` desde Supabase secrets, obtiene leads crudos y deduplica por `lead_id`.
 - Enriquecimiento en Edge Function `normalize-leads` (Gemini/OpenAI).
 - Upsert en tabla `leads` de Supabase con `onConflict: lead_id`.
-- Lectura final desde Supabase para render de dashboard.
+- Lectura final desde RPC paginada para render de dashboard.
 
 ### 4) Flujo de importacion Excel (admin)
 - Carga de archivo en `ImportAdmin`.
-- Parsing con `xlsx` y transformacion en `importService`.
+- Parsing bajo demanda con `exceljs` y transformacion en `importService`.
 - Construccion de `dedupe_key` para evitar duplicados.
 - Upsert por `dedupe_key` en Supabase.
 
@@ -76,11 +77,11 @@ supabase/
 ### Frontend (`.env`)
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-- `VITE_WEBHOOK_URL`
 
 ### Edge Functions (Supabase secrets)
 - `OPENAI_API_KEY`
 - `GEMINI_API_KEY`
+- `LEADS_WEBHOOK_URL`
 
 Notas:
 - No subir secretos al repositorio.
@@ -114,9 +115,11 @@ Notas de entorno local:
 Funciones actuales:
 - `normalize-leads`: normaliza canal/evento (Gemini u OpenAI) y devuelve JSON enriquecido.
 - `ai-summary`: genera insights de graficas para el reporte PDF.
+- `sync-leads-from-webhook`: sincroniza leads desde el webhook privado hacia Supabase.
 
 Consideraciones:
 - Deben existir secrets (`OPENAI_API_KEY` y/o `GEMINI_API_KEY`) segun proveedor elegido.
+- Debe existir `LEADS_WEBHOOK_URL` para sincronizar leads desde el dashboard.
 - Si faltan secrets, el frontend puede continuar con fallback (por ejemplo, reporte sin insights IA).
 - El rol de acceso de usuario se toma desde `user_metadata.role`.
 
@@ -165,16 +168,8 @@ Nota: esta lista es practica para desarrollo frontend/servicios; no reemplaza un
 
 ## Utilidades internas de diagnostico
 
-Scripts presentes en `src/` para analisis puntual de datos/sincronizacion:
-
-- `query_leads.js`
-- `debug_dates.js`
-- `results.json`, `query_leads_output.txt`, `total_comparison_report.json` (salidas auxiliares)
-
-Uso recomendado:
-- Validar diferencias entre origen webhook y Supabase.
-- Auditar parseo de fechas y distribucion por hora.
-- Revisar conteos de ultimos 7/30 dias en investigacion de incidentes.
+Los artefactos locales de diagnostico no forman parte del bundle de la app.
+Si se generan dumps, logs o consultas temporales, deben quedar fuera de `src/` y bajo rutas ignoradas como `docs/debug/legacy-artifacts/`.
 
 ## Validacion recomendada tras cambios
 
@@ -189,4 +184,4 @@ Uso recomendado:
 1. Normalizar `fecha_primer_mensaje` con hora consistente en ingestas nuevas.
 2. Separar visualmente `Sin hora exacta` de `00:00` real en chart por hora.
 3. Unificar catalogos de texto (`Sin Informacion`, nombres de vendedoras, variantes).
-4. Mover scripts de diagnostico a carpeta `scripts/` con documentacion de uso.
+4. Mantener los scripts de diagnostico fuera de `src/` y documentar solo los que sean reutilizables.

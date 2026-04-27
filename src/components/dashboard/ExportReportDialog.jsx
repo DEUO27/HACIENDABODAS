@@ -8,8 +8,6 @@ import { captureCharts, prepareKpiData } from '@/lib/exportUtils'
 import { buildAIPayload, fetchAISummary } from '@/lib/aiSummaryService'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { pdf } from '@react-pdf/renderer'
-import { PdfDocument } from '@/lib/pdfReportGenerator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const STEPS = [
@@ -110,6 +108,10 @@ export default function ExportReportDialog({
 
             // STEP 4: Build PDF Document
             setStep('building')
+            const [{ pdf }, { PdfDocument }] = await Promise.all([
+                import('@react-pdf/renderer'),
+                import('@/lib/pdfReportGenerator'),
+            ])
             const blob = await pdf(
                 <PdfDocument
                     kpis={kpis}

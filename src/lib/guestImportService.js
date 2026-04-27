@@ -1,5 +1,3 @@
-import * as XLSX from 'xlsx'
-
 import {
   buildGuestDedupeKey,
   normalizeAttendanceStatus,
@@ -8,6 +6,7 @@ import {
   normalizeGuestPhone,
   parseTagsInput,
 } from '@/lib/eventModuleUtils'
+import { readSpreadsheetRows } from '@/lib/excelUtils'
 
 function getRowValue(row, keywords) {
   const entries = Object.entries(row || {})
@@ -21,9 +20,7 @@ function parseInteger(value) {
 }
 
 export async function readGuestFile(fileBuffer) {
-  const workbook = XLSX.read(fileBuffer, { type: 'array', cellDates: true })
-  const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-  return XLSX.utils.sheet_to_json(worksheet, { defval: '' })
+  return readSpreadsheetRows(fileBuffer)
 }
 
 export function processGuestRows(rows, { eventId, existingDedupeKeys = new Set() }) {

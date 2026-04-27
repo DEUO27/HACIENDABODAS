@@ -7,7 +7,6 @@ export const GlowingCard = ({
     children,
     className,
     glowColor = "#3b82f6",
-    hoverEffect = true,
     enableGlow = true,
     glowRadius = 15,
     glowOpacity = 1,

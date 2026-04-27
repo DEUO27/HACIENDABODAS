@@ -16,4 +16,4 @@ There is no formal test suite or `npm test` script yet. For now, treat `npm run 
 Recent history follows concise Conventional Commit prefixes such as `feat:`, `fix:`, and `revert:`. Keep commit subjects imperative and scoped to one change. PRs should include a short summary, impacted routes or functions, environment or migration notes, and screenshots for dashboard or RSVP UI changes. Link related issues and call out any required Supabase secrets or schema changes explicitly.
 
 ## Security & Configuration Tips
-Do not commit `.env` values, API keys, or Supabase secrets. Frontend config uses `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_WEBHOOK_URL`; AI-related secrets belong in Supabase Edge Function settings, not in the client.
+Do not commit `.env` values, API keys, or Supabase secrets. Frontend config uses `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; webhook and AI secrets such as `LEADS_WEBHOOK_URL`, `OPENAI_API_KEY`, and `GEMINI_API_KEY` belong in Supabase Edge Function settings, not in the client.

@@ -1,5 +1,4 @@
 import { Document, Page, Text, View, StyleSheet, Image, Font, Svg, Path, Circle, G } from '@react-pdf/renderer';
-import { logoBase64, bgBase64 } from './logoBase64';
 
 // Using standard PDF fonts (Times-Roman and Helvetica) for stability.
 // Custom TTF URLs are prone to 404s and format errors in @react-pdf/renderer.
@@ -94,12 +93,6 @@ const s = StyleSheet.create({
         height: 150,
         backgroundColor: C.olive,
         opacity: 0.06,
-    },
-    coverInner: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 60,
     },
     coverBrand: {
         fontSize: 11,
@@ -493,14 +486,16 @@ function PdfDonutChart({ data, width = 200, height = 200 }) {
     const total = data.reduce((s, d) => s + d.count, 0)
     if (total === 0) return null
 
-    let currentAngle = 0
-    const slices = data.map((d, i) => {
+    const slices = data.reduce((accumulator, d, i) => {
+        const previous = accumulator[accumulator.length - 1]
+        const currentAngle = previous?.endAngle || 0
         const pct = d.count / total
         const startAngle = currentAngle
         const sweep = pct * 360
-        currentAngle += sweep
-        return { ...d, pct, startAngle, endAngle: currentAngle, color: PDF_CHART_COLORS[i % PDF_CHART_COLORS.length] }
-    })
+        const endAngle = currentAngle + sweep
+        accumulator.push({ ...d, pct, startAngle, endAngle, color: PDF_CHART_COLORS[i % PDF_CHART_COLORS.length] })
+        return accumulator
+    }, [])
 
     return (
         <View style={{ alignItems: 'center', width: '100%' }}>
@@ -552,11 +547,15 @@ function ChartBlock({ title, imageData, height = 200, insight = null }) {
 
 /* MAIN DOCUMENT */
 export function PdfDocument({ kpis, images, dateRangeString, generatedAt, activeFiltersText, summary }) {
+    const assetBaseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    const logoSrc = `${assetBaseUrl}/logo.png`
+    const backgroundSrc = `${assetBaseUrl}/fondo.png`
+
     return (
         <Document>
             {/* PAGE 1: COVER */}
             <Page size="A4" style={s.coverPage}>
-                <Image src={bgBase64} style={s.coverBackground} />
+                <Image src={backgroundSrc} style={s.coverBackground} />
                 <View style={s.coverOverlay} />
 
                 {/* Decorative Circles */}
@@ -565,7 +564,7 @@ export function PdfDocument({ kpis, images, dateRangeString, generatedAt, active
                 <View style={s.circle3} />
 
                 <View style={s.coverInner}>
-                    <Image src={logoBase64} style={{ width: 180, marginBottom: 20 }} />
+                    <Image src={logoSrc} style={{ width: 180, marginBottom: 20 }} />
                     <Text style={s.coverBrand}>San Jose Actipan Hacienda - CRM</Text>
                     <Text style={s.coverTitle}>Reporte Ejecutivo</Text>
                     <Text style={s.coverTitle}>de Leads</Text>

@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import { downloadSpreadsheet, triggerBrowserDownload } from '@/lib/excelUtils'
 
 const ATTENDANCE_STATUS_LABELS = {
   pending: 'Pendiente',
@@ -351,15 +351,10 @@ export function buildConfirmationTimeline(guests) {
 }
 
 export function triggerDownload(filename, blob) {
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  anchor.click()
-  URL.revokeObjectURL(url)
+  triggerBrowserDownload(filename, blob)
 }
 
-export function exportGuestsSpreadsheet({ guests, eventName, format = 'xlsx' }) {
+export async function exportGuestsSpreadsheet({ guests, eventName, format = 'xlsx' }) {
   const rows = guests.map((guest) => ({
     Nombre: guest.full_name,
     Telefono: guest.phone || '',
@@ -375,15 +370,11 @@ export function exportGuestsSpreadsheet({ guests, eventName, format = 'xlsx' }) 
     Fuente: guest.source || '',
   }))
 
-  const workbook = XLSX.utils.book_new()
-  const worksheet = XLSX.utils.json_to_sheet(rows)
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Invitados')
-
   const safeName = slugifyEventName(eventName || 'evento')
-  if (format === 'csv') {
-    XLSX.writeFile(workbook, `${safeName}-invitados.csv`, { bookType: 'csv' })
-    return
-  }
-
-  XLSX.writeFile(workbook, `${safeName}-invitados.xlsx`)
+  await downloadSpreadsheet({
+    rows,
+    sheetName: 'Invitados',
+    filename: `${safeName}-invitados.${format === 'csv' ? 'csv' : 'xlsx'}`,
+    format,
+  })
 }

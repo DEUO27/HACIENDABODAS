@@ -18,6 +18,18 @@ async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function maskPhone(phone: string) {
+  const digits = String(phone || '').replace(/\D/g, '')
+  if (digits.length <= 4) return '****'
+  return `${'*'.repeat(Math.max(digits.length - 4, 4))}${digits.slice(-4)}`
+}
+
+function maskName(name: string) {
+  const trimmed = String(name || '').trim()
+  if (!trimmed) return ''
+  return `${trimmed.slice(0, 1)}***`
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -150,8 +162,8 @@ Deno.serve(async (req) => {
       const deliveryStatus = sendResult.ok ? 'accepted' : 'failed'
       const metaTrace = {
         guestId: guest.id,
-        guestName: guest.full_name,
-        phone: guest.phone,
+        guestName: maskName(guest.full_name),
+        phone: maskPhone(guest.phone),
         deliveryId: queuedDelivery.id,
         ok: sendResult.ok,
         providerMessageId: sendResult.providerMessageId || null,

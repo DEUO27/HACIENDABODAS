@@ -1,4 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import { assertAdmin } from '../_shared/auth.ts'
+
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -145,6 +147,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await assertAdmin(req);
+
     const body = await req.json();
 
     // Input validation: expect an array of leads directly or { leads: [...] }
@@ -169,14 +173,14 @@ Deno.serve(async (req) => {
         throw new Error("Missing OPENAI_API_KEY environment variable. Set it in Supabase Secrets.");
       }
       aiProvider = new OpenAIProvider(openAiKey);
-      console.log("Using OpenAI Provider");
+      console.info("[normalize-leads] provider=openai");
     } else {
       const geminiKey = Deno.env.get('GEMINI_API_KEY');
       if (!geminiKey) {
         throw new Error("Missing GEMINI_API_KEY environment variable. Set it in Supabase Secrets.");
       }
       aiProvider = new GeminiProvider(geminiKey);
-      console.log("Using Gemini Provider");
+      console.info("[normalize-leads] provider=gemini");
     }
 
     // 3. The exact prompt provided by the user
@@ -398,7 +402,7 @@ evento=""
 → evento_base="Sin Informacion" → evento_normalizado="Sin Informacion"
 `;
 
-    console.log(`[normalize-leads] Processing ${leadsArray.length} leads with ${providerChoice === 1 ? 'OpenAI' : 'Gemini'}...`);
+    console.info(`[normalize-leads] Processing ${leadsArray.length} leads with ${providerChoice === 1 ? 'OpenAI' : 'Gemini'}...`);
 
     // 4. Call AI Provider
     const resultJSON = await aiProvider.generateNorm(SYSTEM_PROMPT, leadsArray);
@@ -409,9 +413,17 @@ evento=""
     });
 
   } catch (error) {
+    if (error instanceof Response) {
+      const body = await error.text();
+      return new Response(body, {
+        status: error.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.error("AI Normalization Error:", error);
-    // Explicitly returning status 200 with the error inside so the frontend can read the exact message
     return new Response(JSON.stringify({ error: error.message || "Unknown error occurred" }), {
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }

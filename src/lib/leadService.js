@@ -15,7 +15,11 @@ async function invokeNormalizeLeads(leads, provider) {
     let invokeError = null;
     try {
         const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const token = session?.access_token;
+
+        if (!token) {
+            throw new Error('Tu sesion expiro. Vuelve a iniciar sesion.')
+        }
         
         const aiController = new AbortController();
         const aiTimeout = setTimeout(() => aiController.abort(), 120000); // 120 seconds local timeout
@@ -124,7 +128,7 @@ export async function syncLeads(leadsArray, provider = 0, tracking = null) {
         // 3. Isolate Genuinely New Leads
         const newLeads = validLeads.filter(l => !existingIds.has(String(l.lead_id)))
 
-        console.log(`[Supabase Sync] Total incoming: ${validLeads.length} | Already exist: ${existingIds.size} | New to insert: ${newLeads.length}`)
+        console.info(`[Supabase Sync] Total incoming: ${validLeads.length} | Already exist: ${existingIds.size} | New to insert: ${newLeads.length}`)
 
         if (newLeads.length === 0) {
             // Nothing to do, but it's a success
@@ -135,14 +139,13 @@ export async function syncLeads(leadsArray, provider = 0, tracking = null) {
         const AI_BATCH_SIZE = 5;
         let allEnrichedLeads = [];
 
-        console.log(`[Supabase Sync] Processing ${newLeads.length} new leads in batches of ${AI_BATCH_SIZE} using provider ${provider}...`);
+        console.info(`[Supabase Sync] Processing ${newLeads.length} new leads in batches of ${AI_BATCH_SIZE} using provider ${provider}...`);
 
         for (let i = 0; i < newLeads.length; i += AI_BATCH_SIZE) {
             const batch = newLeads.slice(i, i + AI_BATCH_SIZE);
             const batchNum = Math.floor(i / AI_BATCH_SIZE) + 1;
             const batchLeadLookup = new Map(batch.map((lead, index) => [String(lead.lead_id || index), lead]));
-            console.log(`[Supabase Sync] Sending batch ${batchNum} (${batch.length} leads) to AI Normalizer...`);
-            console.log(`[Supabase Sync] Batch JSON Payload:`, JSON.stringify(batch, null, 2));
+            console.info(`[Supabase Sync] Sending batch ${batchNum} (${batch.length} leads) to AI Normalizer...`);
 
             const { data: enrichedBatch, error: invokeError } = await invokeNormalizeLeads(batch, provider);
 
@@ -153,7 +156,7 @@ export async function syncLeads(leadsArray, provider = 0, tracking = null) {
                 console.error(`[Supabase Sync] AI Normalization Error on batch ${batchNum}:`, actualError);
                 // Partial success: insert what we have so far
                 if (allEnrichedLeads.length > 0) {
-                    console.log(`[Supabase Sync] Saving ${allEnrichedLeads.length} leads processed before error...`);
+                    console.info(`[Supabase Sync] Saving ${allEnrichedLeads.length} leads processed before error...`);
                     await supabase.from('leads').upsert(allEnrichedLeads, { onConflict: 'lead_id', ignoreDuplicates: true });
                 }
                 return { success: false, count: allEnrichedLeads.length, error: actualError };
@@ -169,13 +172,13 @@ export async function syncLeads(leadsArray, provider = 0, tracking = null) {
 
             // Short delay between batches to avoid rate limits
             if (i + AI_BATCH_SIZE < newLeads.length) {
-                console.log(`[Supabase Sync] Waiting 3 seconds before next batch...`);
+                console.info(`[Supabase Sync] Waiting 3 seconds before next batch...`);
                 await new Promise(resolve => setTimeout(resolve, 3000));
             }
         }
 
         // 5. Idempotent Insert (Failsafe fallback still using ignoreDuplicates)
-        console.log(`[Supabase Sync] Upserting ${allEnrichedLeads.length} enriched leads to DB...`)
+        console.info(`[Supabase Sync] Upserting ${allEnrichedLeads.length} enriched leads to DB...`)
         const { error: upsertError } = await supabase
             .from('leads')
             .upsert(allEnrichedLeads, {

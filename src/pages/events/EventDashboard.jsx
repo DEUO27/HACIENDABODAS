@@ -27,7 +27,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useEvent } from '@/contexts/EventContext'
-import { downloadEventSummaryPdf } from '@/lib/eventDashboardPdf'
 import { buildConfirmationTimeline, computeGuestMetrics, exportGuestsSpreadsheet, formatDateTime } from '@/lib/eventModuleUtils'
 import { listDeliveries, listGuests } from '@/lib/eventService'
 import { supabase } from '@/lib/supabase'
@@ -121,6 +120,10 @@ export default function EventDashboard() {
   }, [guests])
 
   const recentDeliveries = useMemo(() => deliveries.slice(0, 8), [deliveries])
+  const handleDownloadSummaryPdf = useCallback(async () => {
+    const { downloadEventSummaryPdf } = await import('@/lib/eventDashboardPdf')
+    await downloadEventSummaryPdf({ event, metrics, guests })
+  }, [event, guests, metrics])
 
   return (
     <div className="space-y-6 py-6">
@@ -145,7 +148,7 @@ export default function EventDashboard() {
             </Button>
             <Button
               className="rounded-none"
-              onClick={() => downloadEventSummaryPdf({ event, metrics, guests })}
+              onClick={handleDownloadSummaryPdf}
               disabled={!event}
             >
               <Download className="mr-2 h-4 w-4" />

@@ -1,8 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 
 import { supabase } from '@/lib/supabase'
-import { syncLeads } from '@/lib/leadService'
-import { createLeadImportTracking, LEAD_IMPORT_SOURCES } from '@/lib/leadImportTracking'
 
 // Global state mechanism
 let globalLeads = null
@@ -23,26 +21,23 @@ function notifyListeners() {
 }
 
 async function fetchAllLeads() {
-    let from = 0
+    let page = 0
     let totalCount = 0
     const allLeads = []
 
     while (true) {
-        const shouldCount = from === 0
-        const query = supabase
-            .from('leads')
-            .select('*', shouldCount ? { count: 'exact' } : {})
-            .order('fecha_primer_mensaje', { ascending: false })
-            .range(from, from + LEADS_PAGE_SIZE - 1)
-
-        const { data, error, count } = await query
+        const { data, error } = await supabase.rpc('list_dashboard_leads', {
+            p_search: '',
+            p_page: page,
+            p_page_size: LEADS_PAGE_SIZE,
+        })
 
         if (error) throw error
 
-        const pageData = data || []
+        const pageData = (data || []).map((row) => row.lead).filter(Boolean)
 
-        if (shouldCount) {
-            totalCount = count || pageData.length
+        if (page === 0) {
+            totalCount = Number(data?.[0]?.total_count || pageData.length)
         }
 
         allLeads.push(...pageData)
@@ -50,7 +45,7 @@ async function fetchAllLeads() {
         if (pageData.length < LEADS_PAGE_SIZE) break
         if (totalCount > 0 && allLeads.length >= totalCount) break
 
-        from += LEADS_PAGE_SIZE
+        page += 1
     }
 
     return {
@@ -93,19 +88,16 @@ export function useLeads() {
         globalError = null
         notifyListeners()
 
-        // Sync with Make Webhook if forcing a refresh
-        if (force && import.meta.env.VITE_WEBHOOK_URL) {
+        // Sync with the protected backend function when forcing a refresh.
+        if (force) {
             try {
-                const resData = await fetch(import.meta.env.VITE_WEBHOOK_URL)
-                if (resData.ok) {
-                    const data = await resData.json()
-                    const rawLeads = data.leads || data || []
-                    const aiProvider = Number(localStorage.getItem('aiProvider')) || 0
-                    const syncTracking = createLeadImportTracking(LEAD_IMPORT_SOURCES.N8N_WEBHOOK_SISTEMAHACIENDA)
-                    await syncLeads(rawLeads, aiProvider, syncTracking)
-                }
+                const aiProvider = Number(localStorage.getItem('aiProvider')) || 0
+                const { error } = await supabase.functions.invoke('sync-leads-from-webhook', {
+                    body: { provider: aiProvider, force: true },
+                })
+                if (error) throw error
             } catch (err) {
-                console.error('[Sync] Error during background sync from webhook:', err)
+                console.error('[Sync] Error during protected lead sync:', err)
             }
         }
 

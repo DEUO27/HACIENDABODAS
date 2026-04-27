@@ -1,7 +1,7 @@
-import * as XLSX from 'xlsx'
 import { normalizeTelefono, normalizeCanalExcel, normalizeEventoExcel, cleanText } from './normalizers'
 import { supabase } from '@/lib/supabase'
 import { applyLeadImportTracking, createLeadImportTracking, LEAD_IMPORT_SOURCES } from './leadImportTracking'
+import { readSpreadsheetRows } from '@/lib/excelUtils'
 
 // Funciones Auxiliares
 function sha256_sync(string) {
@@ -61,11 +61,7 @@ function convertExcelDateToISO(excelDate) {
  * Procesa un ArrayBuffer de excel y devuelve el array crudo de objetos
  */
 export async function readExcelFile(fileBuffer) {
-    const workbook = XLSX.read(fileBuffer, { type: 'array', cellDates: true })
-    const sheetName = workbook.SheetNames[0]
-    const worksheet = workbook.Sheets[sheetName]
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" })
-    return jsonData
+    return readSpreadsheetRows(fileBuffer)
 }
 
 /**

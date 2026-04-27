@@ -1,3 +1,5 @@
+import { assertAdmin } from "../_shared/auth.ts";
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -14,6 +16,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await assertAdmin(req);
+
     const payload = await req.json();
     const prompt = buildPrompt(payload);
     const provider = payload.provider || "gemini";
@@ -92,9 +96,17 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     console.error("Edge Function error:", err);
+    if (err instanceof Response) {
+      const body = await err.text();
+      return new Response(body, {
+        status: err.status,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(
       JSON.stringify({ error: err.message || "Internal error" }),
-      { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
     );
   }
 });
