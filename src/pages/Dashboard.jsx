@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import * as XLSX from 'xlsx'
 import { useLeads } from '@/hooks/useLeads'
 import { getLeadTrackingDate, isSinInfo, normalizeCanal } from '@/lib/leadUtils'
 import { useFilteredLeads, useFilters } from '@/contexts/FilterContext'
@@ -51,6 +52,55 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+
+function formatExportDate(value) {
+    if (!value) return ''
+
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return String(value)
+
+    return format(date, 'dd/MM/yyyy HH:mm', { locale: es })
+}
+
+function getSortedLeadsForExport(leads) {
+    return [...leads].sort((a, b) => {
+        const da = getLeadTrackingDate(a)
+        const db = getLeadTrackingDate(b)
+        const ta = da ? da.getTime() : 0
+        const tb = db ? db.getTime() : 0
+        return tb - ta
+    })
+}
+
+function exportLeadsSpreadsheet(leads, formatType = 'xlsx') {
+    const rows = getSortedLeadsForExport(leads).map((lead) => ({
+        ID: lead.lead_id || '',
+        Nombre: lead.nombre || '',
+        Telefono: lead.telefono || '',
+        'Fecha contacto': formatExportDate(lead.fecha_primer_mensaje),
+        'Fecha evento': lead.fecha_evento || '',
+        'Evento original': lead.evento || '',
+        'Evento normalizado': lead.evento_normalizado || '',
+        Fase: lead.fase_embudo || '',
+        Vendedora: lead.vendedora || '',
+        'Canal original': lead.canal_de_contacto || '',
+        'Canal normalizado': lead.canal_normalizado || normalizeCanal(lead.canal_de_contacto),
+        'Como nos encontro': lead.como_nos_encontro || '',
+        Salon: lead.salon || '',
+    }))
+
+    const workbook = XLSX.utils.book_new()
+    const worksheet = XLSX.utils.json_to_sheet(rows)
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Leads')
+
+    const stamp = format(new Date(), 'yyyy-MM-dd-HHmm')
+    if (formatType === 'csv') {
+        XLSX.writeFile(workbook, `leads-${stamp}.csv`, { bookType: 'csv' })
+        return
+    }
+
+    XLSX.writeFile(workbook, `leads-${stamp}.xlsx`)
+}
 
 /* MINI WIDGETS (Overview tab only) */
 
@@ -417,7 +467,27 @@ function LeadsTable({ leads, allLeads, totalCount, loading, onSelectLead, onLead
                         Mostrando {rows.length.toLocaleString()} en tabla, {filteredCount.toLocaleString()} filtrados de {totalLeadsCount.toLocaleString()} leads
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => exportLeadsSpreadsheet(leads, 'xlsx')}
+                        disabled={!leads.length}
+                        className="flex items-center gap-2 rounded-full px-4"
+                    >
+                        <Download className="h-4 w-4" />
+                        Excel
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => exportLeadsSpreadsheet(leads, 'csv')}
+                        disabled={!leads.length}
+                        className="flex items-center gap-2 rounded-full px-4"
+                    >
+                        <Download className="h-4 w-4" />
+                        CSV
+                    </Button>
                     <Button size="sm" onClick={() => navigate('/admin/import-leads')} className="flex items-center gap-2 rounded-full px-4 border border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-600 dark:hover:bg-emerald-900/50">
                         <UploadCloud className="h-4 w-4" />
                         Importar Excel

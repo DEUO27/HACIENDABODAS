@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { UploadCloud } from 'lucide-react'
 
 import {
@@ -21,11 +21,14 @@ export default function GuestImportDialog({
 }) {
   const [preview, setPreview] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [selectedFileName, setSelectedFileName] = useState('')
+  const fileInputRef = useRef(null)
 
   async function handleFileSelection(file) {
     if (!file) return
 
     setLoading(true)
+    setSelectedFileName(file.name)
     try {
       const rows = await readGuestFile(await file.arrayBuffer())
       const existingKeys = new Set(existingGuests.map((guest) => guest.dedupe_key))
@@ -45,6 +48,8 @@ export default function GuestImportDialog({
     if (!nextOpen) {
       setPreview(null)
       setLoading(false)
+      setSelectedFileName('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -64,12 +69,25 @@ export default function GuestImportDialog({
             <p className="font-medium text-foreground">Arrastra un archivo o haz clic para cargarlo</p>
             <p className="mt-2 text-sm text-muted-foreground">Formatos soportados: .xlsx, .xls, .csv</p>
             <input
+              ref={fileInputRef}
               type="file"
               accept=".xlsx,.xls,.csv"
-              className="mt-6 block w-full text-sm text-muted-foreground"
+              className="sr-only"
               onChange={(event) => handleFileSelection(event.target.files?.[0])}
             />
-            {loading && <p className="mt-4 text-sm text-muted-foreground">Procesando archivo...</p>}
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-6 rounded-none"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+            >
+              <UploadCloud className="mr-2 h-4 w-4" />
+              {loading ? 'Procesando archivo...' : 'Seleccionar archivo'}
+            </Button>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {selectedFileName || 'Ningun archivo seleccionado'}
+            </p>
           </div>
         )}
 
