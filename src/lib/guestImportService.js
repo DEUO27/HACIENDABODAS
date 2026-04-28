@@ -8,9 +8,20 @@ import {
 } from '@/lib/eventModuleUtils'
 import { readSpreadsheetRows } from '@/lib/excelUtils'
 
+function normalizeLookupText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+}
+
 function getRowValue(row, keywords) {
   const entries = Object.entries(row || {})
-  const found = entries.find(([key]) => keywords.some((keyword) => key.toLowerCase().includes(keyword)))
+  const found = entries.find(([key]) => {
+    const normalizedKey = normalizeLookupText(key)
+    return keywords.some((keyword) => normalizedKey.includes(normalizeLookupText(keyword)))
+  })
   return found ? found[1] : ''
 }
 
@@ -36,7 +47,9 @@ export function processGuestRows(rows, { eventId, existingDedupeKeys = new Set()
     const guestGroup = String(getRowValue(row, ['grupo', 'group', 'familia']) || '').trim()
     const tableName = String(getRowValue(row, ['mesa', 'table']) || '').trim()
     const tags = parseTagsInput(getRowValue(row, ['tag', 'etiqueta', 'labels']))
-    const notes = String(getRowValue(row, ['nota', 'notes', 'comentario']) || '').trim()
+    const comment = String(getRowValue(row, ['nota', 'notes', 'comentario']) || '').trim()
+    const restrictions = String(getRowValue(row, ['restriccion', 'restricciones', 'alergia', 'dietary']) || '').trim()
+    const notes = [comment, restrictions ? `Restricciones: ${restrictions}` : ''].filter(Boolean).join('\n')
     const attendanceStatus = normalizeAttendanceStatus(getRowValue(row, ['confirm', 'rsvp', 'estado']))
     const deliveryStatus = normalizeDeliveryStatus(getRowValue(row, ['envio', 'delivery']))
     const plusOnesAllowed = parseInteger(getRowValue(row, ['acompan', 'plus', 'guest']))

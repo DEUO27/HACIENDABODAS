@@ -1,4 +1,4 @@
-import { downloadSpreadsheet, triggerBrowserDownload } from '@/lib/excelUtils'
+import { downloadGuestTemplateSpreadsheet, triggerBrowserDownload } from '@/lib/excelUtils'
 
 const ATTENDANCE_STATUS_LABELS = {
   pending: 'Pendiente',
@@ -171,7 +171,7 @@ export function normalizeAttendanceStatus(value) {
 
   if (!normalized) return 'pending'
   if (['confirmado', 'confirmed', 'si', 'asiste'].includes(normalized)) return 'confirmed'
-  if (['rechazado', 'declined', 'no', 'no asiste'].includes(normalized)) return 'declined'
+  if (['cancelado', 'rechazado', 'declined', 'no', 'no asiste'].includes(normalized)) return 'declined'
 
   return 'pending'
 }
@@ -180,6 +180,8 @@ export function normalizeDeliveryStatus(value) {
   const normalized = String(value || '').trim().toLowerCase()
 
   if (!normalized) return 'draft'
+  if (['entregado', 'delivered'].includes(normalized)) return 'delivered'
+  if (['pendiente', 'sin enviar', 'borrador'].includes(normalized)) return 'draft'
   if (Object.keys(DELIVERY_STATUS_LABELS).includes(normalized)) return normalized
   return 'draft'
 }
@@ -354,6 +356,19 @@ export function triggerDownload(filename, blob) {
   triggerBrowserDownload(filename, blob)
 }
 
+function getTemplateAttendanceLabel(status) {
+  const normalized = normalizeAttendanceStatus(status)
+  if (normalized === 'confirmed') return 'Confirmado'
+  if (normalized === 'declined') return 'Cancelado'
+  return 'Pendiente'
+}
+
+function getTemplateDeliveryLabel(status) {
+  const normalized = normalizeDeliveryStatus(status)
+  if (['accepted', 'sent', 'delivered', 'read'].includes(normalized)) return 'Entregado'
+  return 'Sin enviar'
+}
+
 export async function exportGuestsSpreadsheet({ guests, eventName, format = 'xlsx' }) {
   const rows = guests.map((guest) => ({
     Nombre: guest.full_name,
@@ -362,18 +377,18 @@ export async function exportGuestsSpreadsheet({ guests, eventName, format = 'xls
     Grupo: guest.guest_group || '',
     Mesa: guest.table_name || '',
     Etiquetas: (guest.tags || []).join(', '),
-    RSVP: getAttendanceMeta(guest.attendance_status).label,
-    Envio: getDeliveryMeta(guest.delivery_status).label,
-    'Acompanantes permitidos': guest.plus_ones_allowed || 0,
+    RSVP: getTemplateAttendanceLabel(guest.attendance_status),
+    Envio: getTemplateDeliveryLabel(guest.delivery_status),
+    Acompanantes: guest.plus_ones_allowed || 0,
     Comentario: guest.rsvp_response?.comment || '',
     Restricciones: guest.rsvp_response?.dietary_restrictions || '',
-    Fuente: guest.source || '',
+    Fuente: guest.source === 'import' ? 'importado' : guest.source || 'manual',
   }))
 
   const safeName = slugifyEventName(eventName || 'evento')
-  await downloadSpreadsheet({
+  await downloadGuestTemplateSpreadsheet({
     rows,
-    sheetName: 'Invitados',
+    eventName: eventName || 'Evento',
     filename: `${safeName}-invitados.${format === 'csv' ? 'csv' : 'xlsx'}`,
     format,
   })
