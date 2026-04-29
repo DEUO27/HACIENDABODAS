@@ -2,7 +2,7 @@ function getExcelJS(module) {
   return module.default || module
 }
 
-const GUEST_TEMPLATE_LOGO_URL = new URL('../assets/guest-template-logo.png', import.meta.url).href
+const GUEST_TEMPLATE_LOGO_URL = '/logo.png'
 
 async function fetchImageAsBase64(url) {
   const response = await fetch(url)
@@ -212,7 +212,39 @@ function setCellStyle(cell, style) {
   cell.style = JSON.parse(JSON.stringify(style))
 }
 
-function buildWelcomeSheet(workbook, eventName, logoImageId) {
+function getGuestRowField(row, objectKey, columnIndex) {
+  if (Array.isArray(row)) return row[columnIndex] || ''
+  return row?.[objectKey] || ''
+}
+
+function normalizeSummaryText(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function buildGuestSummary(rows = []) {
+  return rows.reduce((summary, row) => {
+    const name = getGuestRowField(row, 'Nombre', 0)
+    const phone = getGuestRowField(row, 'Telefono', 1)
+    const rsvp = normalizeSummaryText(getGuestRowField(row, 'RSVP', 5))
+    const delivery = normalizeSummaryText(getGuestRowField(row, 'Envio', 6))
+
+    if (name || phone) summary.total += 1
+    if (rsvp === 'confirmado') summary.confirmed += 1
+    if (rsvp === 'pendiente' || !rsvp) summary.pending += 1
+    if (rsvp === 'cancelado') summary.declined += 1
+    if (delivery === 'entregado') summary.delivered += 1
+
+    return summary
+  }, {
+    total: 0,
+    confirmed: 0,
+    pending: 0,
+    declined: 0,
+    delivered: 0,
+  })
+}
+
+function buildWelcomeSheet(workbook, eventName, logoImageId, rows = []) {
   const worksheet = workbook.addWorksheet('Bienvenida')
   worksheet.views = [{
     showGridLines: false,
@@ -294,6 +326,16 @@ function buildWelcomeSheet(workbook, eventName, logoImageId) {
     alignment: { horizontal: 'left', vertical: 'middle', indent: 1 },
     fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF9F3' } },
   }
+  const summaryLabelStyle = {
+    font: { bold: true, size: 11, color: { argb: 'FF4A2C0A' }, name: 'Arial' },
+    alignment: { horizontal: 'left', vertical: 'middle', indent: 1 },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF9F3' } },
+  }
+  const summaryValueStyle = {
+    font: { bold: true, size: 12, color: { argb: 'FF7A4E1D' }, name: 'Arial' },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF9F3' } },
+  }
 
   worksheet.mergeCells('A6:F6')
   worksheet.mergeCells('A7:F7')
@@ -314,7 +356,6 @@ function buildWelcomeSheet(workbook, eventName, logoImageId) {
   const guideRows = [
     '   Nombre   —   Nombre completo del invitado',
     '   Telefono   —   Con codigo de pais, ej. +52181...',
-    '   Email   —   Correo electronico (opcional)',
     '   Grupo   —   Numero o nombre del grupo',
     '   Mesa   —   Numero de mesa asignada',
     '   Etiquetas   —   VIP, Prensa, Staff, etc.',
@@ -333,25 +374,29 @@ function buildWelcomeSheet(workbook, eventName, logoImageId) {
     setCellStyle(worksheet.getCell(`A${rowNumber}`), guideStyle)
   })
 
+  const summary = buildGuestSummary(rows)
   const summaryRows = [
-    [28, 'Total invitados'],
-    [29, 'Confirmados'],
-    [30, 'Pendientes'],
-    [31, 'Cancelados'],
-    [32, 'Envios entregados'],
+    [28, 'Total invitados', 'SUMPRODUCT(--((Invitados!A3:A300&Invitados!B3:B300)<>""))', summary.total],
+    [29, 'Confirmados', 'COUNTIF(Invitados!F3:F300,"Confirmado")', summary.confirmed],
+    [30, 'Pendientes', 'COUNTIF(Invitados!F3:F300,"Pendiente")', summary.pending],
+    [31, 'Cancelados', 'COUNTIF(Invitados!F3:F300,"Cancelado")', summary.declined],
+    [32, 'Envios entregados', 'COUNTIF(Invitados!G3:G300,"Entregado")', summary.delivered],
   ]
 
-  summaryRows.forEach(([rowNumber, text]) => {
-    worksheet.mergeCells(`A${rowNumber}:F${rowNumber}`)
+  summaryRows.forEach(([rowNumber, text, formula, result]) => {
+    worksheet.mergeCells(`A${rowNumber}:D${rowNumber}`)
+    worksheet.mergeCells(`E${rowNumber}:F${rowNumber}`)
     worksheet.getCell(`A${rowNumber}`).value = text
-    setCellStyle(worksheet.getCell(`A${rowNumber}`), guideStyle)
+    worksheet.getCell(`E${rowNumber}`).value = { formula, result }
+    setCellStyle(worksheet.getCell(`A${rowNumber}`), summaryLabelStyle)
+    setCellStyle(worksheet.getCell(`E${rowNumber}`), summaryValueStyle)
   })
 }
 
 function buildGuestWorksheet(workbook, { rows, eventName, logoImageId }) {
   const worksheet = workbook.addWorksheet('Invitados')
-  const headers = ['Nombre', 'Telefono', 'Email', 'Grupo', 'Mesa', 'Etiquetas', 'RSVP', 'Envio', 'Acompanantes', 'Comentario', 'Restricciones', 'Fuente']
-  const widths = [24, 31.42578125, 28, 10, 8, 14, 16, 16, 14, 28, 26, 14]
+  const headers = ['Nombre', 'Telefono', 'Grupo', 'Mesa', 'Etiquetas', 'RSVP', 'Envio', 'Acompanantes', 'Comentario', 'Restricciones', 'Fuente']
+  const widths = [24, 31.42578125, 10, 8, 14, 16, 16, 14, 28, 26, 14]
   const title = `   ${eventName}  —  Lista de Invitados`
 
   worksheet.views = [{
@@ -371,14 +416,14 @@ function buildGuestWorksheet(workbook, { rows, eventName, logoImageId }) {
 
   worksheet.addRow(headers.map(() => title))
   worksheet.addRow(headers)
-  worksheet.mergeCells('A1:L1')
+  worksheet.mergeCells('A1:K1')
   worksheet.getRow(1).height = 32.1
   worksheet.getRow(2).height = 26.1
-  worksheet.autoFilter = 'A2:L2'
+  worksheet.autoFilter = 'A2:K2'
 
   if (logoImageId != null) {
     worksheet.addImage(logoImageId, {
-      tl: { col: 9, row: 0 },
+      tl: { col: 8, row: 0 },
       ext: { width: 112, height: 55 },
       editAs: 'oneCell',
     })
@@ -424,22 +469,22 @@ function buildGuestWorksheet(workbook, { rows, eventName, logoImageId }) {
     headers.forEach((_, columnIndex) => {
       const cell = row.getCell(columnIndex + 1)
       setCellStyle(cell, bodyStyle)
-      if (columnIndex + 1 !== 1 && columnIndex + 1 !== 10 && columnIndex + 1 !== 11) {
+      if (columnIndex + 1 !== 1 && columnIndex + 1 !== 9 && columnIndex + 1 !== 10) {
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
       }
     })
   }
 
   for (let rowIndex = 3; rowIndex <= 300; rowIndex += 1) {
-    worksheet.dataValidations.add(`G${rowIndex}`, {
+    worksheet.dataValidations.add(`F${rowIndex}`, {
       type: 'list',
       formulae: ['"Confirmado,Pendiente,Cancelado"'],
     })
-    worksheet.dataValidations.add(`H${rowIndex}`, {
+    worksheet.dataValidations.add(`G${rowIndex}`, {
       type: 'list',
       formulae: ['"Entregado,Pendiente,Sin enviar"'],
     })
-    worksheet.dataValidations.add(`L${rowIndex}`, {
+    worksheet.dataValidations.add(`K${rowIndex}`, {
       type: 'list',
       formulae: ['"manual,importado,web"'],
     })
@@ -467,7 +512,7 @@ export async function downloadGuestTemplateSpreadsheet({ rows, eventName, filena
     console.warn('[Guest Export] Logo asset could not be embedded', error)
   }
 
-  buildWelcomeSheet(workbook, normalizedEventName, logoImageId)
+  buildWelcomeSheet(workbook, normalizedEventName, logoImageId, rows)
   buildGuestWorksheet(workbook, { rows, eventName: normalizedEventName, logoImageId })
 
   const buffer = await workbook.xlsx.writeBuffer()

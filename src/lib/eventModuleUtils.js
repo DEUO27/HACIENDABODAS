@@ -373,7 +373,6 @@ export async function exportGuestsSpreadsheet({ guests, eventName, format = 'xls
   const rows = guests.map((guest) => ({
     Nombre: guest.full_name,
     Telefono: guest.phone || '',
-    Email: guest.email || '',
     Grupo: guest.guest_group || '',
     Mesa: guest.table_name || '',
     Etiquetas: (guest.tags || []).join(', '),
