@@ -60,7 +60,7 @@ function normalizeGuest(guest) {
   return {
     id: guest?.id || null,
     fullName: guest?.fullName || guest?.full_name || 'Invitado de ejemplo',
-    plusOnesAllowed: guest?.plusOnesAllowed ?? guest?.plus_ones_allowed ?? 2,
+    plusOnesAllowed: parseCompanionCount(guest?.plusOnesAllowed ?? guest?.plus_ones_allowed ?? 2),
     attendanceStatus: guest?.attendanceStatus || guest?.attendance_status || 'pending',
   }
 }
@@ -93,6 +93,11 @@ function buildShellStyle(config) {
   }
 }
 
+function parseCompanionCount(value) {
+  const parsed = Number.parseInt(String(value || 0), 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
 export default function RsvpThemeRenderer({
   event,
   guest,
@@ -120,6 +125,38 @@ export default function RsvpThemeRenderer({
   const outlineButtonStyle = {
     borderColor: mergedConfig.branding.primary_color,
     color: mergedConfig.branding.primary_color,
+  }
+  const adultPlusOnes = parseCompanionCount(form?.adultPlusOnes ?? form?.plusOnes)
+  const childPlusOnes = parseCompanionCount(form?.childPlusOnes)
+  const totalPlusOnes = adultPlusOnes + childPlusOnes
+  const maxPlusOnes = normalizedGuest.plusOnesAllowed
+  const companionLimitExceeded = totalPlusOnes > maxPlusOnes
+
+  function updateCompanionCounts(nextAdultPlusOnes, nextChildPlusOnes) {
+    const safeAdultPlusOnes = parseCompanionCount(nextAdultPlusOnes)
+    const safeChildPlusOnes = parseCompanionCount(nextChildPlusOnes)
+    const total = safeAdultPlusOnes + safeChildPlusOnes
+
+    if (total <= maxPlusOnes) {
+      onFormChange?.((current) => ({
+        ...current,
+        adultPlusOnes: safeAdultPlusOnes,
+        childPlusOnes: safeChildPlusOnes,
+        plusOnes: total,
+      }))
+      return
+    }
+
+    const availableForChildren = Math.max(0, maxPlusOnes - safeAdultPlusOnes)
+    const clampedChildPlusOnes = Math.min(safeChildPlusOnes, availableForChildren)
+    const clampedAdultPlusOnes = Math.min(safeAdultPlusOnes, maxPlusOnes - clampedChildPlusOnes)
+
+    onFormChange?.((current) => ({
+      ...current,
+      adultPlusOnes: clampedAdultPlusOnes,
+      childPlusOnes: clampedChildPlusOnes,
+      plusOnes: clampedAdultPlusOnes + clampedChildPlusOnes,
+    }))
   }
 
   const hasHeroImage = Boolean(mergedConfig.branding.hero_image_url)
@@ -345,7 +382,13 @@ export default function RsvpThemeRenderer({
                         className="h-12 rounded-none"
                         style={form?.responseStatus === 'declined' ? accentButtonStyle : outlineButtonStyle}
                         variant={form?.responseStatus === 'declined' ? 'default' : 'outline'}
-                        onClick={() => onFormChange?.((current) => ({ ...current, responseStatus: 'declined', plusOnes: 0 }))}
+                        onClick={() => onFormChange?.((current) => ({
+                          ...current,
+                          responseStatus: 'declined',
+                          plusOnes: 0,
+                          adultPlusOnes: 0,
+                          childPlusOnes: 0,
+                        }))}
                         disabled={preview}
                       >
                         No podre asistir
@@ -353,24 +396,51 @@ export default function RsvpThemeRenderer({
                     </div>
 
                     {form?.responseStatus === 'confirmed' && (
-                      <label className="space-y-2">
-                        <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                          Acompanantes (max. {normalizedGuest.plusOnesAllowed})
-                        </span>
-                        <Input
-                          type="number"
-                          min="0"
-                          max={normalizedGuest.plusOnesAllowed}
-                          value={form.plusOnes}
-                          onChange={(event) => {
-                            const parsed = parseInt(event.target.value, 10)
-                            const clamped = Number.isNaN(parsed) ? 0 : Math.max(0, Math.min(parsed, normalizedGuest.plusOnesAllowed))
-                            onFormChange?.((current) => ({ ...current, plusOnes: clamped }))
-                          }}
-                          className="rounded-none"
-                          disabled={preview}
-                        />
-                      </label>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                            Acompanantes
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {totalPlusOnes} de {maxPlusOnes}
+                          </span>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="space-y-2">
+                            <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                              Adultos
+                            </span>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={Math.max(0, maxPlusOnes - childPlusOnes)}
+                              value={adultPlusOnes}
+                              onChange={(event) => updateCompanionCounts(event.target.value, childPlusOnes)}
+                              className="rounded-none"
+                              disabled={preview}
+                            />
+                          </label>
+                          <label className="space-y-2">
+                            <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                              Ninos
+                            </span>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={Math.max(0, maxPlusOnes - adultPlusOnes)}
+                              value={childPlusOnes}
+                              onChange={(event) => updateCompanionCounts(adultPlusOnes, event.target.value)}
+                              className="rounded-none"
+                              disabled={preview}
+                            />
+                          </label>
+                        </div>
+                        {companionLimitExceeded && (
+                          <p className="text-xs text-rose-600">
+                            El total de acompanantes no puede superar {maxPlusOnes}.
+                          </p>
+                        )}
+                      </div>
                     )}
 
                     <label className="space-y-2">
@@ -401,7 +471,7 @@ export default function RsvpThemeRenderer({
                       className="h-12 w-full rounded-none"
                       style={accentButtonStyle}
                       onClick={onSubmit}
-                      disabled={submitting || preview}
+                      disabled={submitting || preview || companionLimitExceeded}
                     >
                       {preview ? 'Vista previa' : submitting ? 'Enviando...' : 'Enviar respuesta'}
                     </Button>

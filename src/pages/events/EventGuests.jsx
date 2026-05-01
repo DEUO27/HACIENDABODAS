@@ -27,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useEvent } from '@/contexts/EventContext'
-import { exportGuestsSpreadsheet, formatDateTime, getPublicAppUrl } from '@/lib/eventModuleUtils'
+import { exportGuestsSpreadsheet, formatDateTime, getGuestCompanionCounts, getPublicAppUrl } from '@/lib/eventModuleUtils'
 import {
   deleteGuest,
   importGuests,
@@ -407,76 +407,95 @@ export default function EventGuests() {
                   <TableHead>Grupo / Mesa</TableHead>
                   <TableHead>Etiquetas</TableHead>
                   <TableHead>RSVP</TableHead>
+                  <TableHead>Acompanantes</TableHead>
                   <TableHead>Envio</TableHead>
                   <TableHead>Ultima respuesta</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedGuests.map((guest) => (
-                  <TableRow key={guest.id}>
-                    <TableCell className="align-top">
-                      <div className="space-y-1">
-                        <p className="font-medium text-foreground">{guest.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{guest.phone || guest.email || 'Sin contacto'}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        <p>{guest.guest_group || 'Sin grupo'}</p>
-                        <p>{guest.table_name || 'Sin mesa'}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <div className="flex flex-wrap gap-1">
-                        {(guest.tags || []).length
-                          ? guest.tags.map((tag) => (
-                              <Badge key={tag} variant="outline" className="rounded-full px-2 py-0.5 text-[10px] uppercase tracking-widest">
-                                {tag}
-                              </Badge>
-                            ))
-                          : <span className="text-xs text-muted-foreground">Sin tags</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="align-top"><AttendancePill status={guest.attendance_status} /></TableCell>
-                    <TableCell className="align-top"><DeliveryPill status={guest.delivery_status} /></TableCell>
-                    <TableCell className="align-top text-sm text-muted-foreground">
-                      {guest.responded_at ? formatDateTime(guest.responded_at) : 'Sin respuesta'}
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="rounded-none"
-                          onClick={() => handleGenerateLink(guest)}
-                          disabled={generatingLinkGuestId === guest.id}
-                        >
-                          <Link2 className="mr-2 h-4 w-4" />
-                          {generatingLinkGuestId === guest.id ? 'Generando...' : 'Link'}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="rounded-none"
-                          onClick={() => {
-                            setEditingGuest(guest)
-                            setDialogOpen(true)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" className="rounded-none" onClick={() => handleDeleteGuest(guest)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {paginatedGuests.map((guest) => {
+                  const companions = getGuestCompanionCounts(guest)
+                  const hasResponse = Boolean(guest.rsvp_response)
+
+                  return (
+                    <TableRow key={guest.id}>
+                      <TableCell className="align-top">
+                        <div className="space-y-1">
+                          <p className="font-medium text-foreground">{guest.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{guest.phone || guest.email || 'Sin contacto'}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <p>{guest.guest_group || 'Sin grupo'}</p>
+                          <p>{guest.table_name || 'Sin mesa'}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <div className="flex flex-wrap gap-1">
+                          {(guest.tags || []).length
+                            ? guest.tags.map((tag) => (
+                                <Badge key={tag} variant="outline" className="rounded-full px-2 py-0.5 text-[10px] uppercase tracking-widest">
+                                  {tag}
+                                </Badge>
+                              ))
+                            : <span className="text-xs text-muted-foreground">Sin tags</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top"><AttendancePill status={guest.attendance_status} /></TableCell>
+                      <TableCell className="align-top">
+                        {hasResponse ? (
+                          <div className="space-y-1 text-xs text-muted-foreground">
+                            <p>Adultos: {companions.adultPlusOnes}</p>
+                            <p>Ninos: {companions.childPlusOnes}</p>
+                            <p className="font-medium text-foreground">Total: {companions.totalPlusOnes}</p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Permitidos: {guest.plus_ones_allowed || 0}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="align-top"><DeliveryPill status={guest.delivery_status} /></TableCell>
+                      <TableCell className="align-top text-sm text-muted-foreground">
+                        {guest.responded_at ? formatDateTime(guest.responded_at) : 'Sin respuesta'}
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-none"
+                            onClick={() => handleGenerateLink(guest)}
+                            disabled={generatingLinkGuestId === guest.id}
+                          >
+                            <Link2 className="mr-2 h-4 w-4" />
+                            {generatingLinkGuestId === guest.id ? 'Generando...' : 'Link'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-none"
+                            onClick={() => {
+                              setEditingGuest(guest)
+                              setDialogOpen(true)
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" className="rounded-none" onClick={() => handleDeleteGuest(guest)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
 
                 {!paginatedGuests.length && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
                       No hay invitados que coincidan con los filtros actuales.
                     </TableCell>
                   </TableRow>

@@ -23,7 +23,8 @@ export default function RsvpPage() {
   const [errorState, setErrorState] = useState(null)
   const [form, setForm] = useState({
     responseStatus: 'confirmed',
-    plusOnes: 0,
+    adultPlusOnes: 0,
+    childPlusOnes: 0,
     comment: '',
     dietaryRestrictions: '',
   })
@@ -55,7 +56,9 @@ export default function RsvpPage() {
       const result = await submitRsvp({
         token,
         responseStatus: form.responseStatus,
-        plusOnes: form.responseStatus === 'confirmed' ? form.plusOnes : 0,
+        adultPlusOnes: form.responseStatus === 'confirmed' ? form.adultPlusOnes : 0,
+        childPlusOnes: form.responseStatus === 'confirmed' ? form.childPlusOnes : 0,
+        plusOnes: form.responseStatus === 'confirmed' ? form.adultPlusOnes + form.childPlusOnes : 0,
         comment: form.comment,
         dietaryRestrictions: form.dietaryRestrictions,
       })

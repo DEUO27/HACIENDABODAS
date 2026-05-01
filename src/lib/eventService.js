@@ -230,6 +230,8 @@ export async function listGuests(eventId) {
         id,
         response_status,
         plus_ones,
+        adult_plus_ones,
+        child_plus_ones,
         comment,
         dietary_restrictions,
         responded_at
@@ -290,15 +292,56 @@ export async function importGuests(guests) {
     return { inserted: 0 }
   }
 
+  const responseSeeds = new Map()
+  const guestRows = guests.map((guest) => {
+    const { _rsvp_response: responseSeed, ...guestRow } = guest
+    if (responseSeed) responseSeeds.set(guestRow.dedupe_key, responseSeed)
+    return guestRow
+  })
+
   const { data, error } = await supabase
     .from('guests')
-    .upsert(guests, {
+    .upsert(guestRows, {
       onConflict: 'event_id,dedupe_key',
       ignoreDuplicates: true,
     })
-    .select('id')
+    .select('id,event_id,dedupe_key,attendance_status')
 
   if (error) throw error
+
+  const responseRows = (data || [])
+    .map((guest) => {
+      const responseSeed = responseSeeds.get(guest.dedupe_key)
+      if (!responseSeed || !['confirmed', 'declined'].includes(responseSeed.response_status)) return null
+
+      const adultPlusOnes = Number(responseSeed.adult_plus_ones || 0)
+      const childPlusOnes = Number(responseSeed.child_plus_ones || 0)
+      const totalPlusOnes = responseSeed.response_status === 'confirmed'
+        ? adultPlusOnes + childPlusOnes
+        : 0
+
+      return {
+        event_id: guest.event_id,
+        guest_id: guest.id,
+        response_status: responseSeed.response_status,
+        plus_ones: totalPlusOnes,
+        adult_plus_ones: responseSeed.response_status === 'confirmed' ? adultPlusOnes : 0,
+        child_plus_ones: responseSeed.response_status === 'confirmed' ? childPlusOnes : 0,
+        comment: String(responseSeed.comment || ''),
+        dietary_restrictions: String(responseSeed.dietary_restrictions || ''),
+        responded_at: new Date().toISOString(),
+      }
+    })
+    .filter(Boolean)
+
+  if (responseRows.length) {
+    const { error: responseError } = await supabase
+      .from('rsvp_responses')
+      .upsert(responseRows, { onConflict: 'guest_id' })
+
+    if (responseError) throw responseError
+  }
+
   return { inserted: data?.length || 0 }
 }
 

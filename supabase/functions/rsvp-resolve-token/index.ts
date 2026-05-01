@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     if (tokenRow.used_at) {
       const { data: response } = await adminClient
         .from('rsvp_responses')
-        .select('response_status, plus_ones, comment, dietary_restrictions, responded_at')
+        .select('response_status, plus_ones, adult_plus_ones, child_plus_ones, comment, dietary_restrictions, responded_at')
         .eq('guest_id', tokenRow.guest_id)
         .maybeSingle()
 

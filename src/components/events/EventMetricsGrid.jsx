@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, Clock3, Send, Users, XCircle } from 'lucide-react'
+import { Baby, CalendarClock, CheckCircle2, Clock3, Send, UserPlus, Users, UsersRound, XCircle } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -8,11 +8,14 @@ const metricConfig = [
   { key: 'confirmed', label: 'Confirmados', icon: CheckCircle2, accent: 'text-emerald-600 dark:text-emerald-300' },
   { key: 'declined', label: 'Rechazados', icon: XCircle, accent: 'text-rose-600 dark:text-rose-300' },
   { key: 'pending', label: 'Pendientes', icon: Clock3, accent: 'text-amber-600 dark:text-amber-300' },
+  { key: 'adultCompanions', label: 'Adultos extra', icon: UserPlus, accent: 'text-cyan-600 dark:text-cyan-300' },
+  { key: 'childCompanions', label: 'Ninos', icon: Baby, accent: 'text-lime-600 dark:text-lime-300' },
+  { key: 'totalAttendees', label: 'Total asistentes', icon: UsersRound, accent: 'text-fuchsia-600 dark:text-fuchsia-300' },
 ]
 
 export default function EventMetricsGrid({ metrics, scheduleCount = 0 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
       {metricConfig.map((item) => {
         const Icon = item.icon
         return (

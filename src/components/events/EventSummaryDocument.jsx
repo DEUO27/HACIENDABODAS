@@ -99,6 +99,18 @@ export default function EventSummaryDocument({ event, metrics, guests }) {
             <Text style={styles.label}>Pendientes</Text>
             <Text style={styles.value}>{metrics.pending}</Text>
           </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Adultos extra</Text>
+            <Text style={styles.value}>{metrics.adultCompanions || 0}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Ninos acompanantes</Text>
+            <Text style={styles.value}>{metrics.childCompanions || 0}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Total asistentes</Text>
+            <Text style={styles.value}>{metrics.totalAttendees || metrics.confirmed || 0}</Text>
+          </View>
         </View>
 
         <View style={styles.section}>

@@ -315,6 +315,25 @@ export function renderMessageTemplate(template, variables) {
   })
 }
 
+function parseNonNegativeInteger(value) {
+  const parsed = Number.parseInt(String(value ?? 0), 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
+export function getGuestCompanionCounts(guest) {
+  const response = guest?.rsvp_response || {}
+  const adultPlusOnes = 'adult_plus_ones' in response
+    ? parseNonNegativeInteger(response.adult_plus_ones)
+    : parseNonNegativeInteger(response.plus_ones)
+  const childPlusOnes = parseNonNegativeInteger(response.child_plus_ones)
+
+  return {
+    adultPlusOnes,
+    childPlusOnes,
+    totalPlusOnes: adultPlusOnes + childPlusOnes,
+  }
+}
+
 export function computeGuestMetrics(guests) {
   const metrics = {
     total: guests.length,
@@ -322,14 +341,23 @@ export function computeGuestMetrics(guests) {
     confirmed: 0,
     declined: 0,
     pending: 0,
+    adultCompanions: 0,
+    childCompanions: 0,
+    totalAttendees: 0,
   }
 
   guests.forEach((guest) => {
     if (['accepted', 'sent', 'delivered', 'read'].includes(guest.delivery_status)) metrics.sent += 1
-    if (guest.attendance_status === 'confirmed') metrics.confirmed += 1
-    else if (guest.attendance_status === 'declined') metrics.declined += 1
+    if (guest.attendance_status === 'confirmed') {
+      const companions = getGuestCompanionCounts(guest)
+      metrics.confirmed += 1
+      metrics.adultCompanions += companions.adultPlusOnes
+      metrics.childCompanions += companions.childPlusOnes
+    } else if (guest.attendance_status === 'declined') metrics.declined += 1
     else metrics.pending += 1
   })
+
+  metrics.totalAttendees = metrics.confirmed + metrics.adultCompanions + metrics.childCompanions
 
   return metrics
 }
@@ -370,19 +398,25 @@ function getTemplateDeliveryLabel(status) {
 }
 
 export async function exportGuestsSpreadsheet({ guests, eventName, format = 'xlsx' }) {
-  const rows = guests.map((guest) => ({
-    Nombre: guest.full_name,
-    Telefono: guest.phone || '',
-    Grupo: guest.guest_group || '',
-    Mesa: guest.table_name || '',
-    Etiquetas: (guest.tags || []).join(', '),
-    RSVP: getTemplateAttendanceLabel(guest.attendance_status),
-    Envio: getTemplateDeliveryLabel(guest.delivery_status),
-    Acompanantes: guest.plus_ones_allowed || 0,
-    Comentario: guest.rsvp_response?.comment || '',
-    Restricciones: guest.rsvp_response?.dietary_restrictions || '',
-    Fuente: guest.source === 'import' ? 'importado' : guest.source || 'manual',
-  }))
+  const rows = guests.map((guest) => {
+    const companions = getGuestCompanionCounts(guest)
+
+    return {
+      Nombre: guest.full_name,
+      Telefono: guest.phone || '',
+      Grupo: guest.guest_group || '',
+      Mesa: guest.table_name || '',
+      Etiquetas: (guest.tags || []).join(', '),
+      RSVP: getTemplateAttendanceLabel(guest.attendance_status),
+      Envio: getTemplateDeliveryLabel(guest.delivery_status),
+      'Acompanantes permitidos': guest.plus_ones_allowed || 0,
+      'Adultos acompanantes': companions.adultPlusOnes,
+      'Ninos acompanantes': companions.childPlusOnes,
+      Comentario: guest.rsvp_response?.comment || '',
+      Restricciones: guest.rsvp_response?.dietary_restrictions || '',
+      Fuente: guest.source === 'import' ? 'importado' : guest.source || 'manual',
+    }
+  })
 
   const safeName = slugifyEventName(eventName || 'evento')
   await downloadGuestTemplateSpreadsheet({

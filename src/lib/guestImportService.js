@@ -30,6 +30,14 @@ function parseInteger(value) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
 }
 
+function getCompanionCount(row, keywords) {
+  return parseInteger(getRowValue(row, keywords))
+}
+
+function hasRowValue(row, keywords) {
+  return String(getRowValue(row, keywords) || '').trim() !== ''
+}
+
 export async function readGuestFile(fileBuffer) {
   return readSpreadsheetRows(fileBuffer)
 }
@@ -52,7 +60,25 @@ export function processGuestRows(rows, { eventId, existingDedupeKeys = new Set()
     const notes = [comment, restrictions ? `Restricciones: ${restrictions}` : ''].filter(Boolean).join('\n')
     const attendanceStatus = normalizeAttendanceStatus(getRowValue(row, ['confirm', 'rsvp', 'estado']))
     const deliveryStatus = normalizeDeliveryStatus(getRowValue(row, ['envio', 'delivery']))
-    const plusOnesAllowed = parseInteger(getRowValue(row, ['acompan', 'plus', 'guest']))
+    const adultKeywords = ['adultos acompanantes', 'acompanantes adultos', 'adult_plus_ones']
+    const childKeywords = ['ninos acompanantes', 'ni\u00f1os acompanantes', 'acompanantes ninos', 'acompanantes ni\u00f1os', 'child_plus_ones']
+    const adultPlusOnes = getCompanionCount(row, adultKeywords)
+    const childPlusOnes = getCompanionCount(row, childKeywords)
+    const hasCompanionBreakdown = hasRowValue(row, adultKeywords) || hasRowValue(row, childKeywords)
+    const legacyPlusOnes = getCompanionCount(row, ['acompanantes', 'acompan', 'plus', 'guest'])
+    const explicitPlusOnesAllowed = getCompanionCount(row, ['acompanantes permitidos', 'acompanantes max', 'max acompanantes'])
+    const importedResponseTotal = adultPlusOnes + childPlusOnes
+    const plusOnesAllowed = Math.max(explicitPlusOnesAllowed || legacyPlusOnes, importedResponseTotal)
+    const responseSeed = attendanceStatus === 'pending'
+      ? null
+      : {
+          response_status: attendanceStatus,
+          plus_ones: attendanceStatus === 'confirmed' && hasCompanionBreakdown ? importedResponseTotal : 0,
+          adult_plus_ones: attendanceStatus === 'confirmed' && hasCompanionBreakdown ? adultPlusOnes : 0,
+          child_plus_ones: attendanceStatus === 'confirmed' ? childPlusOnes : 0,
+          comment,
+          dietary_restrictions: restrictions,
+        }
 
     if (!fullName && !phone && !email) {
       invalidRows.push({ ...row, _index: index, _error: 'Fila sin nombre, telefono o email util' })
@@ -87,6 +113,7 @@ export function processGuestRows(rows, { eventId, existingDedupeKeys = new Set()
       notes,
       source: 'import',
       dedupe_key: dedupeKey,
+      _rsvp_response: responseSeed,
     })
   })
 

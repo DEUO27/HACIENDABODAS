@@ -51,7 +51,9 @@ const EDITOR_TABS = [
 
 const RSVP_PREVIEW_FORM = {
   responseStatus: 'confirmed',
-  plusOnes: 1,
+  adultPlusOnes: 1,
+  childPlusOnes: 1,
+  plusOnes: 2,
   comment: 'Felicidades por este gran dia.',
   dietaryRestrictions: 'Sin gluten',
 }

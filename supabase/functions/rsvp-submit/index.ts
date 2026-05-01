@@ -14,6 +14,11 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
+function parseNonNegativeInteger(value: unknown) {
+  const parsed = Number.parseInt(String(value ?? 0), 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -24,6 +29,8 @@ Deno.serve(async (req) => {
       token,
       responseStatus,
       plusOnes = 0,
+      adultPlusOnes = null,
+      childPlusOnes = 0,
       comment = '',
       dietaryRestrictions = '',
     } = await req.json()
@@ -52,7 +59,14 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: false, code: 'invalid_token', message: 'El enlace no es valido.' }, 404)
     }
 
-    const safePlusOnes = Math.max(0, Number.parseInt(String(plusOnes || 0), 10) || 0)
+    const safeAdultPlusOnes = responseStatus === 'confirmed'
+      ? parseNonNegativeInteger(adultPlusOnes ?? plusOnes)
+      : 0
+    const safeChildPlusOnes = responseStatus === 'confirmed'
+      ? parseNonNegativeInteger(childPlusOnes)
+      : 0
+    const safePlusOnes = safeAdultPlusOnes + safeChildPlusOnes
+
     if (safePlusOnes > Number(tokenRow.guests.plus_ones_allowed || 0)) {
       return jsonResponse({
         ok: false,
@@ -65,6 +79,8 @@ Deno.serve(async (req) => {
       p_token_hash: tokenHash,
       p_response_status: responseStatus,
       p_plus_ones: safePlusOnes,
+      p_adult_plus_ones: safeAdultPlusOnes,
+      p_child_plus_ones: safeChildPlusOnes,
       p_comment: String(comment || ''),
       p_dietary_restrictions: String(dietaryRestrictions || ''),
     })
@@ -82,6 +98,9 @@ Deno.serve(async (req) => {
     return jsonResponse({
       ok: true,
       attendanceStatus: result.attendance_status,
+      plusOnes: result.plus_ones,
+      adultPlusOnes: result.adult_plus_ones,
+      childPlusOnes: result.child_plus_ones,
       respondedAt: result.responded_at,
       guestName: tokenRow.guests.full_name,
     })

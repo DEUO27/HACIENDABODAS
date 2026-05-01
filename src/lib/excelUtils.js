@@ -227,12 +227,20 @@ function buildGuestSummary(rows = []) {
     const phone = getGuestRowField(row, 'Telefono', 1)
     const rsvp = normalizeSummaryText(getGuestRowField(row, 'RSVP', 5))
     const delivery = normalizeSummaryText(getGuestRowField(row, 'Envio', 6))
+    const adultCompanions = Number(getGuestRowField(row, 'Adultos acompanantes', 8)) || 0
+    const childCompanions = Number(getGuestRowField(row, 'Ninos acompanantes', 9)) || 0
 
     if (name || phone) summary.total += 1
-    if (rsvp === 'confirmado') summary.confirmed += 1
+    if (rsvp === 'confirmado') {
+      summary.confirmed += 1
+      summary.adultCompanions += Math.max(0, adultCompanions)
+      summary.childCompanions += Math.max(0, childCompanions)
+    }
     if (rsvp === 'pendiente' || !rsvp) summary.pending += 1
     if (rsvp === 'cancelado') summary.declined += 1
     if (delivery === 'entregado') summary.delivered += 1
+
+    summary.totalAttendees = summary.confirmed + summary.adultCompanions + summary.childCompanions
 
     return summary
   }, {
@@ -240,6 +248,9 @@ function buildGuestSummary(rows = []) {
     confirmed: 0,
     pending: 0,
     declined: 0,
+    adultCompanions: 0,
+    childCompanions: 0,
+    totalAttendees: 0,
     delivered: 0,
   })
 }
@@ -284,10 +295,10 @@ function buildWelcomeSheet(workbook, eventName, logoImageId, rows = []) {
   for (let rowIndex = 13; rowIndex <= 25; rowIndex += 1) {
     welcomeRowHeights[rowIndex] = 20.1
   }
-  for (let rowIndex = 28; rowIndex <= 32; rowIndex += 1) {
+  for (let rowIndex = 28; rowIndex <= 35; rowIndex += 1) {
     welcomeRowHeights[rowIndex] = 21.95
   }
-  for (let rowIndex = 33; rowIndex <= 54; rowIndex += 1) {
+  for (let rowIndex = 36; rowIndex <= 54; rowIndex += 1) {
     welcomeRowHeights[rowIndex] = 20.1
   }
 
@@ -361,7 +372,9 @@ function buildWelcomeSheet(workbook, eventName, logoImageId, rows = []) {
     '   Etiquetas   —   VIP, Prensa, Staff, etc.',
     '   RSVP   —   Confirmado / Pendiente / Cancelado',
     '   Envio   —   Entregado / Pendiente / Sin enviar',
-    '   Acompanantes   —   Cantidad de acompanantes permitidos',
+    '   Acompanantes permitidos   —   Maximo total de acompanantes',
+    '   Adultos acompanantes   —   Adultos adicionales confirmados',
+    '   Ninos acompanantes   —   Ninos adicionales confirmados',
     '   Comentario   —   Notas internas libres',
     '   Restricciones   —   Alergias o restricciones alimentarias',
     '   Fuente   —   manual / importado / web',
@@ -380,7 +393,10 @@ function buildWelcomeSheet(workbook, eventName, logoImageId, rows = []) {
     [29, 'Confirmados', 'COUNTIF(Invitados!F3:F300,"Confirmado")', summary.confirmed],
     [30, 'Pendientes', 'COUNTIF(Invitados!F3:F300,"Pendiente")', summary.pending],
     [31, 'Cancelados', 'COUNTIF(Invitados!F3:F300,"Cancelado")', summary.declined],
-    [32, 'Envios entregados', 'COUNTIF(Invitados!G3:G300,"Entregado")', summary.delivered],
+    [32, 'Adultos acompanantes', 'SUMIF(Invitados!F3:F300,"Confirmado",Invitados!I3:I300)', summary.adultCompanions],
+    [33, 'Ninos acompanantes', 'SUMIF(Invitados!F3:F300,"Confirmado",Invitados!J3:J300)', summary.childCompanions],
+    [34, 'Total asistentes', 'E29+E32+E33', summary.totalAttendees],
+    [35, 'Envios entregados', 'COUNTIF(Invitados!G3:G300,"Entregado")', summary.delivered],
   ]
 
   summaryRows.forEach(([rowNumber, text, formula, result]) => {
@@ -395,8 +411,22 @@ function buildWelcomeSheet(workbook, eventName, logoImageId, rows = []) {
 
 function buildGuestWorksheet(workbook, { rows, eventName, logoImageId }) {
   const worksheet = workbook.addWorksheet('Invitados')
-  const headers = ['Nombre', 'Telefono', 'Grupo', 'Mesa', 'Etiquetas', 'RSVP', 'Envio', 'Acompanantes', 'Comentario', 'Restricciones', 'Fuente']
-  const widths = [24, 31.42578125, 10, 8, 14, 16, 16, 14, 28, 26, 14]
+  const headers = [
+    'Nombre',
+    'Telefono',
+    'Grupo',
+    'Mesa',
+    'Etiquetas',
+    'RSVP',
+    'Envio',
+    'Acompanantes permitidos',
+    'Adultos acompanantes',
+    'Ninos acompanantes',
+    'Comentario',
+    'Restricciones',
+    'Fuente',
+  ]
+  const widths = [24, 31.42578125, 10, 8, 14, 16, 16, 18, 18, 18, 28, 26, 14]
   const title = `   ${eventName}  —  Lista de Invitados`
 
   worksheet.views = [{
@@ -416,14 +446,14 @@ function buildGuestWorksheet(workbook, { rows, eventName, logoImageId }) {
 
   worksheet.addRow(headers.map(() => title))
   worksheet.addRow(headers)
-  worksheet.mergeCells('A1:K1')
+  worksheet.mergeCells('A1:M1')
   worksheet.getRow(1).height = 32.1
   worksheet.getRow(2).height = 26.1
-  worksheet.autoFilter = 'A2:K2'
+  worksheet.autoFilter = 'A2:M2'
 
   if (logoImageId != null) {
     worksheet.addImage(logoImageId, {
-      tl: { col: 8, row: 0 },
+      tl: { col: 10, row: 0 },
       ext: { width: 112, height: 55 },
       editAs: 'oneCell',
     })
@@ -469,7 +499,7 @@ function buildGuestWorksheet(workbook, { rows, eventName, logoImageId }) {
     headers.forEach((_, columnIndex) => {
       const cell = row.getCell(columnIndex + 1)
       setCellStyle(cell, bodyStyle)
-      if (columnIndex + 1 !== 1 && columnIndex + 1 !== 9 && columnIndex + 1 !== 10) {
+      if (columnIndex + 1 !== 1 && columnIndex + 1 !== 11 && columnIndex + 1 !== 12) {
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
       }
     })
@@ -484,7 +514,7 @@ function buildGuestWorksheet(workbook, { rows, eventName, logoImageId }) {
       type: 'list',
       formulae: ['"Entregado,Pendiente,Sin enviar"'],
     })
-    worksheet.dataValidations.add(`K${rowIndex}`, {
+    worksheet.dataValidations.add(`M${rowIndex}`, {
       type: 'list',
       formulae: ['"manual,importado,web"'],
     })
