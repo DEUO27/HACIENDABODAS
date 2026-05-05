@@ -454,6 +454,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/admin-delete-account/index.ts"
 
+[functions.admin-reset-account-password]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/admin-reset-account-password/index.ts"
+
 [functions.upsert-event-couple-account]
 enabled = true
 verify_jwt = false

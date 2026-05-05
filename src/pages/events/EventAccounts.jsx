@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Mail, RefreshCw, Save, Trash2, UserPlus } from 'lucide-react'
+import { KeyRound, RefreshCw, Save, Trash2, UserPlus } from 'lucide-react'
 
 import EventShellHeader from '@/components/events/EventShellHeader'
+import TemporaryPasswordDialog from '@/components/accounts/TemporaryPasswordDialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { useEvent } from '@/contexts/EventContext'
 import {
@@ -9,6 +10,7 @@ import {
   listAccounts,
   listEventAccounts,
   removeEventMembership,
+  resetAccountTemporaryPassword,
   upsertEventCoupleAccount,
 } from '@/lib/eventService'
 import { Badge } from '@/components/ui/badge'
@@ -81,6 +83,9 @@ export default function EventAccounts() {
   const [saving, setSaving] = useState(false)
   const [plannerSaving, setPlannerSaving] = useState(false)
   const [plannerDraft, setPlannerDraft] = useState('')
+  const [passwordDialog, setPasswordDialog] = useState(null)
+  const [resetTarget, setResetTarget] = useState(null)
+  const [resetSaving, setResetSaving] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -149,10 +154,17 @@ export default function EventAccounts() {
         spouseSlot: dialogSlot,
       })
 
-      if (result?.invite?.sent === false && result?.invite?.error) {
-        setNoticeMessage(result.invite.error)
+      const tempPassword = result?.access?.temporaryPassword
+      if (tempPassword) {
+        setPasswordDialog({
+          email: result?.account?.email || email,
+          fullName: result?.account?.fullName || fullName,
+          temporaryPassword: tempPassword,
+          isNewAccount: result?.access?.isNewAccount !== false,
+        })
+        setNoticeMessage('')
       } else {
-        setNoticeMessage('Cuenta de esposos guardada correctamente.')
+        setNoticeMessage('Cuenta de esposos actualizada correctamente.')
       }
 
       setDialogOpen(false)
@@ -163,6 +175,39 @@ export default function EventAccounts() {
       setErrorMessage(error instanceof Error ? error.message : 'No fue posible guardar la cuenta de esposos.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  function openResetDialog(account) {
+    setResetTarget(account)
+  }
+
+  async function handleConfirmReset() {
+    if (!resetTarget) return
+    setResetSaving(true)
+    setErrorMessage('')
+    setNoticeMessage('')
+
+    try {
+      const result = await resetAccountTemporaryPassword({ userId: resetTarget.user_id })
+      const tempPassword = result?.access?.temporaryPassword
+
+      if (!tempPassword) {
+        throw new Error('No se recibio la contrasena temporal generada.')
+      }
+
+      setPasswordDialog({
+        email: result?.account?.email || resetTarget.email || '',
+        fullName: result?.account?.fullName || resetTarget.full_name || '',
+        temporaryPassword: tempPassword,
+        isNewAccount: false,
+      })
+      setResetTarget(null)
+      await loadData()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'No fue posible regenerar la contrasena.')
+    } finally {
+      setResetSaving(false)
     }
   }
 
@@ -302,10 +347,10 @@ export default function EventAccounts() {
                   <Button
                     variant="outline"
                     className="rounded-none"
-                    onClick={() => openSlotDialog(1, spouseSlotOne)}
+                    onClick={() => openResetDialog(spouseSlotOne)}
                   >
-                    <Mail className="mr-2 h-4 w-4" />
-                    Reenviar acceso
+                    <KeyRound className="mr-2 h-4 w-4" />
+                    Nueva contrasena
                   </Button>
                   <Button
                     variant="outline"
@@ -336,10 +381,10 @@ export default function EventAccounts() {
                   <Button
                     variant="outline"
                     className="rounded-none"
-                    onClick={() => openSlotDialog(2, spouseSlotTwo)}
+                    onClick={() => openResetDialog(spouseSlotTwo)}
                   >
-                    <Mail className="mr-2 h-4 w-4" />
-                    Reenviar acceso
+                    <KeyRound className="mr-2 h-4 w-4" />
+                    Nueva contrasena
                   </Button>
                   <Button
                     variant="outline"
@@ -363,7 +408,7 @@ export default function EventAccounts() {
           <DialogHeader>
             <DialogTitle>{dialogSlot === 1 ? 'Cuenta Novio/a 1' : 'Cuenta Novio/a 2'}</DialogTitle>
             <DialogDescription>
-              Si la cuenta ya existe, se vinculara a este evento y se reenviara el correo para definir o recuperar su contrasena.
+              Si la cuenta es nueva o aun no fue activada, se generara una contrasena temporal en pantalla para que se la compartas. Si ya esta activa, solo se actualizara su informacion.
             </DialogDescription>
           </DialogHeader>
 
@@ -394,12 +439,60 @@ export default function EventAccounts() {
 
             <DialogFooter>
               <Button type="submit" className="rounded-none" disabled={saving}>
-                {saving ? 'Guardando...' : 'Guardar y enviar acceso'}
+                {saving ? 'Guardando...' : 'Guardar cuenta'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={Boolean(resetTarget)} onOpenChange={(next) => { if (!next) setResetTarget(null) }}>
+        <DialogContent className="max-w-lg rounded-none">
+          <DialogHeader>
+            <DialogTitle>Generar contrasena temporal</DialogTitle>
+            <DialogDescription>
+              Esto invalidara la contrasena actual y obligara al usuario a definir una nueva al iniciar sesion.
+            </DialogDescription>
+          </DialogHeader>
+
+          {resetTarget && (
+            <div className="space-y-2 border border-border p-4 text-sm">
+              <p className="font-medium text-foreground">{resetTarget.full_name || 'Sin nombre'}</p>
+              <p className="text-muted-foreground">{resetTarget.email}</p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-none"
+              onClick={() => setResetTarget(null)}
+              disabled={resetSaving}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="rounded-none"
+              onClick={handleConfirmReset}
+              disabled={resetSaving}
+            >
+              <KeyRound className="mr-2 h-4 w-4" />
+              {resetSaving ? 'Generando...' : 'Generar contrasena'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <TemporaryPasswordDialog
+        open={Boolean(passwordDialog)}
+        onClose={() => setPasswordDialog(null)}
+        email={passwordDialog?.email}
+        fullName={passwordDialog?.fullName}
+        temporaryPassword={passwordDialog?.temporaryPassword}
+        isNewAccount={passwordDialog?.isNewAccount}
+      />
     </div>
   )
 }

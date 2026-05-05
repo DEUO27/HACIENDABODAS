@@ -4,8 +4,31 @@ function normalizeEmail(value: string) {
   return String(value || '').trim().toLowerCase()
 }
 
-function buildRandomPassword() {
-  return `Tmp-${crypto.randomUUID().replace(/-/g, '')}`
+const READABLE_PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+
+export function generateReadablePassword() {
+  const groups = 3
+  const groupSize = 4
+  const totalChars = groups * groupSize
+  const buffer = new Uint32Array(totalChars)
+  crypto.getRandomValues(buffer)
+
+  const chars: string[] = []
+  for (let i = 0; i < totalChars; i++) {
+    chars.push(READABLE_PASSWORD_ALPHABET[buffer[i] % READABLE_PASSWORD_ALPHABET.length])
+  }
+
+  const parts: string[] = []
+  for (let i = 0; i < groups; i++) {
+    parts.push(chars.slice(i * groupSize, (i + 1) * groupSize).join(''))
+  }
+  return parts.join('-')
+}
+
+export function userMustChangePassword(
+  user: { user_metadata?: Record<string, unknown> } | null | undefined,
+) {
+  return user?.user_metadata?.must_change_password === true
 }
 
 export function getUserGlobalRole(
@@ -94,15 +117,17 @@ export async function createUserWithRole({
   role: 'planner' | 'esposos'
 }) {
   const normalizedEmail = normalizeEmail(email)
+  const temporaryPassword = generateReadablePassword()
   const { data, error } = await adminClient.auth.admin.createUser({
     email: normalizedEmail,
-    password: buildRandomPassword(),
+    password: temporaryPassword,
     email_confirm: true,
     app_metadata: {
       role,
     },
     user_metadata: {
       full_name: String(fullName || '').trim(),
+      must_change_password: true,
     },
   })
 
@@ -110,7 +135,27 @@ export async function createUserWithRole({
     throw error
   }
 
-  return data.user
+  return { user: data.user, temporaryPassword }
+}
+
+export async function resetUserTemporaryPassword(
+  userId: string,
+  currentUserMetadata: Record<string, unknown> = {},
+) {
+  const temporaryPassword = generateReadablePassword()
+  const { data, error } = await adminClient.auth.admin.updateUserById(userId, {
+    password: temporaryPassword,
+    user_metadata: {
+      ...currentUserMetadata,
+      must_change_password: true,
+    },
+  })
+
+  if (error) {
+    throw error
+  }
+
+  return { user: data.user, temporaryPassword }
 }
 
 export async function updateAuthUserRoleAndName(

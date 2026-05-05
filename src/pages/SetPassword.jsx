@@ -18,6 +18,7 @@ export default function SetPassword() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [ready, setReady] = useState(false)
+  const [forcedChange, setForcedChange] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -29,7 +30,9 @@ export default function SetPassword() {
 
       if (!isMounted) return
 
-      setReady(Boolean(data.session))
+      const session = data.session
+      setReady(Boolean(session))
+      setForcedChange(session?.user?.user_metadata?.must_change_password === true)
       setLoading(false)
     }
 
@@ -38,6 +41,7 @@ export default function SetPassword() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!isMounted) return
       setReady(Boolean(session))
+      setForcedChange(session?.user?.user_metadata?.must_change_password === true)
       setLoading(false)
     })
 
@@ -53,11 +57,14 @@ export default function SetPassword() {
     }
 
     if (ready) {
+      if (forcedChange) {
+        return 'Por seguridad, debes cambiar tu contrasena temporal antes de continuar.'
+      }
       return 'Define una contrasena nueva para completar el acceso a tu cuenta.'
     }
 
     return 'Abre este enlace directamente desde el correo que recibiste para poder definir tu contrasena.'
-  }, [ready, successMessage])
+  }, [ready, forcedChange, successMessage])
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -78,9 +85,18 @@ export default function SetPassword() {
     try {
       const { error } = await supabase.auth.updateUser({
         password,
+        data: { must_change_password: false },
       })
 
       if (error) throw error
+
+      if (forcedChange) {
+        setSuccessMessage('Contrasena actualizada. Redirigiendo...')
+        setPassword('')
+        setConfirmPassword('')
+        navigate('/', { replace: true })
+        return
+      }
 
       await supabase.auth.signOut()
       setSuccessMessage('Tu acceso ya quedo listo. Inicia sesion con tu nueva contrasena.')

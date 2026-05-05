@@ -578,6 +578,10 @@ export async function deleteAccount(userId) {
   return invokeFunction('admin-delete-account', { userId })
 }
 
+export async function resetAccountTemporaryPassword({ userId, email } = {}) {
+  return invokeFunction('admin-reset-account-password', { userId, email })
+}
+
 export async function upsertEventCoupleAccount(payload) {
   return invokeFunction('upsert-couple-account', payload)
 }

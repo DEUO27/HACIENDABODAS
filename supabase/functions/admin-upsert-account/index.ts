@@ -4,8 +4,9 @@ import {
   createUserWithRole,
   findAuthUserByEmail,
   getUserGlobalRole,
-  sendSetPasswordEmail,
+  resetUserTemporaryPassword,
   updateAuthUserRoleAndName,
+  userMustChangePassword,
 } from '../_shared/accounts.ts'
 import { assertAdmin } from '../_shared/auth.ts'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -38,13 +39,16 @@ Deno.serve(async (req) => {
 
     let user = await findAuthUserByEmail(email)
     let action: 'created' | 'promoted' | 'updated' = 'updated'
+    let temporaryPassword: string | null = null
 
     if (!user) {
-      user = await createUserWithRole({
+      const created = await createUserWithRole({
         email,
         fullName,
         role: 'planner',
       })
+      user = created.user
+      temporaryPassword = created.temporaryPassword
       action = 'created'
     } else {
       const currentRole = getUserGlobalRole(user)
@@ -66,6 +70,8 @@ Deno.serve(async (req) => {
         }
       }
 
+      const wasUnactivated = userMustChangePassword(user)
+
       user = await updateAuthUserRoleAndName(user.id, {
         role: 'planner',
         fullName,
@@ -73,14 +79,22 @@ Deno.serve(async (req) => {
         currentAppMetadata: user.app_metadata || {},
       })
       action = currentRole === 'planner' ? 'updated' : 'promoted'
-    }
 
-    const inviteResult = await sendSetPasswordEmail(email)
+      if (wasUnactivated) {
+        const reset = await resetUserTemporaryPassword(user.id, user.user_metadata || {})
+        user = reset.user
+        temporaryPassword = reset.temporaryPassword
+      }
+    }
 
     return jsonResponse({
       ok: true,
       action,
-      invite: inviteResult,
+      access: {
+        isNewAccount: action === 'created',
+        temporaryPassword,
+        mustChangePassword: temporaryPassword ? true : userMustChangePassword(user),
+      },
       account: {
         userId: user.id,
         email: user.email || email,

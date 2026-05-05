@@ -4,8 +4,9 @@ import {
   createUserWithRole,
   findAuthUserByEmail,
   getUserGlobalRole,
-  sendSetPasswordEmail,
+  resetUserTemporaryPassword,
   updateAuthUserRoleAndName,
+  userMustChangePassword,
 } from '../_shared/accounts.ts'
 import { assertEventAccess } from '../_shared/auth.ts'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -54,13 +55,16 @@ Deno.serve(async (req) => {
 
     let user = await findAuthUserByEmail(email)
     let action: 'created' | 'updated' = 'updated'
+    let temporaryPassword: string | null = null
 
     if (!user) {
-      user = await createUserWithRole({
+      const created = await createUserWithRole({
         email,
         fullName,
         role: 'esposos',
       })
+      user = created.user
+      temporaryPassword = created.temporaryPassword
       action = 'created'
     } else {
       const currentRole = getUserGlobalRole(user)
@@ -69,12 +73,20 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: 'No puedes asignar una cuenta admin o planner como esposos.' }, 409)
       }
 
+      const wasUnactivated = userMustChangePassword(user)
+
       user = await updateAuthUserRoleAndName(user.id, {
         role: 'esposos',
         fullName,
         currentUserMetadata: user.user_metadata || {},
         currentAppMetadata: user.app_metadata || {},
       })
+
+      if (wasUnactivated) {
+        const reset = await resetUserTemporaryPassword(user.id, user.user_metadata || {})
+        user = reset.user
+        temporaryPassword = reset.temporaryPassword
+      }
     }
 
     const { data: existingMembership, error: existingMembershipError } = await adminClient
@@ -122,8 +134,6 @@ Deno.serve(async (req) => {
 
     if (assignError) throw assignError
 
-    const inviteResult = await sendSetPasswordEmail(email)
-
     const { data: membershipRows, error: accountsError } = await adminClient
       .from('event_memberships')
       .select(`
@@ -155,7 +165,11 @@ Deno.serve(async (req) => {
     return jsonResponse({
       ok: true,
       action,
-      invite: inviteResult,
+      access: {
+        isNewAccount: action === 'created',
+        temporaryPassword,
+        mustChangePassword: temporaryPassword ? true : userMustChangePassword(user),
+      },
       account: {
         userId: user.id,
         email: user.email || email,

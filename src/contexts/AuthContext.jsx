@@ -49,6 +49,7 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true)
 
     const role = user?.app_metadata?.role || 'esposos'
+    const mustChangePassword = user?.user_metadata?.must_change_password === true
 
     useEffect(() => {
         let isMounted = true
@@ -125,7 +126,7 @@ export function AuthProvider({ children }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, role, loading, signIn, signUp, signOut }}>
+        <AuthContext.Provider value={{ user, role, mustChangePassword, loading, signIn, signUp, signOut }}>
             {children}
         </AuthContext.Provider>
     )

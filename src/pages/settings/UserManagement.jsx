@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
+import { KeyRound, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,8 +29,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import TemporaryPasswordDialog from '@/components/accounts/TemporaryPasswordDialog'
 import { useAuth } from '@/contexts/AuthContext'
-import { assignEventPlanner, deleteAccount, listAccounts, listEvents, upsertPlannerAccount } from '@/lib/eventService'
+import {
+  assignEventPlanner,
+  deleteAccount,
+  listAccounts,
+  listEvents,
+  resetAccountTemporaryPassword,
+  upsertPlannerAccount,
+} from '@/lib/eventService'
 
 function InvitationPill({ status }) {
   const isConfirmed = status === 'confirmed'
@@ -62,6 +70,9 @@ export default function UserManagement() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [accountToDelete, setAccountToDelete] = useState(null)
   const [deleteSaving, setDeleteSaving] = useState(false)
+  const [passwordDialog, setPasswordDialog] = useState(null)
+  const [resetTarget, setResetTarget] = useState(null)
+  const [resetSaving, setResetSaving] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -119,10 +130,17 @@ export default function UserManagement() {
         fullName: plannerName,
       })
 
-      if (result?.invite?.sent === false && result?.invite?.error) {
-        setNoticeMessage(result.invite.error)
+      const tempPassword = result?.access?.temporaryPassword
+      if (tempPassword) {
+        setPasswordDialog({
+          email: result?.account?.email || plannerEmail,
+          fullName: result?.account?.fullName || plannerName,
+          temporaryPassword: tempPassword,
+          isNewAccount: result?.access?.isNewAccount !== false,
+        })
+        setNoticeMessage('')
       } else {
-        setNoticeMessage('Planner guardado correctamente.')
+        setNoticeMessage('Planner actualizado correctamente.')
       }
 
       setPlannerEmail('')
@@ -133,6 +151,39 @@ export default function UserManagement() {
       setErrorMessage(error instanceof Error ? error.message : 'No fue posible guardar la cuenta planner.')
     } finally {
       setDialogSaving(false)
+    }
+  }
+
+  function openResetDialog(account) {
+    setResetTarget(account)
+  }
+
+  async function handleConfirmReset() {
+    if (!resetTarget) return
+    setResetSaving(true)
+    setErrorMessage('')
+    setNoticeMessage('')
+
+    try {
+      const result = await resetAccountTemporaryPassword({ userId: resetTarget.userId })
+      const tempPassword = result?.access?.temporaryPassword
+
+      if (!tempPassword) {
+        throw new Error('No se recibio la contrasena temporal generada.')
+      }
+
+      setPasswordDialog({
+        email: result?.account?.email || resetTarget.email || '',
+        fullName: result?.account?.fullName || resetTarget.fullName || '',
+        temporaryPassword: tempPassword,
+        isNewAccount: false,
+      })
+      setResetTarget(null)
+      await loadData()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'No fue posible regenerar la contrasena.')
+    } finally {
+      setResetSaving(false)
     }
   }
 
@@ -270,14 +321,24 @@ export default function UserManagement() {
                           {account.userId === user?.id ? 'Tu cuenta' : 'Protegida'}
                         </span>
                       ) : (
-                        <Button
-                          variant="outline"
-                          className="rounded-none border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-300 dark:hover:bg-rose-950/20"
-                          onClick={() => openDeleteDialog(account)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Eliminar
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            className="rounded-none"
+                            onClick={() => openResetDialog(account)}
+                          >
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            Nueva contrasena
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="rounded-none border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-300 dark:hover:bg-rose-950/20"
+                            onClick={() => openDeleteDialog(account)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -354,7 +415,7 @@ export default function UserManagement() {
           <DialogHeader>
             <DialogTitle>Alta o promocion de planner</DialogTitle>
             <DialogDescription>
-              Si el correo ya existe, la cuenta se promovera a planner. Si no existe, se creara y recibira su correo para definir contrasena.
+              Si el correo ya existe, la cuenta se promovera a planner. Si es nueva, se generara una contrasena temporal que aparecera en pantalla para que la compartas con el planner.
             </DialogDescription>
           </DialogHeader>
 
@@ -391,6 +452,54 @@ export default function UserManagement() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={Boolean(resetTarget)} onOpenChange={(next) => { if (!next) setResetTarget(null) }}>
+        <DialogContent className="max-w-lg rounded-none">
+          <DialogHeader>
+            <DialogTitle>Generar contrasena temporal</DialogTitle>
+            <DialogDescription>
+              Esto invalidara la contrasena actual y obligara al usuario a definir una nueva al iniciar sesion.
+            </DialogDescription>
+          </DialogHeader>
+
+          {resetTarget && (
+            <div className="space-y-2 border border-border p-4 text-sm">
+              <p className="font-medium text-foreground">{resetTarget.fullName || 'Sin nombre'}</p>
+              <p className="text-muted-foreground">{resetTarget.email}</p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-none"
+              onClick={() => setResetTarget(null)}
+              disabled={resetSaving}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="rounded-none"
+              onClick={handleConfirmReset}
+              disabled={resetSaving}
+            >
+              <KeyRound className="mr-2 h-4 w-4" />
+              {resetSaving ? 'Generando...' : 'Generar contrasena'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <TemporaryPasswordDialog
+        open={Boolean(passwordDialog)}
+        onClose={() => setPasswordDialog(null)}
+        email={passwordDialog?.email}
+        fullName={passwordDialog?.fullName}
+        temporaryPassword={passwordDialog?.temporaryPassword}
+        isNewAccount={passwordDialog?.isNewAccount}
+      />
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="max-w-lg rounded-none">

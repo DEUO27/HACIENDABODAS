@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { FilterProvider } from '@/contexts/FilterContext'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import PasswordChangeGate from '@/components/PasswordChangeGate'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useLeads } from '@/hooks/useLeads'
 import { EventProvider, useEvent } from '@/contexts/EventContext'
@@ -118,31 +119,33 @@ function AppRoutes() {
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/rsvp/:token" element={<RsvpPage />} />
       <Route element={<ProtectedRoute allowedRoles={['admin', 'planner', 'esposos']} />}>
-        <Route element={(
-          <FilterProvider>
-            <DashboardLayout
-              onRefresh={role === 'admin' ? () => refresh(true) : undefined}
-              refreshing={role === 'admin' ? loading : false}
-            />
-          </FilterProvider>
-        )}>
-          <Route index element={<RoleHome />} />
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/*" element={<Dashboard />} />
-            <Route path="/admin/import-leads" element={<ImportAdmin />} />
-            <Route path="/configuracion/mensajes" element={<MessageBlueprintSettings />} />
-            <Route path="/configuracion/usuarios" element={<UserManagement />} />
-          </Route>
-          <Route path="/eventos" element={<EventsIndex />} />
-          <Route path="/eventos/:eventId" element={<EventProvider><EventAccessGuard /></EventProvider>}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<EventDashboard />} />
-            <Route path="invitados" element={<EventGuests />} />
-            <Route path="envios" element={<EventMessaging />} />
-            <Route path="diseno-rsvp" element={<EventRsvpDesign />} />
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'planner']} />}>
-              <Route path="cuentas" element={<EventAccounts />} />
+        <Route element={<PasswordChangeGate />}>
+          <Route element={(
+            <FilterProvider>
+              <DashboardLayout
+                onRefresh={role === 'admin' ? () => refresh(true) : undefined}
+                refreshing={role === 'admin' ? loading : false}
+              />
+            </FilterProvider>
+          )}>
+            <Route index element={<RoleHome />} />
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/*" element={<Dashboard />} />
+              <Route path="/admin/import-leads" element={<ImportAdmin />} />
+              <Route path="/configuracion/mensajes" element={<MessageBlueprintSettings />} />
+              <Route path="/configuracion/usuarios" element={<UserManagement />} />
+            </Route>
+            <Route path="/eventos" element={<EventsIndex />} />
+            <Route path="/eventos/:eventId" element={<EventProvider><EventAccessGuard /></EventProvider>}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<EventDashboard />} />
+              <Route path="invitados" element={<EventGuests />} />
+              <Route path="envios" element={<EventMessaging />} />
+              <Route path="diseno-rsvp" element={<EventRsvpDesign />} />
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'planner']} />}>
+                <Route path="cuentas" element={<EventAccounts />} />
+              </Route>
             </Route>
           </Route>
         </Route>
