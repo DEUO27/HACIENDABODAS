@@ -486,22 +486,38 @@ export async function restorePublishedEventRsvpDraft(eventId, eventData = null) 
   return normalizeEventRsvpPageRecord(data, eventData)
 }
 
+const IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp']
+
 const RSVP_ASSET_RULES = {
   hero: {
     maxBytes: 5 * 1024 * 1024,
     folder: 'hero',
+    allowedMimeTypes: IMAGE_MIME_TYPES,
+    defaultExtension: 'png',
+    invalidMimeMessage: 'Solo se permiten imagenes PNG, JPEG o WEBP.',
   },
   logo: {
     maxBytes: 5 * 1024 * 1024,
     folder: 'logo',
+    allowedMimeTypes: IMAGE_MIME_TYPES,
+    defaultExtension: 'png',
+    invalidMimeMessage: 'Solo se permiten imagenes PNG, JPEG o WEBP.',
   },
   gallery: {
     maxBytes: 4 * 1024 * 1024,
     folder: 'gallery',
+    allowedMimeTypes: IMAGE_MIME_TYPES,
+    defaultExtension: 'png',
+    invalidMimeMessage: 'Solo se permiten imagenes PNG, JPEG o WEBP.',
+  },
+  invitation: {
+    maxBytes: 15 * 1024 * 1024,
+    folder: 'invitation',
+    allowedMimeTypes: ['application/pdf'],
+    defaultExtension: 'pdf',
+    invalidMimeMessage: 'Solo se permiten archivos PDF.',
   },
 }
-
-const RSVP_ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
 export async function uploadRsvpAsset(eventId, file, kind) {
   const rule = RSVP_ASSET_RULES[kind]
@@ -514,15 +530,15 @@ export async function uploadRsvpAsset(eventId, file, kind) {
     throw new Error('Selecciona un archivo para subir.')
   }
 
-  if (!RSVP_ALLOWED_MIME_TYPES.includes(file.type)) {
-    throw new Error('Solo se permiten imagenes PNG, JPEG o WEBP.')
+  if (!rule.allowedMimeTypes.includes(file.type)) {
+    throw new Error(rule.invalidMimeMessage)
   }
 
   if (file.size > rule.maxBytes) {
     throw new Error(`El archivo excede el tamano permitido para ${kind}.`)
   }
 
-  const extension = String(file.name || '').split('.').pop()?.toLowerCase() || 'png'
+  const extension = String(file.name || '').split('.').pop()?.toLowerCase() || rule.defaultExtension
   const objectPath = `event/${eventId}/${rule.folder}/${Date.now()}-${crypto.randomUUID()}.${extension}`
 
   const { error } = await supabase.storage
@@ -541,7 +557,21 @@ export async function uploadRsvpAsset(eventId, file, kind) {
     path: objectPath,
     url: data.publicUrl,
     kind,
+    fileName: file.name || '',
   }
+}
+
+export async function removeRsvpAsset(path) {
+  const trimmedPath = String(path || '').trim()
+  if (!trimmedPath) return false
+
+  const { error } = await supabase.storage.from('rsvp-assets').remove([trimmedPath])
+  if (error) {
+    console.warn('[removeRsvpAsset]', error.message || error)
+    return false
+  }
+
+  return true
 }
 
 export async function saveMessageBlueprint(payload) {

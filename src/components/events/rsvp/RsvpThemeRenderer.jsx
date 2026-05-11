@@ -18,6 +18,8 @@ import {
   mergeRsvpPageConfig,
   normalizeRsvpMapEmbedUrl,
 } from '@/lib/rsvpPageConfig'
+import { clampCompanionCounts, parseCompanionCount } from '@/lib/rsvpFormHelpers'
+import RsvpPdfMode from '@/components/events/rsvp/RsvpPdfMode'
 
 const THEME_PRESETS = {
   editorial: {
@@ -93,11 +95,6 @@ function buildShellStyle(config) {
   }
 }
 
-function parseCompanionCount(value) {
-  const parsed = Number.parseInt(String(value || 0), 10)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
-}
-
 export default function RsvpThemeRenderer({
   event,
   guest,
@@ -114,6 +111,25 @@ export default function RsvpThemeRenderer({
   const normalizedEvent = normalizeEvent(event)
   const normalizedGuest = normalizeGuest(guest)
   const mergedConfig = mergeRsvpPageConfig(buildDefaultRsvpPageConfig(normalizedEvent), pageConfig || {}, normalizedEvent)
+
+  if (mergedConfig.layout.mode === 'pdf') {
+    return (
+      <RsvpPdfMode
+        event={normalizedEvent}
+        guest={normalizedGuest}
+        pageConfig={mergedConfig}
+        loading={loading}
+        errorState={errorState}
+        submitted={submitted}
+        form={form}
+        onFormChange={onFormChange}
+        onSubmit={onSubmit}
+        submitting={submitting}
+        preview={preview}
+      />
+    )
+  }
+
   const themeKey = mergedConfig.layout.template_key || 'editorial'
   const theme = THEME_PRESETS[themeKey] || THEME_PRESETS.editorial
   const shellStyle = buildShellStyle(mergedConfig)
@@ -133,30 +149,8 @@ export default function RsvpThemeRenderer({
   const companionLimitExceeded = totalPlusOnes > maxPlusOnes
 
   function updateCompanionCounts(nextAdultPlusOnes, nextChildPlusOnes) {
-    const safeAdultPlusOnes = parseCompanionCount(nextAdultPlusOnes)
-    const safeChildPlusOnes = parseCompanionCount(nextChildPlusOnes)
-    const total = safeAdultPlusOnes + safeChildPlusOnes
-
-    if (total <= maxPlusOnes) {
-      onFormChange?.((current) => ({
-        ...current,
-        adultPlusOnes: safeAdultPlusOnes,
-        childPlusOnes: safeChildPlusOnes,
-        plusOnes: total,
-      }))
-      return
-    }
-
-    const availableForChildren = Math.max(0, maxPlusOnes - safeAdultPlusOnes)
-    const clampedChildPlusOnes = Math.min(safeChildPlusOnes, availableForChildren)
-    const clampedAdultPlusOnes = Math.min(safeAdultPlusOnes, maxPlusOnes - clampedChildPlusOnes)
-
-    onFormChange?.((current) => ({
-      ...current,
-      adultPlusOnes: clampedAdultPlusOnes,
-      childPlusOnes: clampedChildPlusOnes,
-      plusOnes: clampedAdultPlusOnes + clampedChildPlusOnes,
-    }))
+    const clamped = clampCompanionCounts(nextAdultPlusOnes, nextChildPlusOnes, maxPlusOnes)
+    onFormChange?.((current) => ({ ...current, ...clamped }))
   }
 
   const hasHeroImage = Boolean(mergedConfig.branding.hero_image_url)

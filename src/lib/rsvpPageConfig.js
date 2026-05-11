@@ -23,6 +23,21 @@ export const RSVP_THEME_CATALOG = [
   },
 ]
 
+export const RSVP_DESIGN_MODES = [
+  {
+    key: 'visual',
+    label: 'Diseno visual',
+    description: 'Plantillas listas con hero, branding, dress code, mesa de regalos y FAQ.',
+  },
+  {
+    key: 'pdf',
+    label: 'Mi invitacion PDF',
+    description: 'Sube tu invitacion en PDF y se vuelve la pagina RSVP completa.',
+  },
+]
+
+const DESIGN_MODE_KEYS = new Set(RSVP_DESIGN_MODES.map((mode) => mode.key))
+
 export const RSVP_HEADING_FONT_OPTIONS = [
   { key: 'playfair', label: 'Playfair Display', family: '\'Playfair Display\', Georgia, serif' },
   { key: 'cormorant', label: 'Cormorant Garamond', family: '\'Cormorant Garamond\', Garamond, serif' },
@@ -59,6 +74,9 @@ export function buildDefaultRsvpPageConfig(event = null) {
       accent_color: '#a46c47',
       heading_font: 'playfair',
       body_font: 'inter',
+      invitation_pdf_url: '',
+      invitation_pdf_name: '',
+      invitation_pdf_path: '',
     },
     content: {
       welcome_badge: 'RSVP',
@@ -77,6 +95,8 @@ export function buildDefaultRsvpPageConfig(event = null) {
       faq_items: [],
       confirmation_success_title: 'Respuesta registrada',
       confirmation_success_message: 'Gracias por confirmar. Tu respuesta ya quedo guardada.',
+      pdf_confirm_label: 'Confirmar asistencia',
+      pdf_decline_label: 'No podre asistir',
     },
     visibility: {
       show_logo: true,
@@ -89,6 +109,7 @@ export function buildDefaultRsvpPageConfig(event = null) {
     layout: {
       template_key: 'editorial',
       hero_alignment: 'center',
+      mode: 'visual',
     },
   }
 }
@@ -165,6 +186,11 @@ function sanitizeHeroAlignment(value, fallback = 'center') {
   return ['left', 'center'].includes(value) ? value : fallback
 }
 
+function sanitizeLayoutMode(value, fallback = 'visual') {
+  const normalized = sanitizeString(value, fallback).trim().toLowerCase()
+  return DESIGN_MODE_KEYS.has(normalized) ? normalized : fallback
+}
+
 export function mergeRsvpPageConfig(baseConfig = {}, nextConfig = {}, event = null) {
   const defaults = buildDefaultRsvpPageConfig(event)
 
@@ -198,10 +224,15 @@ export function mergeRsvpPageConfig(baseConfig = {}, nextConfig = {}, event = nu
       gallery_urls: sanitizeGalleryUrls(nextConfig?.branding?.gallery_urls ?? baseConfig?.branding?.gallery_urls ?? defaults.branding.gallery_urls),
       heading_font: sanitizeString(branding.heading_font, defaults.branding.heading_font),
       body_font: sanitizeString(branding.body_font, defaults.branding.body_font),
+      invitation_pdf_url: sanitizeString(branding.invitation_pdf_url, defaults.branding.invitation_pdf_url).trim(),
+      invitation_pdf_name: sanitizeString(branding.invitation_pdf_name, defaults.branding.invitation_pdf_name).trim(),
+      invitation_pdf_path: sanitizeString(branding.invitation_pdf_path, defaults.branding.invitation_pdf_path).trim(),
     },
     content: {
       ...content,
       faq_items: sanitizeFaqItems(nextConfig?.content?.faq_items ?? baseConfig?.content?.faq_items ?? defaults.content.faq_items),
+      pdf_confirm_label: sanitizeString(content.pdf_confirm_label, defaults.content.pdf_confirm_label),
+      pdf_decline_label: sanitizeString(content.pdf_decline_label, defaults.content.pdf_decline_label),
     },
     visibility: {
       ...visibility,
@@ -216,6 +247,7 @@ export function mergeRsvpPageConfig(baseConfig = {}, nextConfig = {}, event = nu
       ...layout,
       template_key: sanitizeThemeKey(layout.template_key, defaults.layout.template_key),
       hero_alignment: sanitizeHeroAlignment(layout.hero_alignment, defaults.layout.hero_alignment),
+      mode: sanitizeLayoutMode(layout.mode, defaults.layout.mode),
     },
   }
 }
@@ -240,6 +272,10 @@ export function normalizeEventRsvpPageRecord(record, event = null) {
 
 export function getRsvpThemeMeta(themeKey) {
   return RSVP_THEME_CATALOG.find((theme) => theme.key === themeKey) || RSVP_THEME_CATALOG[0]
+}
+
+export function getRsvpDesignMode(modeKey) {
+  return RSVP_DESIGN_MODES.find((mode) => mode.key === modeKey) || RSVP_DESIGN_MODES[0]
 }
 
 export function getRsvpFontFamilies(config) {

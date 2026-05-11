@@ -47,6 +47,11 @@ function sanitizeHeroAlignment(value: unknown, fallback = 'center') {
   return ['left', 'center'].includes(String(value)) ? String(value) : fallback
 }
 
+function sanitizeLayoutMode(value: unknown, fallback = 'visual') {
+  const normalized = sanitizeString(value, fallback).trim().toLowerCase()
+  return ['visual', 'pdf'].includes(normalized) ? normalized : fallback
+}
+
 export function buildDefaultRsvpPageConfig(event?: EventShape | null) {
   return {
     branding: {
@@ -58,6 +63,9 @@ export function buildDefaultRsvpPageConfig(event?: EventShape | null) {
       accent_color: '#a46c47',
       heading_font: 'playfair',
       body_font: 'inter',
+      invitation_pdf_url: '',
+      invitation_pdf_name: '',
+      invitation_pdf_path: '',
     },
     content: {
       welcome_badge: 'RSVP',
@@ -76,6 +84,8 @@ export function buildDefaultRsvpPageConfig(event?: EventShape | null) {
       faq_items: [],
       confirmation_success_title: 'Respuesta registrada',
       confirmation_success_message: 'Gracias por confirmar. Tu respuesta ya quedo guardada.',
+      pdf_confirm_label: 'Confirmar asistencia',
+      pdf_decline_label: 'No podre asistir',
     },
     visibility: {
       show_logo: true,
@@ -88,6 +98,7 @@ export function buildDefaultRsvpPageConfig(event?: EventShape | null) {
     layout: {
       template_key: 'editorial',
       hero_alignment: 'center',
+      mode: 'visual',
     },
   }
 }
@@ -106,11 +117,16 @@ export function normalizePublishedRsvpPageConfig(config: Record<string, unknown>
       gallery_urls: sanitizeGalleryUrls(branding.gallery_urls),
       heading_font: sanitizeString(branding.heading_font, defaults.branding.heading_font),
       body_font: sanitizeString(branding.body_font, defaults.branding.body_font),
+      invitation_pdf_url: sanitizeString(branding.invitation_pdf_url, defaults.branding.invitation_pdf_url).trim(),
+      invitation_pdf_name: sanitizeString(branding.invitation_pdf_name, defaults.branding.invitation_pdf_name).trim(),
+      invitation_pdf_path: sanitizeString(branding.invitation_pdf_path, defaults.branding.invitation_pdf_path).trim(),
     },
     content: {
       ...defaults.content,
       ...content,
       faq_items: sanitizeFaqItems(content.faq_items),
+      pdf_confirm_label: sanitizeString(content.pdf_confirm_label, defaults.content.pdf_confirm_label),
+      pdf_decline_label: sanitizeString(content.pdf_decline_label, defaults.content.pdf_decline_label),
     },
     visibility: {
       ...defaults.visibility,
@@ -127,6 +143,7 @@ export function normalizePublishedRsvpPageConfig(config: Record<string, unknown>
       ...layout,
       template_key: sanitizeThemeKey(layout.template_key, defaults.layout.template_key),
       hero_alignment: sanitizeHeroAlignment(layout.hero_alignment, defaults.layout.hero_alignment),
+      mode: sanitizeLayoutMode(layout.mode, defaults.layout.mode),
     },
   }
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Eye,
+  FileText,
   ImagePlus,
   Monitor,
   RotateCcw,
@@ -19,6 +20,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -28,6 +30,7 @@ import { useEvent } from '@/contexts/EventContext'
 import {
   getEventRsvpPage,
   publishEventRsvpPage,
+  removeRsvpAsset,
   restorePublishedEventRsvpDraft,
   upsertEventRsvpDraft,
   uploadRsvpAsset,
@@ -35,9 +38,11 @@ import {
 import {
   buildDefaultRsvpPageConfig,
   buildRsvpPreviewGuest,
+  getRsvpDesignMode,
   getRsvpThemeMeta,
   normalizeRsvpMapEmbedUrl,
   RSVP_BODY_FONT_OPTIONS,
+  RSVP_DESIGN_MODES,
   RSVP_HEADING_FONT_OPTIONS,
   RSVP_THEME_CATALOG,
 } from '@/lib/rsvpPageConfig'
@@ -123,6 +128,60 @@ function AssetPanel({
           {uploading ? 'Subiendo...' : 'Subir imagen'}
         </Button>
         {url && (
+          <Button type="button" variant="outline" className="rounded-none" onClick={onRemove} disabled={uploading}>
+            Quitar
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function PdfUploadPanel({
+  pdfUrl,
+  pdfName,
+  uploading,
+  onUploadClick,
+  onRemove,
+}) {
+  const hasPdf = Boolean(pdfUrl)
+
+  return (
+    <div className="space-y-3 rounded-none border border-border p-4">
+      <div className="space-y-1">
+        <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Invitacion en PDF</p>
+        <p className="text-xs text-muted-foreground">
+          Sube tu invitacion (maximo 15 MB). Sera la pagina RSVP completa para tus invitados.
+        </p>
+      </div>
+
+      {hasPdf ? (
+        <div className="space-y-2">
+          <embed
+            src={pdfUrl}
+            type="application/pdf"
+            className="h-64 w-full rounded-none border border-border bg-white"
+          />
+          <p className="break-all text-xs text-muted-foreground">
+            <FileText className="mr-1 inline-block h-3 w-3" />
+            {pdfName || 'Invitacion.pdf'}
+          </p>
+        </div>
+      ) : (
+        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-none border border-dashed border-border bg-secondary/20 px-6 text-center">
+          <FileText className="h-10 w-10 text-muted-foreground/60" />
+          <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+            Aun no subes una invitacion
+          </p>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" className="rounded-none" onClick={onUploadClick} disabled={uploading}>
+          <UploadCloud className="mr-2 h-4 w-4" />
+          {uploading ? 'Subiendo...' : hasPdf ? 'Reemplazar PDF' : 'Subir PDF'}
+        </Button>
+        {hasPdf && (
           <Button type="button" variant="outline" className="rounded-none" onClick={onRemove} disabled={uploading}>
             Quitar
           </Button>
@@ -288,6 +347,8 @@ export default function EventRsvpDesign() {
   const heroInputRef = useRef(null)
   const logoInputRef = useRef(null)
   const galleryInputRef = useRef(null)
+  const pdfInputRef = useRef(null)
+  const [confirmModeChange, setConfirmModeChange] = useState(null)
 
   useEffect(() => {
     if (!notice) return undefined
@@ -317,7 +378,17 @@ export default function EventRsvpDesign() {
   }, [loadPage])
 
   const themeMeta = useMemo(() => getRsvpThemeMeta(draftConfig.layout.template_key), [draftConfig.layout.template_key])
+  const currentMode = draftConfig.layout.mode || 'visual'
+  const designModeMeta = useMemo(() => getRsvpDesignMode(currentMode), [currentMode])
+  const isPdfMode = currentMode === 'pdf'
+  const hasInvitationPdf = Boolean(draftConfig.branding.invitation_pdf_url)
   const previewGuest = useMemo(() => buildRsvpPreviewGuest(), [])
+
+  useEffect(() => {
+    if (isPdfMode && (activeTab === 'branding' || activeTab === 'content')) {
+      setActiveTab('template')
+    }
+  }, [isPdfMode, activeTab])
   const isDirty = useMemo(() => {
     if (!pageData) return false
     return JSON.stringify(draftConfig) !== JSON.stringify(pageData.draft_config)
@@ -386,6 +457,11 @@ export default function EventRsvpDesign() {
   async function handlePublish() {
     if (!eventId) return
 
+    if (isPdfMode && !hasInvitationPdf) {
+      setErrorMessage('Sube un PDF antes de publicar el modo PDF.')
+      return
+    }
+
     setPublishing(true)
     setErrorMessage('')
 
@@ -434,6 +510,17 @@ export default function EventRsvpDesign() {
         patchSection('branding', {
           gallery_urls: [...draftConfig.branding.gallery_urls, ...uploads.map((upload) => upload.url)].slice(0, 6),
         })
+      } else if (kind === 'invitation') {
+        const previousPath = draftConfig.branding.invitation_pdf_path
+        const upload = await uploadRsvpAsset(eventId, files[0], 'invitation')
+        if (previousPath && previousPath !== upload.path) {
+          await removeRsvpAsset(previousPath)
+        }
+        patchSection('branding', {
+          invitation_pdf_url: upload.url,
+          invitation_pdf_name: upload.fileName,
+          invitation_pdf_path: upload.path,
+        })
       } else {
         const upload = await uploadRsvpAsset(eventId, files[0], kind)
         patchSection('branding', {
@@ -449,7 +536,36 @@ export default function EventRsvpDesign() {
       if (heroInputRef.current) heroInputRef.current.value = ''
       if (logoInputRef.current) logoInputRef.current.value = ''
       if (galleryInputRef.current) galleryInputRef.current.value = ''
+      if (pdfInputRef.current) pdfInputRef.current.value = ''
     }
+  }
+
+  async function handleRemovePdf() {
+    const previousPath = draftConfig.branding.invitation_pdf_path
+    if (previousPath) {
+      await removeRsvpAsset(previousPath)
+    }
+    patchSection('branding', {
+      invitation_pdf_url: '',
+      invitation_pdf_name: '',
+      invitation_pdf_path: '',
+    })
+    setNotice('PDF removido del borrador. Guarda para confirmar.')
+  }
+
+  function handleModeChange(nextMode) {
+    if (nextMode === currentMode) return
+    if (nextMode === 'visual' && hasInvitationPdf) {
+      setConfirmModeChange({ nextMode })
+      return
+    }
+    patchSection('layout', { mode: nextMode })
+  }
+
+  function confirmModeSwitch() {
+    if (!confirmModeChange) return
+    patchSection('layout', { mode: confirmModeChange.nextMode })
+    setConfirmModeChange(null)
   }
 
   const headerActions = (
@@ -505,8 +621,13 @@ export default function EventRsvpDesign() {
                 </Badge>
               )}
               <Badge variant="outline" className="rounded-full px-3 py-1 uppercase tracking-[0.2em]">
-                Tema {themeMeta.label}
+                Modo {designModeMeta.label}
               </Badge>
+              {!isPdfMode && (
+                <Badge variant="outline" className="rounded-full px-3 py-1 uppercase tracking-[0.2em]">
+                  Tema {themeMeta.label}
+                </Badge>
+              )}
               <Badge variant="outline" className="rounded-full px-3 py-1 uppercase tracking-[0.2em]">
                 {pageData?.has_published ? 'Publicado' : 'Solo borrador'}
               </Badge>
@@ -526,63 +647,160 @@ export default function EventRsvpDesign() {
           </CardHeader>
 
           <CardContent>
+          <div className="mb-6 grid gap-3 sm:grid-cols-2">
+            {RSVP_DESIGN_MODES.map((mode) => {
+              const isActive = currentMode === mode.key
+              return (
+                <button
+                  key={mode.key}
+                  type="button"
+                  onClick={() => handleModeChange(mode.key)}
+                  className={cn(
+                    'rounded-none border p-4 text-left transition-colors',
+                    isActive
+                      ? 'border-foreground bg-secondary/40'
+                      : 'border-border bg-background hover:bg-secondary/20',
+                  )}
+                >
+                  <p className="font-heading text-xl tracking-wide text-foreground">{mode.label}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{mode.description}</p>
+                </button>
+              )
+            })}
+          </div>
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-6">
             <TabsList variant="line" className="w-full justify-start rounded-none border-b border-border p-0">
-              {EDITOR_TABS.map((tab) => (
-                <TabsTrigger key={tab.key} value={tab.key} className="rounded-none px-4 py-3 uppercase tracking-[0.2em]">
-                  {tab.label}
-                </TabsTrigger>
-              ))}
+              {EDITOR_TABS.map((tab) => {
+                const tabDisabled = isPdfMode && (tab.key === 'branding' || tab.key === 'content')
+                return (
+                  <TabsTrigger
+                    key={tab.key}
+                    value={tab.key}
+                    disabled={tabDisabled}
+                    title={tabDisabled ? 'Disponible solo en modo Diseno visual' : undefined}
+                    className="rounded-none px-4 py-3 uppercase tracking-[0.2em] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                )
+              })}
             </TabsList>
 
             <TabsContent value="template" className="space-y-6">
-              <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-                {RSVP_THEME_CATALOG.map((theme) => (
-                  <button
-                    key={theme.key}
-                    type="button"
-                    onClick={() => patchSection('layout', { template_key: theme.key })}
-                    className={cn(
-                      'rounded-none border p-5 text-left transition-colors',
-                      draftConfig.layout.template_key === theme.key
-                        ? 'border-foreground bg-secondary/40'
-                        : 'border-border bg-background hover:bg-secondary/20',
-                    )}
-                  >
-                    <p className="font-heading text-2xl tracking-wide text-foreground">{theme.label}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">{theme.description}</p>
-                  </button>
-                ))}
-              </div>
+              {isPdfMode ? (
+                <>
+                  <PdfUploadPanel
+                    pdfUrl={draftConfig.branding.invitation_pdf_url}
+                    pdfName={draftConfig.branding.invitation_pdf_name}
+                    uploading={uploadingKind === 'invitation'}
+                    onUploadClick={() => pdfInputRef.current?.click()}
+                    onRemove={handleRemovePdf}
+                  />
 
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card className="rounded-none border-border bg-background shadow-none">
-                  <CardHeader>
-                    <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Layout</CardTitle>
-                    <CardDescription>Ajusta la composicion principal del hero.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Field label="Alineacion del hero">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <Button type="button" variant={draftConfig.layout.hero_alignment === 'center' ? 'default' : 'outline'} className="rounded-none" onClick={() => patchSection('layout', { hero_alignment: 'center' })}>Centrado</Button>
-                        <Button type="button" variant={draftConfig.layout.hero_alignment === 'left' ? 'default' : 'outline'} className="rounded-none" onClick={() => patchSection('layout', { hero_alignment: 'left' })}>Alineado a la izquierda</Button>
-                      </div>
-                    </Field>
-                  </CardContent>
-                </Card>
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="rounded-none border-border bg-background shadow-none">
+                      <CardHeader>
+                        <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Botones de confirmacion</CardTitle>
+                        <CardDescription>Personaliza el color y los textos de los botones que veran tus invitados sobre el PDF.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <Field label="Color de acento (boton principal)">
+                          <div className="flex gap-3">
+                            <Input type="color" value={draftConfig.branding.accent_color} onChange={(event) => patchSection('branding', { accent_color: event.target.value })} className="h-11 w-16 rounded-none p-1" />
+                            <Input value={draftConfig.branding.accent_color} onChange={(event) => patchSection('branding', { accent_color: event.target.value })} className="rounded-none" />
+                          </div>
+                        </Field>
+                        <Field label="Color del boton secundario (no asistir)">
+                          <div className="flex gap-3">
+                            <Input type="color" value={draftConfig.branding.primary_color} onChange={(event) => patchSection('branding', { primary_color: event.target.value })} className="h-11 w-16 rounded-none p-1" />
+                            <Input value={draftConfig.branding.primary_color} onChange={(event) => patchSection('branding', { primary_color: event.target.value })} className="rounded-none" />
+                          </div>
+                        </Field>
+                        <Field label="Texto boton confirmar">
+                          <Input
+                            value={draftConfig.content.pdf_confirm_label}
+                            onChange={(event) => patchSection('content', { pdf_confirm_label: event.target.value })}
+                            className="rounded-none"
+                            placeholder="Confirmar asistencia"
+                          />
+                        </Field>
+                        <Field label="Texto boton no asistir">
+                          <Input
+                            value={draftConfig.content.pdf_decline_label}
+                            onChange={(event) => patchSection('content', { pdf_decline_label: event.target.value })}
+                            className="rounded-none"
+                            placeholder="No podre asistir"
+                          />
+                        </Field>
+                      </CardContent>
+                    </Card>
 
-                <Card className="rounded-none border-border bg-background shadow-none">
-                  <CardHeader>
-                    <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Estado del editor</CardTitle>
-                    <CardDescription>Trabajas siempre sobre borrador. El publico solo ve lo publicado.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm text-muted-foreground">
-                    <p>Evento: <span className="text-foreground">{event?.name || 'Sin nombre'}</span></p>
-                    <p>Publicado: <span className="text-foreground">{pageData?.published_at ? new Date(pageData.published_at).toLocaleString() : 'Aun no'}</span></p>
-                    <p>Tema activo: <span className="text-foreground">{themeMeta.label}</span></p>
-                  </CardContent>
-                </Card>
-              </div>
+                    <Card className="rounded-none border-border bg-background shadow-none">
+                      <CardHeader>
+                        <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Estado del editor</CardTitle>
+                        <CardDescription>Trabajas siempre sobre borrador. El publico solo ve lo publicado.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3 text-sm text-muted-foreground">
+                        <p>Evento: <span className="text-foreground">{event?.name || 'Sin nombre'}</span></p>
+                        <p>Publicado: <span className="text-foreground">{pageData?.published_at ? new Date(pageData.published_at).toLocaleString() : 'Aun no'}</span></p>
+                        <p>Modo activo: <span className="text-foreground">{designModeMeta.label}</span></p>
+                        <p>Invitacion: <span className="text-foreground">{hasInvitationPdf ? draftConfig.branding.invitation_pdf_name || 'PDF cargado' : 'Sin PDF'}</span></p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+                    {RSVP_THEME_CATALOG.map((theme) => (
+                      <button
+                        key={theme.key}
+                        type="button"
+                        onClick={() => patchSection('layout', { template_key: theme.key })}
+                        className={cn(
+                          'rounded-none border p-5 text-left transition-colors',
+                          draftConfig.layout.template_key === theme.key
+                            ? 'border-foreground bg-secondary/40'
+                            : 'border-border bg-background hover:bg-secondary/20',
+                        )}
+                      >
+                        <p className="font-heading text-2xl tracking-wide text-foreground">{theme.label}</p>
+                        <p className="mt-2 text-sm text-muted-foreground">{theme.description}</p>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="rounded-none border-border bg-background shadow-none">
+                      <CardHeader>
+                        <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Layout</CardTitle>
+                        <CardDescription>Ajusta la composicion principal del hero.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <Field label="Alineacion del hero">
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <Button type="button" variant={draftConfig.layout.hero_alignment === 'center' ? 'default' : 'outline'} className="rounded-none" onClick={() => patchSection('layout', { hero_alignment: 'center' })}>Centrado</Button>
+                            <Button type="button" variant={draftConfig.layout.hero_alignment === 'left' ? 'default' : 'outline'} className="rounded-none" onClick={() => patchSection('layout', { hero_alignment: 'left' })}>Alineado a la izquierda</Button>
+                          </div>
+                        </Field>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="rounded-none border-border bg-background shadow-none">
+                      <CardHeader>
+                        <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Estado del editor</CardTitle>
+                        <CardDescription>Trabajas siempre sobre borrador. El publico solo ve lo publicado.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3 text-sm text-muted-foreground">
+                        <p>Evento: <span className="text-foreground">{event?.name || 'Sin nombre'}</span></p>
+                        <p>Publicado: <span className="text-foreground">{pageData?.published_at ? new Date(pageData.published_at).toLocaleString() : 'Aun no'}</span></p>
+                        <p>Tema activo: <span className="text-foreground">{themeMeta.label}</span></p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              )}
             </TabsContent>
 
             <TabsContent value="branding" className="space-y-6">
@@ -840,6 +1058,32 @@ export default function EventRsvpDesign() {
         className="hidden"
         onChange={(event) => handleAssetUpload('gallery', event.target.files)}
       />
+      <input
+        ref={pdfInputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={(event) => handleAssetUpload('invitation', event.target.files)}
+      />
+
+      <Dialog open={Boolean(confirmModeChange)} onOpenChange={(nextOpen) => { if (!nextOpen) setConfirmModeChange(null) }}>
+        <DialogContent className="max-w-md rounded-none">
+          <DialogHeader>
+            <DialogTitle>Cambiar a diseno visual</DialogTitle>
+            <DialogDescription>
+              Volver al diseno visual ocultara tu PDF de la pagina publica. El archivo seguira guardado y puedes volver al modo PDF cuando quieras.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" className="rounded-none" onClick={() => setConfirmModeChange(null)}>
+              Cancelar
+            </Button>
+            <Button type="button" className="rounded-none" onClick={confirmModeSwitch}>
+              Cambiar de modo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
