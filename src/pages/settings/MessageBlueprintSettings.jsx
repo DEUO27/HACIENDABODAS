@@ -80,7 +80,7 @@ export default function MessageBlueprintSettings() {
           <div>
             <h2 className="font-heading text-4xl text-foreground">Mensajes de WhatsApp</h2>
             <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              Define los dos templates reales de Meta que usara el wizard: Confirmacion 1 (invitacion inicial) y Confirmacion 2 (re-confirmacion final). Esta pantalla no se muestra en el flujo principal del evento.
+              Define los dos templates reales de Meta que usara el wizard: Confirmacion Inicial (primer envio) y Confirmacion Final (re-confirmacion cercana al evento). Esta pantalla no se muestra en el flujo principal del evento.
             </p>
           </div>
         </div>

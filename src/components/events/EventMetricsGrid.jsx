@@ -55,8 +55,8 @@ export default function EventMetricsGrid({ metrics, scheduleCount = 0 }) {
         />
       </div>
 
-      <StageSection title="Confirmacion 1" accent="bg-emerald-500" metrics={stage1} />
-      <StageSection title="Confirmacion 2" accent="bg-sky-500" metrics={stage2} />
+      <StageSection title="Confirmacion Inicial" accent="bg-emerald-500" metrics={stage1} />
+      <StageSection title="Confirmacion Final" accent="bg-sky-500" metrics={stage2} />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard

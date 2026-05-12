@@ -80,16 +80,16 @@ export const DEFAULT_RSVP_STAGE = 'confirmacion_1'
 export const MESSAGE_BLUEPRINT_CATALOG = [
   {
     key: 'confirmacion_1',
-    label: 'Confirmacion 1',
-    shortLabel: 'C1',
+    label: 'Confirmacion Inicial',
+    shortLabel: 'Inicial',
     stage: 'confirmacion_1',
     description: 'Primer envio: invitacion inicial que abre el RSVP de cada invitado.',
     referenceBody: DEFAULT_WHATSAPP_TEMPLATE,
   },
   {
     key: 'confirmacion_2',
-    label: 'Confirmacion 2',
-    shortLabel: 'C2',
+    label: 'Confirmacion Final',
+    shortLabel: 'Final',
     stage: 'confirmacion_2',
     description: 'Segundo envio (mas cerca del evento): re-confirmacion final de asistencia.',
     referenceBody: 'Hola {nombre}, estamos cerrando la lista final de {evento} el {fecha}. Re-confirma tu asistencia aqui: {link_confirmacion}',
@@ -252,7 +252,7 @@ export function resolveAudienceGuests(guests, audience, options = {}) {
 
 export function getAudienceSummary(audience, guests, options = {}) {
   const stage = normalizeRsvpStage(options.stage)
-  const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion 2' : 'Confirmacion 1'
+  const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion Final' : 'Confirmacion Inicial'
 
   if (audience?.type === 'group') return `Grupo: ${audience.value || 'Sin grupo'}`
   if (audience?.type === 'tag') return `Tag: ${audience.value || 'Sin tag'}`
@@ -486,16 +486,16 @@ export async function exportGuestsSpreadsheet({ guests, eventName, format = 'xls
       Grupo: guest.guest_group || '',
       Mesa: guest.table_name || '',
       Etiquetas: (guest.tags || []).join(', '),
-      'Confirmacion 1': getTemplateAttendanceLabel(getGuestAttendanceForStage(guest, 'confirmacion_1')),
-      'Confirmacion 2': getTemplateAttendanceLabel(getGuestAttendanceForStage(guest, 'confirmacion_2')),
+      'Confirmacion Inicial': getTemplateAttendanceLabel(getGuestAttendanceForStage(guest, 'confirmacion_1')),
+      'Confirmacion Final': getTemplateAttendanceLabel(getGuestAttendanceForStage(guest, 'confirmacion_2')),
       Envio: getTemplateDeliveryLabel(guest.delivery_status),
       'Acompanantes permitidos': guest.plus_ones_allowed || 0,
       'Adultos acompanantes (final)': finalCompanions.adultPlusOnes,
       'Ninos acompanantes (final)': finalCompanions.childPlusOnes,
-      'Comentario C1': stage1Response?.comment || '',
-      'Comentario C2': stage2Response?.comment || '',
-      'Restricciones C1': stage1Response?.dietary_restrictions || '',
-      'Restricciones C2': stage2Response?.dietary_restrictions || '',
+      'Comentario Inicial': stage1Response?.comment || '',
+      'Comentario Final': stage2Response?.comment || '',
+      'Restricciones Inicial': stage1Response?.dietary_restrictions || '',
+      'Restricciones Final': stage2Response?.dietary_restrictions || '',
       Fuente: guest.source === 'import' ? 'importado' : guest.source || 'manual',
     }
   })

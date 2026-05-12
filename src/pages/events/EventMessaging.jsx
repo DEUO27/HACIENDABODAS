@@ -409,8 +409,8 @@ export default function EventMessaging() {
                   {
                     key: 'pending',
                     label: selectedStage === 'confirmacion_2'
-                      ? 'Pendientes de Confirmacion 2'
-                      : 'Pendientes de Confirmacion 1',
+                      ? 'Pendientes de Confirmacion Final'
+                      : 'Pendientes de Confirmacion Inicial',
                     icon: UsersRound,
                   },
                   { key: 'group', label: 'Por grupo', icon: UsersRound },
@@ -479,8 +479,8 @@ export default function EventMessaging() {
                           <TableHead className="w-12">Sel.</TableHead>
                           <TableHead>Invitado</TableHead>
                           <TableHead>Grupo</TableHead>
-                          <TableHead>C1</TableHead>
-                          <TableHead>C2</TableHead>
+                          <TableHead>Inicial</TableHead>
+                          <TableHead>Final</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

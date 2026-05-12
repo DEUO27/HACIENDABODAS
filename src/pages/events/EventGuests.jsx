@@ -221,7 +221,7 @@ export default function EventGuests() {
         }
       }
 
-      const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion 2' : 'Confirmacion 1'
+      const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion Final' : 'Confirmacion Inicial'
 
       setLinkPreview({
         open: true,
@@ -351,20 +351,20 @@ export default function EventGuests() {
               onChange={(event) => setFilters((current) => ({ ...current, attendance_1: event.target.value }))}
               className="h-9 rounded-none border border-border bg-background px-3 text-sm"
             >
-              <option value="all">C1: todos</option>
-              <option value="pending">C1: pendientes</option>
-              <option value="confirmed">C1: confirmados</option>
-              <option value="declined">C1: rechazados</option>
+              <option value="all">Inicial: todos</option>
+              <option value="pending">Inicial: pendientes</option>
+              <option value="confirmed">Inicial: confirmados</option>
+              <option value="declined">Inicial: rechazados</option>
             </select>
             <select
               value={filters.attendance_2}
               onChange={(event) => setFilters((current) => ({ ...current, attendance_2: event.target.value }))}
               className="h-9 rounded-none border border-border bg-background px-3 text-sm"
             >
-              <option value="all">C2: todos</option>
-              <option value="pending">C2: pendientes</option>
-              <option value="confirmed">C2: confirmados</option>
-              <option value="declined">C2: rechazados</option>
+              <option value="all">Final: todos</option>
+              <option value="pending">Final: pendientes</option>
+              <option value="confirmed">Final: confirmados</option>
+              <option value="declined">Final: rechazados</option>
             </select>
             <select
               value={filters.delivery}
@@ -431,8 +431,8 @@ export default function EventGuests() {
                   <TableHead>Invitado</TableHead>
                   <TableHead>Grupo / Mesa</TableHead>
                   <TableHead>Etiquetas</TableHead>
-                  <TableHead>C1</TableHead>
-                  <TableHead>C2</TableHead>
+                  <TableHead>Inicial</TableHead>
+                  <TableHead>Final</TableHead>
                   <TableHead>Acompanantes (final)</TableHead>
                   <TableHead>Envio</TableHead>
                   <TableHead>Ultima respuesta</TableHead>
@@ -498,10 +498,10 @@ export default function EventGuests() {
                             className="rounded-none"
                             onClick={() => handleGenerateLink(guest, 'confirmacion_1')}
                             disabled={isGeneratingC1}
-                            title="Generar link Confirmacion 1"
+                            title="Generar link Confirmacion Inicial"
                           >
                             <Link2 className="mr-1 h-4 w-4" />
-                            {isGeneratingC1 ? '...' : 'C1'}
+                            {isGeneratingC1 ? '...' : 'Inicial'}
                           </Button>
                           <Button
                             variant="outline"
@@ -509,10 +509,10 @@ export default function EventGuests() {
                             className="rounded-none"
                             onClick={() => handleGenerateLink(guest, 'confirmacion_2')}
                             disabled={isGeneratingC2}
-                            title="Generar link Confirmacion 2"
+                            title="Generar link Confirmacion Final"
                           >
                             <Link2 className="mr-1 h-4 w-4" />
-                            {isGeneratingC2 ? '...' : 'C2'}
+                            {isGeneratingC2 ? '...' : 'Final'}
                           </Button>
                           <Button
                             variant="outline"
@@ -602,7 +602,7 @@ export default function EventGuests() {
         <DialogContent className="max-w-2xl rounded-none">
           <DialogHeader>
             <DialogTitle>
-              Link {linkPreview.stage === 'confirmacion_2' ? 'Confirmacion 2' : 'Confirmacion 1'} listo
+              Link {linkPreview.stage === 'confirmacion_2' ? 'Confirmacion Final' : 'Confirmacion Inicial'} listo
             </DialogTitle>
             <DialogDescription>
               Comparte este enlace con {linkPreview.guest?.full_name || 'tu invitado'} o abre una vista previa antes de enviarlo.

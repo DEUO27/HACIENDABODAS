@@ -229,10 +229,10 @@ export default function EventDashboard() {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="c1Confirmed" name="C1 confirmados" fill="#10b981" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="c1Declined" name="C1 rechazados" fill="#fca5a5" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="c2Confirmed" name="C2 confirmados" fill="#0284c7" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="c2Declined" name="C2 rechazados" fill="#f43f5e" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="c1Confirmed" name="Inicial confirmados" fill="#10b981" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="c1Declined" name="Inicial rechazados" fill="#fca5a5" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="c2Confirmed" name="Final confirmados" fill="#0284c7" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="c2Declined" name="Final rechazados" fill="#f43f5e" radius={[0, 0, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -242,7 +242,7 @@ export default function EventDashboard() {
       <div className="grid gap-4 xl:grid-cols-2">
         <Card className="rounded-none border-border bg-card shadow-sm">
           <CardHeader>
-            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Distribucion Confirmacion 1</CardTitle>
+            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Distribucion Confirmacion Inicial</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
             {loading ? (
@@ -264,7 +264,7 @@ export default function EventDashboard() {
 
         <Card className="rounded-none border-border bg-card shadow-sm">
           <CardHeader>
-            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Distribucion Confirmacion 2</CardTitle>
+            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Distribucion Confirmacion Final</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
             {loading ? (
@@ -305,7 +305,7 @@ export default function EventDashboard() {
                   <TableRow key={response.id}>
                     <TableCell className="font-medium text-foreground">{guestNameById.get(response.guest_id) || 'Invitado'}</TableCell>
                     <TableCell className="text-xs uppercase tracking-widest text-muted-foreground">
-                      {response.stage === 'confirmacion_2' ? 'C2' : 'C1'}
+                      {response.stage === 'confirmacion_2' ? 'Final' : 'Inicial'}
                     </TableCell>
                     <TableCell><AttendancePill status={response.response_status} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDateTime(response.responded_at)}</TableCell>
@@ -343,7 +343,7 @@ export default function EventDashboard() {
                   <TableRow key={delivery.id}>
                     <TableCell className="font-medium text-foreground">{delivery.guests?.full_name || 'Invitado'}</TableCell>
                     <TableCell className="text-xs uppercase tracking-widest text-muted-foreground">
-                      {getMessageBlueprintMeta(delivery.message_key).shortLabel || (delivery.message_key === 'confirmacion_2' ? 'C2' : 'C1')}
+                      {getMessageBlueprintMeta(delivery.message_key).shortLabel || (delivery.message_key === 'confirmacion_2' ? 'Final' : 'Inicial')}
                     </TableCell>
                     <TableCell><DeliveryPill status={delivery.status} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{delivery.scheduled_at ? formatDateTime(delivery.scheduled_at) : 'Ahora'}</TableCell>

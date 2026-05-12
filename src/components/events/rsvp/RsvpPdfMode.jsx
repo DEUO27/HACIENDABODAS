@@ -127,7 +127,7 @@ export default function RsvpPdfMode({
   submitting = false,
   preview = false,
 }) {
-  const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion 2' : stage === 'confirmacion_1' ? 'Confirmacion 1' : ''
+  const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion Final' : stage === 'confirmacion_1' ? 'Confirmacion Inicial' : ''
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [intent, setIntent] = useState(null)

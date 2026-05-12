@@ -101,7 +101,7 @@ export default function GuestFormDialog({
             />
           </label>
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">RSVP Confirmacion 1</span>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">RSVP Confirmacion Inicial</span>
             <select
               value={form.attendance_status_1}
               onChange={(event) => setForm((current) => ({ ...current, attendance_status_1: event.target.value }))}
@@ -113,7 +113,7 @@ export default function GuestFormDialog({
             </select>
           </label>
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">RSVP Confirmacion 2</span>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">RSVP Confirmacion Final</span>
             <select
               value={form.attendance_status_2}
               onChange={(event) => setForm((current) => ({ ...current, attendance_status_2: event.target.value }))}

@@ -112,7 +112,7 @@ export default function RsvpThemeRenderer({
   const normalizedEvent = normalizeEvent(event)
   const normalizedGuest = normalizeGuest(guest)
   const mergedConfig = mergeRsvpPageConfig(buildDefaultRsvpPageConfig(normalizedEvent), pageConfig || {}, normalizedEvent)
-  const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion 2' : stage === 'confirmacion_1' ? 'Confirmacion 1' : ''
+  const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion Final' : stage === 'confirmacion_1' ? 'Confirmacion Inicial' : ''
 
   if (mergedConfig.layout.mode === 'pdf') {
     return (

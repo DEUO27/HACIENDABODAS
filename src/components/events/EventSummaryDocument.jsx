@@ -133,16 +133,16 @@ export default function EventSummaryDocument({ event, metrics, guests }) {
           </View>
         </View>
 
-        <StageBlock title="Confirmacion 1" stage={stage1} />
-        <StageBlock title="Confirmacion 2" stage={stage2} />
+        <StageBlock title="Confirmacion Inicial" stage={stage1} />
+        <StageBlock title="Confirmacion Final" stage={stage2} />
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Muestra de invitados</Text>
-          <Text style={styles.sectionSubtitle}>Estado por etapa (C1 / C2) y ultima fecha de respuesta.</Text>
+          <Text style={styles.sectionSubtitle}>Estado por etapa (Inicial / Final) y ultima fecha de respuesta.</Text>
           <View style={styles.tableHeader}>
             <Text style={styles.colName}>Invitado</Text>
-            <Text style={styles.colStage}>C1</Text>
-            <Text style={styles.colStage}>C2</Text>
+            <Text style={styles.colStage}>Inicial</Text>
+            <Text style={styles.colStage}>Final</Text>
             <Text style={styles.colDelivery}>Envio</Text>
             <Text style={styles.colResponse}>Respondio</Text>
           </View>
