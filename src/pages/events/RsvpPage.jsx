@@ -76,6 +76,7 @@ export default function RsvpPage() {
       event={resolvedData?.event}
       guest={resolvedData?.guest}
       pageConfig={resolvedData?.pageConfig}
+      stage={resolvedData?.stage || submitted?.stage || null}
       loading={loading}
       errorState={!resolvedData ? errorState : null}
       submitted={submitted}

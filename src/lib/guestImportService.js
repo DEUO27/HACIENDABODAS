@@ -107,13 +107,14 @@ export function processGuestRows(rows, { eventId, existingDedupeKeys = new Set()
       guest_group: guestGroup,
       table_name: tableName,
       tags,
-      attendance_status: attendanceStatus,
+      attendance_status_1: attendanceStatus,
+      attendance_status_2: 'pending',
       delivery_status: deliveryStatus,
       plus_ones_allowed: plusOnesAllowed,
       notes,
       source: 'import',
       dedupe_key: dedupeKey,
-      _rsvp_response: responseSeed,
+      _rsvp_response: responseSeed ? { ...responseSeed, stage: 'confirmacion_1' } : null,
     })
   })
 

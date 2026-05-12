@@ -38,8 +38,9 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json()
 
+    const VALID_MESSAGE_KEYS = ['confirmacion_1', 'confirmacion_2'] as const
     const eventId = body.eventId
-    const messageKey = String(body.messageKey || 'invitation_main').trim()
+    const messageKey = String(body.messageKey || 'confirmacion_1').trim()
     const guestIds = Array.isArray(body.guestIds) ? body.guestIds : []
     const baseUrl = String(body.baseUrl || '').trim()
     const scheduledAt = body.scheduledAt || null
@@ -47,6 +48,10 @@ Deno.serve(async (req) => {
 
     if (!eventId || !messageKey || !baseUrl || !guestIds.length) {
       return jsonResponse({ error: 'eventId, messageKey, guestIds y baseUrl son obligatorios.' }, 400)
+    }
+
+    if (!VALID_MESSAGE_KEYS.includes(messageKey as typeof VALID_MESSAGE_KEYS[number])) {
+      return jsonResponse({ error: `messageKey invalido. Valores aceptados: ${VALID_MESSAGE_KEYS.join(', ')}.` }, 400)
     }
 
     const { adminClient } = await assertEventAccess(req, String(eventId), {
@@ -78,7 +83,7 @@ Deno.serve(async (req) => {
 
     const { data: guests, error: guestsError } = await adminClient
       .from('guests')
-      .select('id, event_id, full_name, phone, attendance_status, plus_ones_allowed, guest_group, table_name, tags')
+      .select('id, event_id, full_name, phone, attendance_status_1, attendance_status_2, plus_ones_allowed, guest_group, table_name, tags')
       .eq('event_id', eventId)
       .in('id', guestIds)
 
@@ -98,7 +103,7 @@ Deno.serve(async (req) => {
     }> = []
 
     for (const guest of guests || []) {
-      const rsvpLink = await issueTokenForGuest(adminClient, guest, baseUrl)
+      const rsvpLink = await issueTokenForGuest(adminClient, guest, baseUrl, messageKey)
       const payloadBuilder = buildTemplatePayload({
         guest,
         event,

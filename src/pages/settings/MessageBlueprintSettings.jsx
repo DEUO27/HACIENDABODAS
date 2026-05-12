@@ -80,7 +80,7 @@ export default function MessageBlueprintSettings() {
           <div>
             <h2 className="font-heading text-4xl text-foreground">Mensajes de WhatsApp</h2>
             <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              Define los templates reales de Meta que usara el wizard para los esposos. Esta pantalla no se muestra en el flujo principal del evento.
+              Define los dos templates reales de Meta que usara el wizard: Confirmacion 1 (invitacion inicial) y Confirmacion 2 (re-confirmacion final). Esta pantalla no se muestra en el flujo principal del evento.
             </p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function MessageBlueprintSettings() {
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-2">
         {(loading ? buildFormState([]) : rows).map((row) => (
           <Card key={row.message_key} className="rounded-none border-border bg-card shadow-sm">
             <CardHeader className="space-y-3">

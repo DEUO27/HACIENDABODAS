@@ -38,10 +38,16 @@ function buildRsvpUrl(baseUrl: string, token: string) {
   return `${String(baseUrl).replace(/\/$/, '')}/rsvp/${String(token || '').replace(/^\/+/, '')}`
 }
 
-export async function issueTokenForGuest(adminClient: any, guest: any, baseUrl: string) {
+export async function issueTokenForGuest(
+  adminClient: any,
+  guest: any,
+  baseUrl: string,
+  stage = 'confirmacion_1',
+) {
   const { data, error } = await adminClient.rpc('issue_guest_rsvp_token_core', {
     p_guest_id: guest.id,
     p_event_id: guest.event_id,
+    p_stage: stage,
     p_expires_at: null,
   })
 

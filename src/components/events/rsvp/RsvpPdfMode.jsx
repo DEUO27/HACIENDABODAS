@@ -117,6 +117,7 @@ function PdfNativeFallback({ url, accentColor }) {
 export default function RsvpPdfMode({
   guest,
   pageConfig,
+  stage = null,
   loading = false,
   errorState = null,
   submitted = null,
@@ -126,6 +127,8 @@ export default function RsvpPdfMode({
   submitting = false,
   preview = false,
 }) {
+  const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion 2' : stage === 'confirmacion_1' ? 'Confirmacion 1' : ''
+
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [intent, setIntent] = useState(null)
   const useNativeFallback = useMemo(() => isIos(), [])
@@ -229,7 +232,9 @@ export default function RsvpPdfMode({
             <SheetTitle className="font-heading text-2xl tracking-wide">
               {intent === 'confirmed' ? 'Confirma tu asistencia' : 'No podras asistir'}
             </SheetTitle>
-            <SheetDescription>{guest?.fullName || 'Invitado'}</SheetDescription>
+            <SheetDescription>
+              {guest?.fullName || 'Invitado'}{stageLabel ? ` · ${stageLabel}` : ''}
+            </SheetDescription>
           </SheetHeader>
 
           <div className="mt-4 space-y-5 px-4 pb-6">

@@ -27,7 +27,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useEvent } from '@/contexts/EventContext'
-import { exportGuestsSpreadsheet, formatDateTime, getGuestCompanionCounts, getPublicAppUrl } from '@/lib/eventModuleUtils'
+import {
+  exportGuestsSpreadsheet,
+  formatDateTime,
+  getGuestCompanionCounts,
+  getPublicAppUrl,
+  getStageResponse,
+} from '@/lib/eventModuleUtils'
 import {
   deleteGuest,
   importGuests,
@@ -39,7 +45,8 @@ import { supabase } from '@/lib/supabase'
 
 const emptyFilters = {
   search: '',
-  attendance: 'all',
+  attendance_1: 'all',
+  attendance_2: 'all',
   delivery: 'all',
   group: 'all',
   table: 'all',
@@ -58,10 +65,11 @@ export default function EventGuests() {
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [generatingLinkGuestId, setGeneratingLinkGuestId] = useState(null)
+  const [generatingLink, setGeneratingLink] = useState({ guestId: null, stage: null })
   const [linkPreview, setLinkPreview] = useState({
     open: false,
     guest: null,
+    stage: null,
     url: '',
     copied: false,
   })
@@ -132,7 +140,8 @@ export default function EventGuests() {
         if (!haystack.includes(searchNeedle)) return false
       }
 
-      if (filters.attendance !== 'all' && guest.attendance_status !== filters.attendance) return false
+      if (filters.attendance_1 !== 'all' && guest.attendance_status_1 !== filters.attendance_1) return false
+      if (filters.attendance_2 !== 'all' && guest.attendance_status_2 !== filters.attendance_2) return false
       if (filters.delivery !== 'all' && guest.delivery_status !== filters.delivery) return false
       if (filters.group !== 'all' && guest.guest_group !== filters.group) return false
       if (filters.table !== 'all' && guest.table_name !== filters.table) return false
@@ -183,9 +192,9 @@ export default function EventGuests() {
     }
   }
 
-  async function handleGenerateLink(guest) {
+  async function handleGenerateLink(guest, stage) {
     try {
-      setGeneratingLinkGuestId(guest.id)
+      setGeneratingLink({ guestId: guest.id, stage })
       setErrorMessage('')
       const publicAppUrl = getPublicAppUrl(window.location.origin)
 
@@ -197,6 +206,7 @@ export default function EventGuests() {
       const result = await issueRsvpToken({
         guestId: guest.id,
         eventId,
+        stage,
         baseUrl: publicAppUrl,
       })
 
@@ -211,17 +221,22 @@ export default function EventGuests() {
         }
       }
 
+      const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion 2' : 'Confirmacion 1'
+
       setLinkPreview({
         open: true,
         guest,
+        stage,
         url: result.url,
         copied,
       })
-      setNotice(copied ? `Link RSVP listo para ${guest.full_name}.` : `Link RSVP generado para ${guest.full_name}.`)
+      setNotice(copied
+        ? `Link de ${stageLabel} listo para ${guest.full_name}.`
+        : `Link de ${stageLabel} generado para ${guest.full_name}.`)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No fue posible generar el link RSVP.')
     } finally {
-      setGeneratingLinkGuestId(null)
+      setGeneratingLink({ guestId: null, stage: null })
     }
   }
 
@@ -324,7 +339,7 @@ export default function EventGuests() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-6">
+          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-7">
             <Input
               value={filters.search}
               onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
@@ -332,14 +347,24 @@ export default function EventGuests() {
               className="rounded-none md:col-span-2"
             />
             <select
-              value={filters.attendance}
-              onChange={(event) => setFilters((current) => ({ ...current, attendance: event.target.value }))}
+              value={filters.attendance_1}
+              onChange={(event) => setFilters((current) => ({ ...current, attendance_1: event.target.value }))}
               className="h-9 rounded-none border border-border bg-background px-3 text-sm"
             >
-              <option value="all">RSVP: todos</option>
-              <option value="pending">Pendientes</option>
-              <option value="confirmed">Confirmados</option>
-              <option value="declined">Rechazados</option>
+              <option value="all">C1: todos</option>
+              <option value="pending">C1: pendientes</option>
+              <option value="confirmed">C1: confirmados</option>
+              <option value="declined">C1: rechazados</option>
+            </select>
+            <select
+              value={filters.attendance_2}
+              onChange={(event) => setFilters((current) => ({ ...current, attendance_2: event.target.value }))}
+              className="h-9 rounded-none border border-border bg-background px-3 text-sm"
+            >
+              <option value="all">C2: todos</option>
+              <option value="pending">C2: pendientes</option>
+              <option value="confirmed">C2: confirmados</option>
+              <option value="declined">C2: rechazados</option>
             </select>
             <select
               value={filters.delivery}
@@ -406,8 +431,9 @@ export default function EventGuests() {
                   <TableHead>Invitado</TableHead>
                   <TableHead>Grupo / Mesa</TableHead>
                   <TableHead>Etiquetas</TableHead>
-                  <TableHead>RSVP</TableHead>
-                  <TableHead>Acompanantes</TableHead>
+                  <TableHead>C1</TableHead>
+                  <TableHead>C2</TableHead>
+                  <TableHead>Acompanantes (final)</TableHead>
                   <TableHead>Envio</TableHead>
                   <TableHead>Ultima respuesta</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -416,7 +442,9 @@ export default function EventGuests() {
               <TableBody>
                 {paginatedGuests.map((guest) => {
                   const companions = getGuestCompanionCounts(guest)
-                  const hasResponse = Boolean(guest.rsvp_response)
+                  const hasAnyResponse = Boolean(getStageResponse(guest, 'confirmacion_1') || getStageResponse(guest, 'confirmacion_2'))
+                  const isGeneratingC1 = generatingLink.guestId === guest.id && generatingLink.stage === 'confirmacion_1'
+                  const isGeneratingC2 = generatingLink.guestId === guest.id && generatingLink.stage === 'confirmacion_2'
 
                   return (
                     <TableRow key={guest.id}>
@@ -443,9 +471,10 @@ export default function EventGuests() {
                             : <span className="text-xs text-muted-foreground">Sin tags</span>}
                         </div>
                       </TableCell>
-                      <TableCell className="align-top"><AttendancePill status={guest.attendance_status} /></TableCell>
+                      <TableCell className="align-top"><AttendancePill status={guest.attendance_status_1} /></TableCell>
+                      <TableCell className="align-top"><AttendancePill status={guest.attendance_status_2} /></TableCell>
                       <TableCell className="align-top">
-                        {hasResponse ? (
+                        {hasAnyResponse ? (
                           <div className="space-y-1 text-xs text-muted-foreground">
                             <p>Adultos: {companions.adultPlusOnes}</p>
                             <p>Ninos: {companions.childPlusOnes}</p>
@@ -467,11 +496,23 @@ export default function EventGuests() {
                             variant="outline"
                             size="sm"
                             className="rounded-none"
-                            onClick={() => handleGenerateLink(guest)}
-                            disabled={generatingLinkGuestId === guest.id}
+                            onClick={() => handleGenerateLink(guest, 'confirmacion_1')}
+                            disabled={isGeneratingC1}
+                            title="Generar link Confirmacion 1"
                           >
-                            <Link2 className="mr-2 h-4 w-4" />
-                            {generatingLinkGuestId === guest.id ? 'Generando...' : 'Link'}
+                            <Link2 className="mr-1 h-4 w-4" />
+                            {isGeneratingC1 ? '...' : 'C1'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-none"
+                            onClick={() => handleGenerateLink(guest, 'confirmacion_2')}
+                            disabled={isGeneratingC2}
+                            title="Generar link Confirmacion 2"
+                          >
+                            <Link2 className="mr-1 h-4 w-4" />
+                            {isGeneratingC2 ? '...' : 'C2'}
                           </Button>
                           <Button
                             variant="outline"
@@ -495,7 +536,7 @@ export default function EventGuests() {
 
                 {!paginatedGuests.length && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={9} className="py-12 text-center text-sm text-muted-foreground">
                       No hay invitados que coincidan con los filtros actuales.
                     </TableCell>
                   </TableRow>
@@ -560,7 +601,9 @@ export default function EventGuests() {
       >
         <DialogContent className="max-w-2xl rounded-none">
           <DialogHeader>
-            <DialogTitle>Link RSVP listo</DialogTitle>
+            <DialogTitle>
+              Link {linkPreview.stage === 'confirmacion_2' ? 'Confirmacion 2' : 'Confirmacion 1'} listo
+            </DialogTitle>
             <DialogDescription>
               Comparte este enlace con {linkPreview.guest?.full_name || 'tu invitado'} o abre una vista previa antes de enviarlo.
             </DialogDescription>
@@ -601,10 +644,12 @@ export default function EventGuests() {
             </Button>
             <Button
               className="rounded-none"
-              onClick={() => linkPreview.guest && handleGenerateLink(linkPreview.guest)}
-              disabled={!linkPreview.guest || generatingLinkGuestId === linkPreview.guest.id}
+              onClick={() => linkPreview.guest && linkPreview.stage && handleGenerateLink(linkPreview.guest, linkPreview.stage)}
+              disabled={!linkPreview.guest || !linkPreview.stage || (generatingLink.guestId === linkPreview.guest?.id && generatingLink.stage === linkPreview.stage)}
             >
-              {linkPreview.guest && generatingLinkGuestId === linkPreview.guest.id ? 'Regenerando...' : 'Regenerar link'}
+              {linkPreview.guest && generatingLink.guestId === linkPreview.guest.id && generatingLink.stage === linkPreview.stage
+                ? 'Regenerando...'
+                : 'Regenerar link'}
             </Button>
           </DialogFooter>
         </DialogContent>

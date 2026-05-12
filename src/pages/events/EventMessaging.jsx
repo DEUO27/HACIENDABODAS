@@ -27,6 +27,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useEvent } from '@/contexts/EventContext'
 import {
   buildRsvpPublicUrl,
+  DEFAULT_RSVP_STAGE,
   formatDateTime,
   formatEventDate,
   getAudienceOptions,
@@ -127,7 +128,7 @@ export default function EventMessaging() {
   const [deliveries, setDeliveries] = useState([])
   const [blueprints, setBlueprints] = useState([])
   const [currentStep, setCurrentStep] = useState(1)
-  const [selectedMessageKey, setSelectedMessageKey] = useState('invitation_main')
+  const [selectedMessageKey, setSelectedMessageKey] = useState(DEFAULT_RSVP_STAGE)
   const [audience, setAudience] = useState({
     type: 'pending',
     value: '',
@@ -183,7 +184,11 @@ export default function EventMessaging() {
 
   const selectedPreset = useMemo(() => getMessageBlueprintMeta(selectedMessageKey), [selectedMessageKey])
   const selectedBlueprint = blueprintMap[selectedMessageKey] || null
-  const resolvedAudienceGuests = useMemo(() => resolveAudienceGuests(guests, audience), [audience, guests])
+  const selectedStage = selectedPreset.stage || selectedMessageKey
+  const resolvedAudienceGuests = useMemo(
+    () => resolveAudienceGuests(guests, audience, { stage: selectedStage }),
+    [audience, guests, selectedStage],
+  )
   const publicAppUrl = useMemo(() => getPublicAppUrl(window.location.origin), [])
   const canViewTechnicalDetails = ['admin', 'planner'].includes(role)
   const scheduledAtIso = useMemo(() => getValidScheduleIso(scheduleAt), [scheduleAt])
@@ -365,7 +370,7 @@ export default function EventMessaging() {
 
         <CardContent className="space-y-6">
           {currentStep === 1 && (
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-2">
               {MESSAGE_BLUEPRINT_CATALOG.map((preset) => {
                 const blueprint = blueprintMap[preset.key]
                 const isReady = Boolean(blueprint?.is_active && blueprint?.meta_template_name && blueprint?.reference_body)
@@ -401,7 +406,13 @@ export default function EventMessaging() {
             <div className="space-y-6">
               <div className="grid gap-4 lg:grid-cols-4">
                 {[
-                  { key: 'pending', label: 'Todos los pendientes', icon: UsersRound },
+                  {
+                    key: 'pending',
+                    label: selectedStage === 'confirmacion_2'
+                      ? 'Pendientes de Confirmacion 2'
+                      : 'Pendientes de Confirmacion 1',
+                    icon: UsersRound,
+                  },
                   { key: 'group', label: 'Por grupo', icon: UsersRound },
                   { key: 'tag', label: 'Por tag', icon: UsersRound },
                   { key: 'manual', label: 'Seleccion manual', icon: CheckCircle2 },
@@ -468,7 +479,8 @@ export default function EventMessaging() {
                           <TableHead className="w-12">Sel.</TableHead>
                           <TableHead>Invitado</TableHead>
                           <TableHead>Grupo</TableHead>
-                          <TableHead>RSVP</TableHead>
+                          <TableHead>C1</TableHead>
+                          <TableHead>C2</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -496,7 +508,8 @@ export default function EventMessaging() {
                               </div>
                             </TableCell>
                             <TableCell>{guest.guest_group || 'Sin grupo'}</TableCell>
-                            <TableCell>{guest.attendance_status === 'pending' ? 'Pendiente' : guest.attendance_status === 'confirmed' ? 'Confirmado' : 'Rechazado'}</TableCell>
+                            <TableCell>{guest.attendance_status_1 === 'pending' ? 'Pendiente' : guest.attendance_status_1 === 'confirmed' ? 'Confirmado' : 'Rechazado'}</TableCell>
+                            <TableCell>{guest.attendance_status_2 === 'pending' ? 'Pendiente' : guest.attendance_status_2 === 'confirmed' ? 'Confirmado' : 'Rechazado'}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -507,7 +520,7 @@ export default function EventMessaging() {
 
               <div className="rounded-none border border-border bg-secondary/20 px-4 py-3">
                 <p className="text-sm font-medium text-foreground">{resolvedAudienceGuests.length} invitados seleccionados</p>
-                <p className="mt-1 text-xs text-muted-foreground">{getAudienceSummary(audience, guests)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{getAudienceSummary(audience, guests, { stage: selectedStage })}</p>
               </div>
             </div>
           )}
@@ -584,7 +597,7 @@ export default function EventMessaging() {
                     </div>
                     <div className="rounded-none border border-border p-4">
                       <p className="text-xs uppercase tracking-widest text-muted-foreground">Audiencia</p>
-                      <p className="mt-2 font-medium text-foreground">{getAudienceSummary(audience, guests)}</p>
+                      <p className="mt-2 font-medium text-foreground">{getAudienceSummary(audience, guests, { stage: selectedStage })}</p>
                     </div>
                     <div className="rounded-none border border-border p-4">
                       <p className="text-xs uppercase tracking-widest text-muted-foreground">Momento</p>

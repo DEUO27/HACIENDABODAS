@@ -19,7 +19,8 @@ const defaultState = {
   guest_group: '',
   table_name: '',
   tags: '',
-  attendance_status: 'pending',
+  attendance_status_1: 'pending',
+  attendance_status_2: 'pending',
   delivery_status: 'draft',
   plus_ones_allowed: 0,
   notes: '',
@@ -39,7 +40,8 @@ export default function GuestFormDialog({
     guest_group: initialValue.guest_group || '',
     table_name: initialValue.table_name || '',
     tags: (initialValue.tags || []).join(', '),
-    attendance_status: initialValue.attendance_status || 'pending',
+    attendance_status_1: initialValue.attendance_status_1 || 'pending',
+    attendance_status_2: initialValue.attendance_status_2 || 'pending',
     delivery_status: initialValue.delivery_status || 'draft',
     plus_ones_allowed: initialValue.plus_ones_allowed || 0,
     notes: initialValue.notes || '',
@@ -99,10 +101,22 @@ export default function GuestFormDialog({
             />
           </label>
           <label className="space-y-2">
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">RSVP</span>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">RSVP Confirmacion 1</span>
             <select
-              value={form.attendance_status}
-              onChange={(event) => setForm((current) => ({ ...current, attendance_status: event.target.value }))}
+              value={form.attendance_status_1}
+              onChange={(event) => setForm((current) => ({ ...current, attendance_status_1: event.target.value }))}
+              className="h-9 w-full rounded-none border border-border bg-background px-3 text-sm"
+            >
+              <option value="pending">Pendiente</option>
+              <option value="confirmed">Confirmado</option>
+              <option value="declined">Rechazado</option>
+            </select>
+          </label>
+          <label className="space-y-2">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">RSVP Confirmacion 2</span>
+            <select
+              value={form.attendance_status_2}
+              onChange={(event) => setForm((current) => ({ ...current, attendance_status_2: event.target.value }))}
               className="h-9 w-full rounded-none border border-border bg-background px-3 text-sm"
             >
               <option value="pending">Pendiente</option>

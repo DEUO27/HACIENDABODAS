@@ -97,6 +97,7 @@ Deno.serve(async (req) => {
 
     return jsonResponse({
       ok: true,
+      stage: result.stage,
       attendanceStatus: result.attendance_status,
       plusOnes: result.plus_ones,
       adultPlusOnes: result.adult_plus_ones,

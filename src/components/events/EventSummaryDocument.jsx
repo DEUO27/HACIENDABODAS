@@ -29,6 +29,11 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     marginBottom: 8,
   },
+  sectionSubtitle: {
+    fontSize: 10,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -53,21 +58,56 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   colName: {
-    width: '42%',
+    width: '38%',
   },
-  colStatus: {
-    width: '18%',
+  colStage: {
+    width: '17%',
   },
   colDelivery: {
-    width: '18%',
+    width: '14%',
   },
   colResponse: {
-    width: '22%',
+    width: '14%',
   },
 })
 
+function StageBlock({ title, stage }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.row}>
+        <Text style={styles.label}>Confirmados</Text>
+        <Text style={styles.value}>{stage.confirmed || 0}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Rechazados</Text>
+        <Text style={styles.value}>{stage.declined || 0}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Pendientes</Text>
+        <Text style={styles.value}>{stage.pending || 0}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Adultos extra</Text>
+        <Text style={styles.value}>{stage.adultCompanions || 0}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Ninos acompanantes</Text>
+        <Text style={styles.value}>{stage.childCompanions || 0}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>Total asistentes</Text>
+        <Text style={styles.value}>{stage.totalAttendees || 0}</Text>
+      </View>
+    </View>
+  )
+}
+
 export default function EventSummaryDocument({ event, metrics, guests }) {
   const visibleGuests = guests.slice(0, 20)
+  const stage1 = metrics.stage1 || {}
+  const stage2 = metrics.stage2 || {}
+  const final = metrics.final || {}
 
   return (
     <Document>
@@ -81,50 +121,36 @@ export default function EventSummaryDocument({ event, metrics, guests }) {
           <Text style={styles.sectionTitle}>Resumen operativo</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Total invitados</Text>
-            <Text style={styles.value}>{metrics.total}</Text>
+            <Text style={styles.value}>{metrics.total || 0}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Invitaciones enviadas</Text>
-            <Text style={styles.value}>{metrics.sent}</Text>
+            <Text style={styles.value}>{metrics.sent || 0}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Confirmados</Text>
-            <Text style={styles.value}>{metrics.confirmed}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Rechazados</Text>
-            <Text style={styles.value}>{metrics.declined}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Pendientes</Text>
-            <Text style={styles.value}>{metrics.pending}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Adultos extra</Text>
-            <Text style={styles.value}>{metrics.adultCompanions || 0}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Ninos acompanantes</Text>
-            <Text style={styles.value}>{metrics.childCompanions || 0}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Total asistentes</Text>
-            <Text style={styles.value}>{metrics.totalAttendees || metrics.confirmed || 0}</Text>
+            <Text style={styles.label}>Asistentes finales</Text>
+            <Text style={styles.value}>{final.totalAttendees || 0}</Text>
           </View>
         </View>
 
+        <StageBlock title="Confirmacion 1" stage={stage1} />
+        <StageBlock title="Confirmacion 2" stage={stage2} />
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Muestra de invitados</Text>
+          <Text style={styles.sectionSubtitle}>Estado por etapa (C1 / C2) y ultima fecha de respuesta.</Text>
           <View style={styles.tableHeader}>
             <Text style={styles.colName}>Invitado</Text>
-            <Text style={styles.colStatus}>RSVP</Text>
+            <Text style={styles.colStage}>C1</Text>
+            <Text style={styles.colStage}>C2</Text>
             <Text style={styles.colDelivery}>Envio</Text>
             <Text style={styles.colResponse}>Respondio</Text>
           </View>
           {visibleGuests.map((guest) => (
             <View key={guest.id} style={styles.tableRow}>
               <Text style={styles.colName}>{guest.full_name}</Text>
-              <Text style={styles.colStatus}>{guest.attendance_status}</Text>
+              <Text style={styles.colStage}>{guest.attendance_status_1 || 'pending'}</Text>
+              <Text style={styles.colStage}>{guest.attendance_status_2 || 'pending'}</Text>
               <Text style={styles.colDelivery}>{guest.delivery_status}</Text>
               <Text style={styles.colResponse}>{guest.responded_at ? guest.responded_at.slice(0, 10) : 'Sin respuesta'}</Text>
             </View>

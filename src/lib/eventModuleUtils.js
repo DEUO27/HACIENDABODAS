@@ -71,26 +71,28 @@ const DELIVERY_STATUS_CLASSES = {
   canceled: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800',
 }
 
-export const DEFAULT_WHATSAPP_TEMPLATE = `Hola {nombre}, te compartimos la invitacion de {evento} para el dia {fecha}. Confirma aqui: {link_confirmacion}`
+export const DEFAULT_WHATSAPP_TEMPLATE = `Hola {nombre}, te compartimos la invitacion de {evento} para el dia {fecha}. Confirma tu asistencia aqui: {link_confirmacion}`
+
+export const RSVP_STAGES = ['confirmacion_1', 'confirmacion_2']
+
+export const DEFAULT_RSVP_STAGE = 'confirmacion_1'
 
 export const MESSAGE_BLUEPRINT_CATALOG = [
   {
-    key: 'invitation_main',
-    label: 'Invitacion principal',
-    description: 'Primer envio para compartir la invitacion y abrir el RSVP.',
+    key: 'confirmacion_1',
+    label: 'Confirmacion 1',
+    shortLabel: 'C1',
+    stage: 'confirmacion_1',
+    description: 'Primer envio: invitacion inicial que abre el RSVP de cada invitado.',
     referenceBody: DEFAULT_WHATSAPP_TEMPLATE,
   },
   {
-    key: 'rsvp_reminder',
-    label: 'Recordatorio RSVP',
-    description: 'Seguimiento amable para invitados que aun no responden.',
-    referenceBody: 'Hola {nombre}, solo queremos recordarte la invitacion de {evento} para el dia {fecha}. Puedes confirmar aqui: {link_confirmacion}',
-  },
-  {
-    key: 'last_call',
-    label: 'Ultimo recordatorio',
-    description: 'Ultimo aviso antes de cerrar la lista final del evento.',
-    referenceBody: 'Hola {nombre}, estamos cerrando la lista final de {evento} para el dia {fecha}. Si aun no confirmas, este es tu ultimo recordatorio: {link_confirmacion}',
+    key: 'confirmacion_2',
+    label: 'Confirmacion 2',
+    shortLabel: 'C2',
+    stage: 'confirmacion_2',
+    description: 'Segundo envio (mas cerca del evento): re-confirmacion final de asistencia.',
+    referenceBody: 'Hola {nombre}, estamos cerrando la lista final de {evento} el {fecha}. Re-confirma tu asistencia aqui: {link_confirmacion}',
   },
 ]
 
@@ -98,6 +100,14 @@ const MESSAGE_BLUEPRINT_MAP = MESSAGE_BLUEPRINT_CATALOG.reduce((accumulator, blu
   accumulator[blueprint.key] = blueprint
   return accumulator
 }, {})
+
+export function isValidRsvpStage(stage) {
+  return RSVP_STAGES.includes(stage)
+}
+
+export function normalizeRsvpStage(stage) {
+  return isValidRsvpStage(stage) ? stage : DEFAULT_RSVP_STAGE
+}
 
 function stableHash(value) {
   let hash = 0
@@ -205,7 +215,12 @@ export function getDeliveryMeta(status) {
 }
 
 export function getMessageBlueprintMeta(messageKey) {
-  return MESSAGE_BLUEPRINT_MAP[messageKey] || MESSAGE_BLUEPRINT_MAP.invitation_main
+  return MESSAGE_BLUEPRINT_MAP[messageKey] || MESSAGE_BLUEPRINT_MAP[DEFAULT_RSVP_STAGE]
+}
+
+function getGuestAttendanceForStage(guest, stage) {
+  if (stage === 'confirmacion_2') return guest?.attendance_status_2 || 'pending'
+  return guest?.attendance_status_1 || 'pending'
 }
 
 export function getDeliveryDisplayMeta(status) {
@@ -219,7 +234,9 @@ export function getAudienceOptions(guests) {
   }
 }
 
-export function resolveAudienceGuests(guests, audience) {
+export function resolveAudienceGuests(guests, audience, options = {}) {
+  const stage = normalizeRsvpStage(options.stage)
+
   switch (audience?.type) {
     case 'group':
       return guests.filter((guest) => guest.guest_group && guest.guest_group === audience.value)
@@ -229,15 +246,18 @@ export function resolveAudienceGuests(guests, audience) {
       return guests.filter((guest) => (audience.guestIds || []).includes(guest.id))
     case 'pending':
     default:
-      return guests.filter((guest) => guest.attendance_status === 'pending')
+      return guests.filter((guest) => getGuestAttendanceForStage(guest, stage) === 'pending')
   }
 }
 
-export function getAudienceSummary(audience, guests) {
+export function getAudienceSummary(audience, guests, options = {}) {
+  const stage = normalizeRsvpStage(options.stage)
+  const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion 2' : 'Confirmacion 1'
+
   if (audience?.type === 'group') return `Grupo: ${audience.value || 'Sin grupo'}`
   if (audience?.type === 'tag') return `Tag: ${audience.value || 'Sin tag'}`
-  if (audience?.type === 'manual') return `Seleccion manual (${resolveAudienceGuests(guests, audience).length})`
-  return 'Todos los pendientes'
+  if (audience?.type === 'manual') return `Seleccion manual (${resolveAudienceGuests(guests, audience, { stage }).length})`
+  return `Pendientes de ${stageLabel}`
 }
 
 export function getDeliveryDisplayStatus(delivery) {
@@ -320,8 +340,8 @@ function parseNonNegativeInteger(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
 }
 
-export function getGuestCompanionCounts(guest) {
-  const response = guest?.rsvp_response || {}
+function readCompanionCountsFromResponse(response) {
+  if (!response) return { adultPlusOnes: 0, childPlusOnes: 0, totalPlusOnes: 0 }
   const adultPlusOnes = 'adult_plus_ones' in response
     ? parseNonNegativeInteger(response.adult_plus_ones)
     : parseNonNegativeInteger(response.plus_ones)
@@ -334,10 +354,31 @@ export function getGuestCompanionCounts(guest) {
   }
 }
 
-export function computeGuestMetrics(guests) {
-  const metrics = {
-    total: guests.length,
-    sent: 0,
+export function getStageResponse(guest, stage) {
+  const normalizedStage = normalizeRsvpStage(stage)
+  if (normalizedStage === 'confirmacion_2') return guest?.rsvp_response_stage_2 || null
+  return guest?.rsvp_response_stage_1 || null
+}
+
+export function getStageCompanionCounts(guest, stage) {
+  return readCompanionCountsFromResponse(getStageResponse(guest, stage))
+}
+
+export function getGuestFinalStage(guest) {
+  if (getGuestAttendanceForStage(guest, 'confirmacion_2') !== 'pending') return 'confirmacion_2'
+  return 'confirmacion_1'
+}
+
+export function getGuestFinalAttendance(guest) {
+  return getGuestAttendanceForStage(guest, getGuestFinalStage(guest))
+}
+
+export function getGuestCompanionCounts(guest) {
+  return getStageCompanionCounts(guest, getGuestFinalStage(guest))
+}
+
+function emptyStageMetrics() {
+  return {
     confirmed: 0,
     declined: 0,
     pending: 0,
@@ -345,39 +386,75 @@ export function computeGuestMetrics(guests) {
     childCompanions: 0,
     totalAttendees: 0,
   }
+}
+
+function accumulateStageMetrics(stageMetrics, attendance, companions) {
+  if (attendance === 'confirmed') {
+    stageMetrics.confirmed += 1
+    stageMetrics.adultCompanions += companions.adultPlusOnes
+    stageMetrics.childCompanions += companions.childPlusOnes
+  } else if (attendance === 'declined') {
+    stageMetrics.declined += 1
+  } else {
+    stageMetrics.pending += 1
+  }
+}
+
+export function computeGuestMetrics(guests) {
+  const metrics = {
+    total: guests.length,
+    sent: 0,
+    stage1: emptyStageMetrics(),
+    stage2: emptyStageMetrics(),
+    final: emptyStageMetrics(),
+  }
 
   guests.forEach((guest) => {
     if (['accepted', 'sent', 'delivered', 'read'].includes(guest.delivery_status)) metrics.sent += 1
-    if (guest.attendance_status === 'confirmed') {
-      const companions = getGuestCompanionCounts(guest)
-      metrics.confirmed += 1
-      metrics.adultCompanions += companions.adultPlusOnes
-      metrics.childCompanions += companions.childPlusOnes
-    } else if (guest.attendance_status === 'declined') metrics.declined += 1
-    else metrics.pending += 1
+
+    const stage1Attendance = getGuestAttendanceForStage(guest, 'confirmacion_1')
+    const stage2Attendance = getGuestAttendanceForStage(guest, 'confirmacion_2')
+
+    accumulateStageMetrics(metrics.stage1, stage1Attendance, getStageCompanionCounts(guest, 'confirmacion_1'))
+    accumulateStageMetrics(metrics.stage2, stage2Attendance, getStageCompanionCounts(guest, 'confirmacion_2'))
+
+    const finalStage = getGuestFinalStage(guest)
+    const finalAttendance = getGuestAttendanceForStage(guest, finalStage)
+    accumulateStageMetrics(metrics.final, finalAttendance, getStageCompanionCounts(guest, finalStage))
   })
 
-  metrics.totalAttendees = metrics.confirmed + metrics.adultCompanions + metrics.childCompanions
+  metrics.stage1.totalAttendees = metrics.stage1.confirmed + metrics.stage1.adultCompanions + metrics.stage1.childCompanions
+  metrics.stage2.totalAttendees = metrics.stage2.confirmed + metrics.stage2.adultCompanions + metrics.stage2.childCompanions
+  metrics.final.totalAttendees = metrics.final.confirmed + metrics.final.adultCompanions + metrics.final.childCompanions
 
   return metrics
 }
 
-export function buildConfirmationTimeline(guests) {
+export function buildConfirmationTimeline(rsvpResponses) {
   const counts = new Map()
 
-  guests.forEach((guest) => {
-    if (!guest.responded_at || guest.attendance_status === 'pending') return
+  ;(rsvpResponses || []).forEach((response) => {
+    if (!response?.responded_at) return
 
-    const key = guest.responded_at.slice(0, 10)
-    const current = counts.get(key) || { date: key, confirmed: 0, declined: 0 }
+    const stage = normalizeRsvpStage(response.stage)
+    const key = `${response.responded_at.slice(0, 10)}|${stage}`
+    const current = counts.get(key) || {
+      date: response.responded_at.slice(0, 10),
+      stage,
+      confirmed: 0,
+      declined: 0,
+    }
 
-    if (guest.attendance_status === 'confirmed') current.confirmed += 1
-    if (guest.attendance_status === 'declined') current.declined += 1
+    if (response.response_status === 'confirmed') current.confirmed += 1
+    if (response.response_status === 'declined') current.declined += 1
 
     counts.set(key, current)
   })
 
-  return Array.from(counts.values()).sort((left, right) => left.date.localeCompare(right.date))
+  return Array.from(counts.values()).sort((left, right) => {
+    if (left.date === right.date) return left.stage.localeCompare(right.stage)
+    return left.date.localeCompare(right.date)
+  })
 }
 
 export function triggerDownload(filename, blob) {
@@ -399,7 +476,9 @@ function getTemplateDeliveryLabel(status) {
 
 export async function exportGuestsSpreadsheet({ guests, eventName, format = 'xlsx' }) {
   const rows = guests.map((guest) => {
-    const companions = getGuestCompanionCounts(guest)
+    const stage1Response = getStageResponse(guest, 'confirmacion_1')
+    const stage2Response = getStageResponse(guest, 'confirmacion_2')
+    const finalCompanions = getGuestCompanionCounts(guest)
 
     return {
       Nombre: guest.full_name,
@@ -407,13 +486,16 @@ export async function exportGuestsSpreadsheet({ guests, eventName, format = 'xls
       Grupo: guest.guest_group || '',
       Mesa: guest.table_name || '',
       Etiquetas: (guest.tags || []).join(', '),
-      RSVP: getTemplateAttendanceLabel(guest.attendance_status),
+      'Confirmacion 1': getTemplateAttendanceLabel(getGuestAttendanceForStage(guest, 'confirmacion_1')),
+      'Confirmacion 2': getTemplateAttendanceLabel(getGuestAttendanceForStage(guest, 'confirmacion_2')),
       Envio: getTemplateDeliveryLabel(guest.delivery_status),
       'Acompanantes permitidos': guest.plus_ones_allowed || 0,
-      'Adultos acompanantes': companions.adultPlusOnes,
-      'Ninos acompanantes': companions.childPlusOnes,
-      Comentario: guest.rsvp_response?.comment || '',
-      Restricciones: guest.rsvp_response?.dietary_restrictions || '',
+      'Adultos acompanantes (final)': finalCompanions.adultPlusOnes,
+      'Ninos acompanantes (final)': finalCompanions.childPlusOnes,
+      'Comentario C1': stage1Response?.comment || '',
+      'Comentario C2': stage2Response?.comment || '',
+      'Restricciones C1': stage1Response?.dietary_restrictions || '',
+      'Restricciones C2': stage2Response?.dietary_restrictions || '',
       Fuente: guest.source === 'import' ? 'importado' : guest.source || 'manual',
     }
   })

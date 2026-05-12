@@ -2,9 +2,12 @@ import { supabase } from '@/lib/supabase'
 import {
   buildGuestDedupeKey,
   buildRsvpPublicUrl,
+  DEFAULT_RSVP_STAGE,
   getPublicAppUrl,
+  isValidRsvpStage,
   normalizeGuestEmail,
   normalizeGuestPhone,
+  normalizeRsvpStage,
   parseTagsInput,
   slugifyEventName,
 } from '@/lib/eventModuleUtils'
@@ -132,19 +135,27 @@ async function invokeFunction(name, payload, requiresAuth = true, hasRetried = f
   return data
 }
 
+function pickLatestTokenForStage(tokens, stage) {
+  return [...tokens]
+    .filter((token) => (token?.stage || DEFAULT_RSVP_STAGE) === stage)
+    .sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime())[0] || null
+}
+
 function mapGuestRecord(record) {
   const responses = Array.isArray(record.rsvp_responses) ? record.rsvp_responses : []
   const tokens = Array.isArray(record.rsvp_tokens) ? record.rsvp_tokens : []
-  const latestToken = [...tokens].sort((left, right) => {
-    return new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime()
-  })[0] || null
+
+  const stage1Response = responses.find((response) => response.stage === 'confirmacion_1') || null
+  const stage2Response = responses.find((response) => response.stage === 'confirmacion_2') || null
 
   return {
     ...record,
     tags: parseTagsInput(record.tags),
-    rsvp_response: responses[0] || null,
-    latest_token: latestToken,
-    responded_at: responses[0]?.responded_at || record.responded_at || null,
+    rsvp_response_stage_1: stage1Response,
+    rsvp_response_stage_2: stage2Response,
+    latest_token_stage_1: pickLatestTokenForStage(tokens, 'confirmacion_1'),
+    latest_token_stage_2: pickLatestTokenForStage(tokens, 'confirmacion_2'),
+    responded_at: record.responded_at || stage2Response?.responded_at || stage1Response?.responded_at || null,
   }
 }
 
@@ -228,6 +239,7 @@ export async function listGuests(eventId) {
       *,
       rsvp_responses (
         id,
+        stage,
         response_status,
         plus_ones,
         adult_plus_ones,
@@ -238,6 +250,7 @@ export async function listGuests(eventId) {
       ),
       rsvp_tokens (
         id,
+        stage,
         expires_at,
         used_at,
         revoked_at,
@@ -251,6 +264,17 @@ export async function listGuests(eventId) {
   return (data || []).map(mapGuestRecord)
 }
 
+export async function listEventRsvpResponses(eventId) {
+  const { data, error } = await supabase
+    .from('rsvp_responses')
+    .select('id, guest_id, stage, response_status, plus_ones, adult_plus_ones, child_plus_ones, responded_at')
+    .eq('event_id', eventId)
+    .order('responded_at', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
 export async function upsertGuest(eventId, payload, guestId = null) {
   const insertPayload = {
     event_id: eventId,
@@ -260,7 +284,8 @@ export async function upsertGuest(eventId, payload, guestId = null) {
     guest_group: String(payload.guest_group || '').trim(),
     table_name: String(payload.table_name || '').trim(),
     tags: parseTagsInput(payload.tags),
-    attendance_status: payload.attendance_status || 'pending',
+    attendance_status_1: payload.attendance_status_1 || 'pending',
+    attendance_status_2: payload.attendance_status_2 || 'pending',
     delivery_status: payload.delivery_status || 'draft',
     plus_ones_allowed: Number(payload.plus_ones_allowed || 0),
     notes: String(payload.notes || '').trim(),
@@ -305,7 +330,7 @@ export async function importGuests(guests) {
       onConflict: 'event_id,dedupe_key',
       ignoreDuplicates: true,
     })
-    .select('id,event_id,dedupe_key,attendance_status')
+    .select('id,event_id,dedupe_key')
 
   if (error) throw error
 
@@ -323,6 +348,7 @@ export async function importGuests(guests) {
       return {
         event_id: guest.event_id,
         guest_id: guest.id,
+        stage: normalizeRsvpStage(responseSeed.stage),
         response_status: responseSeed.response_status,
         plus_ones: totalPlusOnes,
         adult_plus_ones: responseSeed.response_status === 'confirmed' ? adultPlusOnes : 0,
@@ -337,7 +363,7 @@ export async function importGuests(guests) {
   if (responseRows.length) {
     const { error: responseError } = await supabase
       .from('rsvp_responses')
-      .upsert(responseRows, { onConflict: 'guest_id' })
+      .upsert(responseRows, { onConflict: 'guest_id,stage' })
 
     if (responseError) throw responseError
   }
@@ -355,7 +381,8 @@ export async function listDeliveries(eventId) {
         full_name,
         phone,
         responded_at,
-        attendance_status
+        attendance_status_1,
+        attendance_status_2
       )
     `)
     .eq('event_id', eventId)
@@ -616,16 +643,21 @@ export async function upsertEventCoupleAccount(payload) {
   return invokeFunction('upsert-couple-account', payload)
 }
 
-export async function issueRsvpToken({ guestId, eventId, baseUrl, expiresAt = null }) {
+export async function issueRsvpToken({ guestId, eventId, stage = DEFAULT_RSVP_STAGE, baseUrl, expiresAt = null }) {
   const resolvedBaseUrl = baseUrl || getPublicAppUrl(typeof window !== 'undefined' ? window.location.origin : '')
 
   if (!resolvedBaseUrl) {
     throw new Error('Configura VITE_PUBLIC_APP_URL para generar links RSVP publicos fuera de localhost.')
   }
 
+  if (!isValidRsvpStage(stage)) {
+    throw new Error('Etapa de RSVP invalida.')
+  }
+
   const rpcParams = {
     p_guest_id: guestId,
     p_event_id: eventId,
+    p_stage: stage,
   }
 
   if (expiresAt) {

@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
         id,
         event_id,
         guest_id,
+        stage,
         expires_at,
         used_at,
         revoked_at,
@@ -41,7 +42,8 @@ Deno.serve(async (req) => {
           id,
           full_name,
           plus_ones_allowed,
-          attendance_status
+          attendance_status_1,
+          attendance_status_2
         ),
         events!inner (
           id,
@@ -66,14 +68,16 @@ Deno.serve(async (req) => {
     if (tokenRow.used_at) {
       const { data: response } = await adminClient
         .from('rsvp_responses')
-        .select('response_status, plus_ones, adult_plus_ones, child_plus_ones, comment, dietary_restrictions, responded_at')
+        .select('response_status, plus_ones, adult_plus_ones, child_plus_ones, comment, dietary_restrictions, responded_at, stage')
         .eq('guest_id', tokenRow.guest_id)
+        .eq('stage', tokenRow.stage)
         .maybeSingle()
 
       return jsonResponse({
         valid: false,
         code: 'used_token',
         message: 'Este enlace ya fue utilizado.',
+        stage: tokenRow.stage,
         response,
       }, 409)
     }
@@ -105,13 +109,20 @@ Deno.serve(async (req) => {
       : buildDefaultRsvpPageConfig(tokenRow.events)
     const themeKey = pageConfig.layout.template_key || 'editorial'
 
+    const stageAttendanceStatus = tokenRow.stage === 'confirmacion_2'
+      ? tokenRow.guests.attendance_status_2
+      : tokenRow.guests.attendance_status_1
+
     return jsonResponse({
       valid: true,
+      stage: tokenRow.stage,
       guest: {
         id: tokenRow.guests.id,
         fullName: tokenRow.guests.full_name,
         plusOnesAllowed: tokenRow.guests.plus_ones_allowed,
-        attendanceStatus: tokenRow.guests.attendance_status,
+        attendanceStatus: stageAttendanceStatus,
+        attendanceStatus1: tokenRow.guests.attendance_status_1,
+        attendanceStatus2: tokenRow.guests.attendance_status_2,
       },
       event: {
         ...eventPayload,

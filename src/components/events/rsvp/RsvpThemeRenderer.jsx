@@ -63,7 +63,7 @@ function normalizeGuest(guest) {
     id: guest?.id || null,
     fullName: guest?.fullName || guest?.full_name || 'Invitado de ejemplo',
     plusOnesAllowed: parseCompanionCount(guest?.plusOnesAllowed ?? guest?.plus_ones_allowed ?? 2),
-    attendanceStatus: guest?.attendanceStatus || guest?.attendance_status || 'pending',
+    attendanceStatus: guest?.attendanceStatus || 'pending',
   }
 }
 
@@ -99,6 +99,7 @@ export default function RsvpThemeRenderer({
   event,
   guest,
   pageConfig,
+  stage = null,
   loading = false,
   errorState = null,
   submitted = null,
@@ -111,6 +112,7 @@ export default function RsvpThemeRenderer({
   const normalizedEvent = normalizeEvent(event)
   const normalizedGuest = normalizeGuest(guest)
   const mergedConfig = mergeRsvpPageConfig(buildDefaultRsvpPageConfig(normalizedEvent), pageConfig || {}, normalizedEvent)
+  const stageLabel = stage === 'confirmacion_2' ? 'Confirmacion 2' : stage === 'confirmacion_1' ? 'Confirmacion 1' : ''
 
   if (mergedConfig.layout.mode === 'pdf') {
     return (
@@ -118,6 +120,7 @@ export default function RsvpThemeRenderer({
         event={normalizedEvent}
         guest={normalizedGuest}
         pageConfig={mergedConfig}
+        stage={stage}
         loading={loading}
         errorState={errorState}
         submitted={submitted}
@@ -280,6 +283,9 @@ export default function RsvpThemeRenderer({
             )}>
               <div className="space-y-4">
                 <InfoSection title="Invitacion" icon={HeartHandshake} className={theme.sectionClass}>
+                  {stageLabel && (
+                    <p className="text-xs uppercase tracking-[0.28em] opacity-70">{stageLabel}</p>
+                  )}
                   <p>
                     <strong>{normalizedGuest.fullName}</strong>, esta confirmacion corresponde al evento de{' '}
                     <strong>{normalizedEvent.name}</strong>.
