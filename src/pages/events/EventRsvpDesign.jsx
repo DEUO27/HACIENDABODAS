@@ -765,7 +765,7 @@ export default function EventRsvpDesign() {
                             : 'border-border bg-background hover:bg-secondary/20',
                         )}
                       >
-                        <p className="font-heading text-2xl tracking-wide text-foreground">{theme.label}</p>
+                        <p className="font-heading text-xl tracking-wide text-foreground break-words">{theme.label}</p>
                         <p className="mt-2 text-sm text-muted-foreground">{theme.description}</p>
                       </button>
                     ))}
