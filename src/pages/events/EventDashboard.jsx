@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Download, RefreshCw } from 'lucide-react'
+import { Check, Download, RefreshCw } from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -32,7 +32,6 @@ import {
   computeGuestMetrics,
   exportGuestsSpreadsheet,
   formatDateTime,
-  getMessageBlueprintMeta,
 } from '@/lib/eventModuleUtils'
 import { listDeliveries, listEventRsvpResponses, listGuests } from '@/lib/eventService'
 import { supabase } from '@/lib/supabase'
@@ -42,8 +41,13 @@ export default function EventDashboard() {
   const [guests, setGuests] = useState([])
   const [deliveries, setDeliveries] = useState([])
   const [rsvpResponses, setRsvpResponses] = useState([])
+  const [selectedStage, setSelectedStage] = useState('confirmacion_1')
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+
+  const isFinalStage = selectedStage === 'confirmacion_2'
+  const stageLabel = isFinalStage ? 'Confirmacion Final' : 'Confirmacion Inicial'
+  const stageShortLabel = isFinalStage ? 'Final' : 'Inicial'
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -129,31 +133,24 @@ export default function EventDashboard() {
   const timeline = useMemo(() => {
     const dateMap = new Map()
     buildConfirmationTimeline(rsvpResponses).forEach((entry) => {
-      const current = dateMap.get(entry.date) || { date: entry.date, c1Confirmed: 0, c1Declined: 0, c2Confirmed: 0, c2Declined: 0 }
-      if (entry.stage === 'confirmacion_2') {
-        current.c2Confirmed += entry.confirmed
-        current.c2Declined += entry.declined
-      } else {
-        current.c1Confirmed += entry.confirmed
-        current.c1Declined += entry.declined
-      }
+      if (entry.stage !== selectedStage) return
+      const current = dateMap.get(entry.date) || { date: entry.date, confirmed: 0, declined: 0 }
+      current.confirmed += entry.confirmed
+      current.declined += entry.declined
       dateMap.set(entry.date, current)
     })
     return Array.from(dateMap.values()).sort((left, right) => left.date.localeCompare(right.date))
-  }, [rsvpResponses])
+  }, [rsvpResponses, selectedStage])
   const scheduleCount = useMemo(() => guests.filter((guest) => guest.delivery_status === 'scheduled').length, [guests])
 
-  const stage1ChartData = useMemo(() => ([
-    { name: 'Confirmados', value: metrics.stage1?.confirmed || 0, color: '#10b981' },
-    { name: 'Rechazados', value: metrics.stage1?.declined || 0, color: '#f43f5e' },
-    { name: 'Pendientes', value: metrics.stage1?.pending || 0, color: '#f59e0b' },
-  ]), [metrics.stage1])
-
-  const stage2ChartData = useMemo(() => ([
-    { name: 'Confirmados', value: metrics.stage2?.confirmed || 0, color: '#10b981' },
-    { name: 'Rechazados', value: metrics.stage2?.declined || 0, color: '#f43f5e' },
-    { name: 'Pendientes', value: metrics.stage2?.pending || 0, color: '#f59e0b' },
-  ]), [metrics.stage2])
+  const stageChartData = useMemo(() => {
+    const stageMetrics = isFinalStage ? metrics.stage2 : metrics.stage1
+    return [
+      { name: 'Confirmados', value: stageMetrics?.confirmed || 0, color: '#10b981' },
+      { name: 'Rechazados', value: stageMetrics?.declined || 0, color: '#f43f5e' },
+      { name: 'Pendientes', value: stageMetrics?.pending || 0, color: '#f59e0b' },
+    ]
+  }, [isFinalStage, metrics.stage1, metrics.stage2])
 
   const guestNameById = useMemo(() => {
     const map = new Map()
@@ -163,16 +160,50 @@ export default function EventDashboard() {
 
   const latestResponses = useMemo(() => {
     return [...rsvpResponses]
-      .filter((response) => response.responded_at)
+      .filter((response) => response.responded_at && response.stage === selectedStage)
       .sort((left, right) => new Date(right.responded_at).getTime() - new Date(left.responded_at).getTime())
       .slice(0, 8)
-  }, [rsvpResponses])
+  }, [rsvpResponses, selectedStage])
 
-  const recentDeliveries = useMemo(() => deliveries.slice(0, 8), [deliveries])
+  const recentDeliveries = useMemo(
+    () => deliveries.filter((delivery) => delivery.message_key === selectedStage).slice(0, 8),
+    [deliveries, selectedStage],
+  )
   const handleDownloadSummaryPdf = useCallback(async () => {
     const { downloadEventSummaryPdf } = await import('@/lib/eventDashboardPdf')
     await downloadEventSummaryPdf({ event, metrics, guests })
   }, [event, guests, metrics])
+
+  const stageToggle = (
+    <div className="inline-flex border border-border bg-card">
+      <button
+        type="button"
+        onClick={() => setSelectedStage('confirmacion_1')}
+        aria-pressed={selectedStage === 'confirmacion_1'}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+          selectedStage === 'confirmacion_1'
+            ? 'bg-foreground text-background'
+            : 'bg-transparent text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
+        }`}
+      >
+        <Check className={`h-3 w-3 transition-opacity ${selectedStage === 'confirmacion_1' ? 'opacity-100' : 'opacity-0'}`} />
+        Inicial
+      </button>
+      <button
+        type="button"
+        onClick={() => setSelectedStage('confirmacion_2')}
+        aria-pressed={selectedStage === 'confirmacion_2'}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+          selectedStage === 'confirmacion_2'
+            ? 'bg-foreground text-background'
+            : 'bg-transparent text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
+        }`}
+      >
+        <Check className={`h-3 w-3 transition-opacity ${selectedStage === 'confirmacion_2' ? 'opacity-100' : 'opacity-0'}`} />
+        Final
+      </button>
+    </div>
+  )
 
   return (
     <div className="space-y-6 py-6">
@@ -205,6 +236,7 @@ export default function EventDashboard() {
             </Button>
           </>
         )}
+        subActions={stageToggle}
       />
 
       {errorMessage && (
@@ -213,11 +245,11 @@ export default function EventDashboard() {
         </div>
       )}
 
-      <EventMetricsGrid metrics={metrics} scheduleCount={scheduleCount} />
+      <EventMetricsGrid metrics={metrics} scheduleCount={scheduleCount} selectedStage={selectedStage} />
 
       <Card className="rounded-none border-border bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Timeline de confirmaciones (por etapa)</CardTitle>
+          <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">{`Timeline de confirmaciones — ${stageLabel}`}</CardTitle>
         </CardHeader>
         <CardContent className="h-[320px]">
           {loading ? (
@@ -229,11 +261,31 @@ export default function EventDashboard() {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="c1Confirmed" name="Inicial confirmados" fill="#10b981" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="c1Declined" name="Inicial rechazados" fill="#fca5a5" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="c2Confirmed" name="Final confirmados" fill="#0284c7" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="c2Declined" name="Final rechazados" fill="#f43f5e" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="confirmed" name={`${stageShortLabel} confirmados`} fill={isFinalStage ? '#0284c7' : '#10b981'} radius={[0, 0, 0, 0]} />
+                <Bar dataKey="declined" name={`${stageShortLabel} rechazados`} fill={isFinalStage ? '#f43f5e' : '#fca5a5'} radius={[0, 0, 0, 0]} />
               </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-none border-border bg-card shadow-sm">
+        <CardHeader>
+          <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">{`Distribucion ${stageLabel}`}</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[280px]">
+          {loading ? (
+            <div className="h-full animate-pulse bg-secondary/40" />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={stageChartData} dataKey="value" innerRadius={58} outerRadius={94}>
+                  {stageChartData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
             </ResponsiveContainer>
           )}
         </CardContent>
@@ -242,60 +294,13 @@ export default function EventDashboard() {
       <div className="grid gap-4 xl:grid-cols-2">
         <Card className="rounded-none border-border bg-card shadow-sm">
           <CardHeader>
-            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Distribucion Confirmacion Inicial</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            {loading ? (
-              <div className="h-full animate-pulse bg-secondary/40" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={stage1ChartData} dataKey="value" innerRadius={58} outerRadius={94}>
-                    {stage1ChartData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-none border-border bg-card shadow-sm">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Distribucion Confirmacion Final</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            {loading ? (
-              <div className="h-full animate-pulse bg-secondary/40" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={stage2ChartData} dataKey="value" innerRadius={58} outerRadius={94}>
-                    {stage2ChartData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="rounded-none border-border bg-card shadow-sm">
-          <CardHeader>
-            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Ultimas respuestas</CardTitle>
+            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">{`Ultimas respuestas — ${stageLabel}`}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Invitado</TableHead>
-                  <TableHead>Etapa</TableHead>
                   <TableHead>Respuesta</TableHead>
                   <TableHead>Respondio</TableHead>
                 </TableRow>
@@ -304,17 +309,14 @@ export default function EventDashboard() {
                 {latestResponses.map((response) => (
                   <TableRow key={response.id}>
                     <TableCell className="font-medium text-foreground">{guestNameById.get(response.guest_id) || 'Invitado'}</TableCell>
-                    <TableCell className="text-xs uppercase tracking-widest text-muted-foreground">
-                      {response.stage === 'confirmacion_2' ? 'Final' : 'Inicial'}
-                    </TableCell>
                     <TableCell><AttendancePill status={response.response_status} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{formatDateTime(response.responded_at)}</TableCell>
                   </TableRow>
                 ))}
                 {!latestResponses.length && (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
-                      Aun no hay respuestas confirmadas en este evento.
+                    <TableCell colSpan={3} className="py-10 text-center text-sm text-muted-foreground">
+                      {`Aun no hay respuestas de ${stageLabel} en este evento.`}
                     </TableCell>
                   </TableRow>
                 )}
@@ -325,14 +327,13 @@ export default function EventDashboard() {
 
         <Card className="rounded-none border-border bg-card shadow-sm">
           <CardHeader>
-            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">Historial de entregas</CardTitle>
+            <CardTitle className="font-heading text-2xl tracking-wide text-card-foreground">{`Historial de entregas — ${stageLabel}`}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Invitado</TableHead>
-                  <TableHead>Etapa</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Programado</TableHead>
                   <TableHead>Enviado</TableHead>
@@ -342,9 +343,6 @@ export default function EventDashboard() {
                 {recentDeliveries.map((delivery) => (
                   <TableRow key={delivery.id}>
                     <TableCell className="font-medium text-foreground">{delivery.guests?.full_name || 'Invitado'}</TableCell>
-                    <TableCell className="text-xs uppercase tracking-widest text-muted-foreground">
-                      {getMessageBlueprintMeta(delivery.message_key).shortLabel || (delivery.message_key === 'confirmacion_2' ? 'Final' : 'Inicial')}
-                    </TableCell>
                     <TableCell><DeliveryPill status={delivery.status} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{delivery.scheduled_at ? formatDateTime(delivery.scheduled_at) : 'Ahora'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{delivery.sent_at ? formatDateTime(delivery.sent_at) : 'Sin enviar'}</TableCell>
@@ -352,8 +350,8 @@ export default function EventDashboard() {
                 ))}
                 {!recentDeliveries.length && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
-                      Aun no existe historial de envios para este evento.
+                    <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                      {`Aun no existe historial de envios de ${stageLabel} en este evento.`}
                     </TableCell>
                   </TableRow>
                 )}

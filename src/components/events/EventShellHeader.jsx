@@ -18,6 +18,7 @@ export default function EventShellHeader({
   currentEvent,
   activeTab = 'dashboard',
   actions = null,
+  subActions = null,
 }) {
   const navigate = useNavigate()
   const { role } = useAuth()
@@ -85,20 +86,23 @@ export default function EventShellHeader({
       </div>
 
       {currentEvent && (
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => {
-            const isActive = tab.key === activeTab
-            return (
-              <Button
-                key={tab.key}
-                asChild
-                variant={isActive ? 'default' : 'outline'}
-                className="rounded-none uppercase tracking-widest"
-              >
-                <Link to={`/eventos/${currentEvent.id}/${tab.suffix}`}>{tab.label}</Link>
-              </Button>
-            )
-          })}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab) => {
+              const isActive = tab.key === activeTab
+              return (
+                <Button
+                  key={tab.key}
+                  asChild
+                  variant={isActive ? 'default' : 'outline'}
+                  className="rounded-none uppercase tracking-widest"
+                >
+                  <Link to={`/eventos/${currentEvent.id}/${tab.suffix}`}>{tab.label}</Link>
+                </Button>
+              )
+            })}
+          </div>
+          {subActions}
         </div>
       )}
     </div>

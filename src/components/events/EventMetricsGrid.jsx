@@ -36,10 +36,15 @@ function StageSection({ title, accent, metrics }) {
   )
 }
 
-export default function EventMetricsGrid({ metrics, scheduleCount = 0 }) {
+export default function EventMetricsGrid({ metrics, scheduleCount = 0, selectedStage = 'confirmacion_1' }) {
   const stage1 = metrics.stage1 || {}
   const stage2 = metrics.stage2 || {}
   const final = metrics.final || {}
+
+  const isFinalStage = selectedStage === 'confirmacion_2'
+  const stageMetrics = isFinalStage ? stage2 : stage1
+  const stageTitle = isFinalStage ? 'Confirmacion Final' : 'Confirmacion Inicial'
+  const stageAccent = isFinalStage ? 'bg-sky-500' : 'bg-emerald-500'
 
   return (
     <div className="space-y-6">
@@ -55,33 +60,20 @@ export default function EventMetricsGrid({ metrics, scheduleCount = 0 }) {
         />
       </div>
 
-      <StageSection title="Confirmacion Inicial" accent="bg-emerald-500" metrics={stage1} />
-      <StageSection title="Confirmacion Final" accent="bg-sky-500" metrics={stage2} />
+      <StageSection title={stageTitle} accent={stageAccent} metrics={stageMetrics} />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <MetricCard
-          label="Adultos extra (final)"
-          value={final.adultCompanions || 0}
+          label="Adultos extra"
+          value={stageMetrics.adultCompanions || 0}
           icon={UserPlus}
           accent="text-cyan-600 dark:text-cyan-300"
         />
         <MetricCard
-          label="Ninos extra (final)"
-          value={final.childCompanions || 0}
+          label="Ninos extra"
+          value={stageMetrics.childCompanions || 0}
           icon={Baby}
           accent="text-lime-600 dark:text-lime-300"
-        />
-        <MetricCard
-          label="Confirmados (final)"
-          value={final.confirmed || 0}
-          icon={CheckCircle2}
-          accent="text-emerald-600 dark:text-emerald-300"
-        />
-        <MetricCard
-          label="Rechazados (final)"
-          value={final.declined || 0}
-          icon={XCircle}
-          accent="text-rose-600 dark:text-rose-300"
         />
       </div>
     </div>
