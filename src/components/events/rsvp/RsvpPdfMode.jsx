@@ -11,7 +11,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
-import { isIos } from '@/lib/userAgent'
+import { isMobileDevice } from '@/lib/userAgent'
 import { clampCompanionCounts, parseCompanionCount } from '@/lib/rsvpFormHelpers'
 
 function PreviewBanner() {
@@ -131,7 +131,7 @@ export default function RsvpPdfMode({
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [intent, setIntent] = useState(null)
-  const useNativeFallback = useMemo(() => isIos(), [])
+  const useNativeFallback = useMemo(() => isMobileDevice(), [])
 
   const pdfUrl = pageConfig?.branding?.invitation_pdf_url || ''
   const accentColor = pageConfig?.branding?.accent_color || '#a46c47'
