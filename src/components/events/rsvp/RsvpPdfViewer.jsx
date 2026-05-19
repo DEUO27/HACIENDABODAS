@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { ExternalLink, FileText } from 'lucide-react'
-import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
 import { Button } from '@/components/ui/button'
 
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
 function ViewerFallback({ url, accentColor }) {
   return (
@@ -45,8 +44,14 @@ function RsvpPdfDocument({ url, accentColor, containerWidth }) {
     <Document
       file={url}
       onLoadSuccess={({ numPages: total }) => setNumPages(total)}
-      onLoadError={() => setLoadError(true)}
-      onSourceError={() => setLoadError(true)}
+      onLoadError={(error) => {
+        console.error('[RsvpPdfViewer] onLoadError', error)
+        setLoadError(true)
+      }}
+      onSourceError={(error) => {
+        console.error('[RsvpPdfViewer] onSourceError', error)
+        setLoadError(true)
+      }}
       loading={
         <div className="h-[calc(100vh-9rem)] w-full animate-pulse bg-secondary/40" />
       }
