@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json()
 
-    const VALID_MESSAGE_KEYS = ['confirmacion_1', 'confirmacion_2'] as const
+    const VALID_MESSAGE_KEYS = ['confirmacion_1', 'recordatorio', 'confirmacion_2'] as const
     const eventId = body.eventId
     const messageKey = String(body.messageKey || 'confirmacion_1').trim()
     const guestIds = Array.isArray(body.guestIds) ? body.guestIds : []
@@ -102,8 +102,10 @@ Deno.serve(async (req) => {
       errorSubcode?: string | number | null
     }> = []
 
+    const tokenStage = messageKey === 'recordatorio' ? 'confirmacion_1' : messageKey
+
     for (const guest of guests || []) {
-      const rsvpLink = await issueTokenForGuest(adminClient, guest, baseUrl, messageKey)
+      const rsvpLink = await issueTokenForGuest(adminClient, guest, baseUrl, tokenStage)
       const payloadBuilder = buildTemplatePayload({
         guest,
         event,

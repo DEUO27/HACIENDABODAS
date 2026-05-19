@@ -165,10 +165,12 @@ export default function EventDashboard() {
       .slice(0, 8)
   }, [rsvpResponses, selectedStage])
 
-  const recentDeliveries = useMemo(
-    () => deliveries.filter((delivery) => delivery.message_key === selectedStage).slice(0, 8),
-    [deliveries, selectedStage],
-  )
+  const recentDeliveries = useMemo(() => {
+    const allowedKeys = selectedStage === 'confirmacion_1'
+      ? ['confirmacion_1', 'recordatorio']
+      : ['confirmacion_2']
+    return deliveries.filter((delivery) => allowedKeys.includes(delivery.message_key)).slice(0, 8)
+  }, [deliveries, selectedStage])
   const handleDownloadSummaryPdf = useCallback(async () => {
     const { downloadEventSummaryPdf } = await import('@/lib/eventDashboardPdf')
     await downloadEventSummaryPdf({ event, metrics, guests })
@@ -236,7 +238,6 @@ export default function EventDashboard() {
             </Button>
           </>
         )}
-        subActions={stageToggle}
       />
 
       {errorMessage && (
@@ -245,7 +246,7 @@ export default function EventDashboard() {
         </div>
       )}
 
-      <EventMetricsGrid metrics={metrics} scheduleCount={scheduleCount} selectedStage={selectedStage} />
+      <EventMetricsGrid metrics={metrics} scheduleCount={scheduleCount} selectedStage={selectedStage} stageToggle={stageToggle} />
 
       <Card className="rounded-none border-border bg-card shadow-sm">
         <CardHeader>

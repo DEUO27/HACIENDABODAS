@@ -87,6 +87,14 @@ export const MESSAGE_BLUEPRINT_CATALOG = [
     referenceBody: DEFAULT_WHATSAPP_TEMPLATE,
   },
   {
+    key: 'recordatorio',
+    label: 'Recordatorio',
+    shortLabel: 'Recordatorio',
+    stage: 'confirmacion_1',
+    description: 'Reenvio para invitados que aun no responden la Inicial. Usa el mismo link y la misma pagina de RSVP.',
+    referenceBody: 'Hola {nombre}, te recordamos la invitacion de {evento} para el dia {fecha}. Aun no nos confirmas: {link_confirmacion}',
+  },
+  {
     key: 'confirmacion_2',
     label: 'Confirmacion Final',
     shortLabel: 'Final',

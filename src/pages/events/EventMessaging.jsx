@@ -370,7 +370,7 @@ export default function EventMessaging() {
 
         <CardContent className="space-y-6">
           {currentStep === 1 && (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-3">
               {MESSAGE_BLUEPRINT_CATALOG.map((preset) => {
                 const blueprint = blueprintMap[preset.key]
                 const isReady = Boolean(blueprint?.is_active && blueprint?.meta_template_name && blueprint?.reference_body)

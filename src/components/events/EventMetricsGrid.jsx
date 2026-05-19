@@ -19,12 +19,15 @@ function MetricCard({ label, value, icon, accent = 'text-foreground' }) {
   )
 }
 
-function StageSection({ title, accent, metrics }) {
+function StageSection({ title, accent, metrics, action }) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <span className={`inline-block h-2 w-2 rounded-full ${accent}`} />
-        <p className="text-xs uppercase tracking-[0.32em] text-muted-foreground">{title}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className={`inline-block h-2 w-2 rounded-full ${accent}`} />
+          <p className="text-xs uppercase tracking-[0.32em] text-muted-foreground">{title}</p>
+        </div>
+        {action}
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Confirmados" value={metrics.confirmed || 0} icon={CheckCircle2} accent="text-emerald-600 dark:text-emerald-300" />
@@ -36,7 +39,7 @@ function StageSection({ title, accent, metrics }) {
   )
 }
 
-export default function EventMetricsGrid({ metrics, scheduleCount = 0, selectedStage = 'confirmacion_1' }) {
+export default function EventMetricsGrid({ metrics, scheduleCount = 0, selectedStage = 'confirmacion_1', stageToggle = null }) {
   const stage1 = metrics.stage1 || {}
   const stage2 = metrics.stage2 || {}
   const final = metrics.final || {}
@@ -60,7 +63,7 @@ export default function EventMetricsGrid({ metrics, scheduleCount = 0, selectedS
         />
       </div>
 
-      <StageSection title={stageTitle} accent={stageAccent} metrics={stageMetrics} />
+      <StageSection title={stageTitle} accent={stageAccent} metrics={stageMetrics} action={stageToggle} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <MetricCard

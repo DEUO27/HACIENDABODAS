@@ -80,7 +80,7 @@ export default function MessageBlueprintSettings() {
           <div>
             <h2 className="font-heading text-4xl text-foreground">Mensajes de WhatsApp</h2>
             <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              Define los dos templates reales de Meta que usara el wizard: Confirmacion Inicial (primer envio) y Confirmacion Final (re-confirmacion cercana al evento). Esta pantalla no se muestra en el flujo principal del evento.
+              Define los tres templates reales de Meta que usara el wizard: Confirmacion Inicial (primer envio), Recordatorio (reenvio a quienes aun no responden) y Confirmacion Final (re-confirmacion cercana al evento). Esta pantalla no se muestra en el flujo principal del evento.
             </p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function MessageBlueprintSettings() {
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-3">
         {(loading ? buildFormState([]) : rows).map((row) => (
           <Card key={row.message_key} className="rounded-none border-border bg-card shadow-sm">
             <CardHeader className="space-y-3">
